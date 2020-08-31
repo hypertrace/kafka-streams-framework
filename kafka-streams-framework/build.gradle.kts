@@ -40,6 +40,10 @@ dependencies {
             because("Denial of Service (DoS) [Medium Severity][https://snyk.io/vuln/SNYK-JAVA-ORGYAML-537645] in org.yaml:snakeyaml@1.23\n" +
                     "   introduced by io.confluent:kafka-avro-serializer@5.5.0 > io.confluent:kafka-schema-registry-client@5.5.0 > io.swagger:swagger-core@1.5.3 > com.fasterxml.jackson.dataformat:jackson-dataformat-yaml@2.4.5 > org.yaml:snakeyaml@1.12")
         }
+        implementation("org.glassfish.jersey.media:jersey-media-jaxbn@2.31"){
+            because("XML Entity Expansion [High Severity][https://snyk.io/vuln/SNYK-JAVA-ORGGLASSFISHJERSEYMEDIA-595972] in org.glassfish.jersey.media:jersey-media-jaxb@2.30\n" +
+                    "    introduced by io.confluent:kafka-avro-serializer@5.5.0 > io.confluent:kafka-schema-registry-client@5.5.0 > org.glassfish.jersey.ext:jersey-bean-validation@2.30 > org.glassfish.jersey.core:jersey-server@2.30 > org.glassfish.jersey.media:jersey-media-jaxb@2.30");
+        }
     }
 
     api("org.apache.kafka:kafka-streams:5.5.1-ccs")
