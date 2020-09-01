@@ -6,27 +6,21 @@ plugins {
     id("org.hypertrace.jacoco-report-plugin")
 }
 
-repositories {
-    // Need this to fetch confluent's kafka-avro-serializer dependency
-    maven("http://packages.confluent.io/maven")
-}
-
-sourceSets {
-    test {
-        java {
-            srcDirs("src/test/java")
-        }
-    }
-}
-
 tasks.test {
     useJUnitPlatform()
 }
 
 dependencies {
+    api("org.apache.kafka:kafka-streams:5.5.1-ccs")
+    api("com.typesafe:config:1.4.0")
+    api("io.confluent:kafka-avro-serializer:5.5.0")
     implementation("org.hypertrace.core.serviceframework:platform-metrics:0.1.0")
     implementation("org.hypertrace.core.serviceframework:platform-service-framework:0.1.5")
-
+    implementation("org.apache.kafka:kafka-clients:5.5.1-ccs")
+    testImplementation("org.apache.kafka:kafka-streams-test-utils:5.5.1-ccs")
+    testImplementation("org.junit.jupiter:junit-jupiter:5.6.2")
+    testImplementation("org.mockito:mockito-core:3.3.3")
+    testImplementation("org.hamcrest:hamcrest-core:1.3")
     constraints {
         implementation("com.google.guava:guava:29.0-jre") {
             because("Deserialization of Untrusted Data [Medium Severity][https://snyk.io/vuln/SNYK-JAVA-COMGOOGLEGUAVA-32236] in com.google.guava:guava@20.0\n" +
@@ -45,14 +39,4 @@ dependencies {
                     "    introduced by io.confluent:kafka-avro-serializer@5.5.0 > io.confluent:kafka-schema-registry-client@5.5.0 > org.glassfish.jersey.ext:jersey-bean-validation@2.30 > org.glassfish.jersey.core:jersey-server@2.30 > org.glassfish.jersey.media:jersey-media-jaxb@2.30");
         }
     }
-
-    api("org.apache.kafka:kafka-streams:5.5.1-ccs")
-    api("com.typesafe:config:1.4.0")
-    implementation("org.apache.kafka:kafka-clients:5.5.1-ccs")
-    api("io.confluent:kafka-avro-serializer:5.5.0")
-
-    testImplementation("org.apache.kafka:kafka-streams-test-utils:5.5.1-ccs")
-    testImplementation("org.junit.jupiter:junit-jupiter:5.6.2")
-    testImplementation("org.mockito:mockito-core:3.3.3")
-    testImplementation("org.hamcrest:hamcrest-core:1.3")
 }
