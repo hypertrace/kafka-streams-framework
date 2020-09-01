@@ -6,7 +6,6 @@ import java.util.Properties;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
-import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.kstream.KStream;
 import org.slf4j.Logger;
 
@@ -21,7 +20,7 @@ public class SampleApp extends KafkaStreamsApp {
   }
 
   @Override
-  protected Topology buildTopology(Properties streamsConfig) {
+  protected StreamsBuilder buildTopology(Properties streamsConfig) {
     return retainWordsLongerThan5Letters();
   }
 
@@ -42,12 +41,12 @@ public class SampleApp extends KafkaStreamsApp {
     return null;
   }
 
-  static Topology retainWordsLongerThan5Letters() {
+  static StreamsBuilder retainWordsLongerThan5Letters() {
     StreamsBuilder builder = new StreamsBuilder();
 
     KStream<String, String> stream = builder.stream(INPUT_TOPIC);
     stream.filter((k, v) -> v.length() > 5).to(OUTPUT_TOPIC);
 
-    return builder.build();
+    return builder;
   }
 }

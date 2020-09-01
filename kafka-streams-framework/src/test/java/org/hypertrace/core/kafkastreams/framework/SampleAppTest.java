@@ -40,7 +40,7 @@ public class SampleAppTest {
 
   @Test
   public void shouldIncludeValueWithLengthGreaterThanFive() {
-    topology = SampleApp.retainWordsLongerThan5Letters();
+    topology = SampleApp.retainWordsLongerThan5Letters().build();
     td = new TopologyTestDriver(topology, config);
 
     inputTopic = td.createInputTopic(SampleApp.INPUT_TOPIC, Serdes.String().serializer(),

@@ -4,6 +4,7 @@ import com.typesafe.config.Config;
 import java.time.Duration;
 import java.util.Properties;
 import org.apache.kafka.streams.KafkaStreams;
+import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.Topology;
 import org.hypertrace.core.kafkastreams.framework.listeners.LoggingStateListener;
 import org.hypertrace.core.kafkastreams.framework.listeners.LoggingStateRestoreListener;
@@ -25,7 +26,8 @@ public abstract class KafkaStreamsApp implements PlatformBackgroundJob {
     Properties streamsConfig = getStreamsConfig(jobConfig);
     getLogger().info(ConfigUtils.propertiesAsList(streamsConfig));
 
-    Topology topology = buildTopology(streamsConfig);
+    StreamsBuilder streamsBuilder = buildTopology(streamsConfig);
+    Topology topology = streamsBuilder.build();
     getLogger().info(topology.describe().toString());
 
     app = new KafkaStreams(topology, streamsConfig);
@@ -62,7 +64,7 @@ public abstract class KafkaStreamsApp implements PlatformBackgroundJob {
     app.close(Duration.ofSeconds(30));
   }
 
-  protected abstract Topology buildTopology(Properties streamsConfig);
+  protected abstract StreamsBuilder buildTopology(Properties streamsConfig);
 
   protected abstract Properties getStreamsConfig(Config jobConfig);
 
