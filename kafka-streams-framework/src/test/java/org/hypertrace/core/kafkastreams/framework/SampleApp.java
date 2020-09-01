@@ -10,7 +10,7 @@ import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.kstream.KStream;
 import org.slf4j.Logger;
 
-public class SampleApp extends StreamsApp {
+public class SampleApp extends KafkaStreamsApp {
 
   static String INPUT_TOPIC = "input";
   static String OUTPUT_TOPIC = "output";

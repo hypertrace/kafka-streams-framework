@@ -15,13 +15,13 @@ import org.slf4j.Logger;
 /**
  * Abstract base class that all Kafka Streams based applications need to extend
  */
-public abstract class StreamsApp implements PlatformBackgroundJob {
+public abstract class KafkaStreamsApp implements PlatformBackgroundJob {
 
   public static final String CLEANUP_LOCAL_STATE = "cleanup.local.state";
 
   protected final KafkaStreams app;
 
-  protected StreamsApp(Config jobConfig) {
+  protected KafkaStreamsApp(Config jobConfig) {
     Properties streamsConfig = getStreamsConfig(jobConfig);
     getLogger().info(ConfigUtils.propertiesAsList(streamsConfig));
 
