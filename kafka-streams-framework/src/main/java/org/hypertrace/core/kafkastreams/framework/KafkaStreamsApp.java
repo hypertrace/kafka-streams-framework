@@ -26,7 +26,8 @@ public abstract class KafkaStreamsApp implements PlatformBackgroundJob {
     Properties streamsConfig = getStreamsConfig(jobConfig);
     getLogger().info(ConfigUtils.propertiesAsList(streamsConfig));
 
-    StreamsBuilder streamsBuilder = buildTopology(streamsConfig);
+    StreamsBuilder streamsBuilder = new StreamsBuilder();
+    streamsBuilder = buildTopology(streamsConfig, streamsBuilder);
     Topology topology = streamsBuilder.build();
     getLogger().info(topology.describe().toString());
 
@@ -64,7 +65,7 @@ public abstract class KafkaStreamsApp implements PlatformBackgroundJob {
     app.close(Duration.ofSeconds(30));
   }
 
-  protected abstract StreamsBuilder buildTopology(Properties streamsConfig);
+  protected abstract StreamsBuilder buildTopology(Properties streamsConfig, StreamsBuilder streamsBuilder);
 
   protected abstract Properties getStreamsConfig(Config jobConfig);
 

@@ -20,8 +20,8 @@ public class SampleApp extends KafkaStreamsApp {
   }
 
   @Override
-  protected StreamsBuilder buildTopology(Properties streamsConfig) {
-    return retainWordsLongerThan5Letters();
+  protected StreamsBuilder buildTopology(Properties streamsConfig, StreamsBuilder streamsBuilder) {
+    return retainWordsLongerThan5Letters(streamsBuilder);
   }
 
   @Override
@@ -41,12 +41,10 @@ public class SampleApp extends KafkaStreamsApp {
     return null;
   }
 
-  static StreamsBuilder retainWordsLongerThan5Letters() {
-    StreamsBuilder builder = new StreamsBuilder();
-
-    KStream<String, String> stream = builder.stream(INPUT_TOPIC);
+  static StreamsBuilder retainWordsLongerThan5Letters(StreamsBuilder streamsBuilder) {
+    KStream<String, String> stream = streamsBuilder.stream(INPUT_TOPIC);
     stream.filter((k, v) -> v.length() > 5).to(OUTPUT_TOPIC);
 
-    return builder;
+    return streamsBuilder;
   }
 }

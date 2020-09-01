@@ -6,6 +6,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.util.Properties;
 import org.apache.kafka.common.serialization.Serdes;
+import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.TestInputTopic;
 import org.apache.kafka.streams.TestOutputTopic;
@@ -40,7 +41,7 @@ public class SampleAppTest {
 
   @Test
   public void shouldIncludeValueWithLengthGreaterThanFive() {
-    topology = SampleApp.retainWordsLongerThan5Letters().build();
+    topology = SampleApp.retainWordsLongerThan5Letters(new StreamsBuilder()).build();
     td = new TopologyTestDriver(topology, config);
 
     inputTopic = td.createInputTopic(SampleApp.INPUT_TOPIC, Serdes.String().serializer(),
