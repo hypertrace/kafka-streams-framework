@@ -48,6 +48,19 @@ public class LoggingStateRestoreListener implements StateRestoreListener {
         "Restoration completed for [{}] on topic-partition [{}]. Total restored [{}] records. Duration [{}]",
         store, topicPartition, totalRestored,
         Duration.between(Instant.ofEpochMilli(startTs), Instant.now()));
-    restoredSoFar.put(topicPartition, 0L);
+    restoredSoFar.remove(topicPartition);
+    totalToRestore.remove(topicPartition);
+  }
+
+  Map<TopicPartition, Long> getTotalToRestore() {
+    return totalToRestore;
+  }
+
+  Map<TopicPartition, Long> getRestoredSoFar() {
+    return restoredSoFar;
+  }
+
+  Map<TopicPartition, Long> getStartTimes() {
+    return startTimes;
   }
 }
