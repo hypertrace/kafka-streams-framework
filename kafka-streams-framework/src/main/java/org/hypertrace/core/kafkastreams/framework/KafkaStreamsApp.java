@@ -60,7 +60,8 @@ public abstract class KafkaStreamsApp extends PlatformService {
       );
     } catch (Exception e) {
       getLogger().error("Error initializing - ", e);
-      throw new RuntimeException(e);
+      e.printStackTrace();
+      System.exit(1);
     }
   }
 
