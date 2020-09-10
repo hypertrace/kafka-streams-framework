@@ -2,6 +2,7 @@ package org.hypertrace.core.kafkastreams.framework;
 
 
 import com.typesafe.config.Config;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import org.apache.kafka.common.serialization.Serdes;
@@ -22,19 +23,19 @@ public class SampleApp extends KafkaStreamsApp {
   }
 
   @Override
-  public StreamsBuilder buildTopology(Properties streamsConfig, StreamsBuilder streamsBuilder,
+  public StreamsBuilder buildTopology(Map<String, Object> streamsConfig, StreamsBuilder streamsBuilder,
       Map<String, KStream<?, ?>> sourceStreams) {
     return retainWordsLongerThan5Letters(streamsBuilder);
   }
 
   @Override
-  public Properties getStreamsConfig(Config jobConfig) {
-    Properties config = new Properties();
-    config.setProperty(StreamsConfig.APPLICATION_ID_CONFIG, APP_ID);
-    config.setProperty(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:1234");
-    config.setProperty(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG,
+  public Map<String, Object> getStreamsConfig(Config jobConfig) {
+    Map<String, Object> config = new HashMap<>();
+    config.put(StreamsConfig.APPLICATION_ID_CONFIG, APP_ID);
+    config.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:1234");
+    config.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG,
         Serdes.String().getClass().getName());
-    config.setProperty(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG,
+    config.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG,
         Serdes.String().getClass().getName());
     return config;
   }
