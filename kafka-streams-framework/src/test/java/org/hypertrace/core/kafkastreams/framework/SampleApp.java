@@ -2,6 +2,9 @@ package org.hypertrace.core.kafkastreams.framework;
 
 
 import com.typesafe.config.Config;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import org.apache.kafka.common.serialization.Serdes;
@@ -43,6 +46,22 @@ public class SampleApp extends KafkaStreamsApp {
   public Logger getLogger() {
     return null;
   }
+
+  @Override
+  public List<String> getInputTopics() {
+    return Arrays.asList(INPUT_TOPIC);
+  }
+
+  @Override
+  public List<String> getOutputTopics() {
+    return Arrays.asList(OUTPUT_TOPIC);
+  }
+
+  @Override
+  public String getServiceName() {
+    return "SampleApp";
+  }
+
 
   static StreamsBuilder retainWordsLongerThan5Letters(StreamsBuilder streamsBuilder) {
     KStream<String, String> stream = streamsBuilder.stream(INPUT_TOPIC);

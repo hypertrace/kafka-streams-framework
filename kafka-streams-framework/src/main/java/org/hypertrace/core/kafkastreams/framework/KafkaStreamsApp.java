@@ -1,16 +1,23 @@
 package org.hypertrace.core.kafkastreams.framework;
 
+import com.google.common.collect.Streams;
 import com.typesafe.config.Config;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.stream.Collectors;
+import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.kstream.KStream;
 import org.hypertrace.core.kafkastreams.framework.listeners.LoggingStateListener;
 import org.hypertrace.core.kafkastreams.framework.listeners.LoggingStateRestoreListener;
+import org.hypertrace.core.kafkastreams.framework.topics.creator.KafkaTopicCreator;
 import org.hypertrace.core.kafkastreams.framework.util.ExceptionUtils;
 import org.hypertrace.core.serviceframework.PlatformService;
 import org.hypertrace.core.serviceframework.config.ConfigClient;
@@ -20,6 +27,7 @@ import org.slf4j.Logger;
 public abstract class KafkaStreamsApp extends PlatformService {
 
   public static final String CLEANUP_LOCAL_STATE = "cleanup.local.state";
+  public static final String PRE_CREATE_TOPICS = "precreate.topics";
   protected KafkaStreams app;
 
   public KafkaStreamsApp(ConfigClient configClient) {
@@ -31,6 +39,21 @@ public abstract class KafkaStreamsApp extends PlatformService {
     try {
       Properties streamsConfig = getStreamsConfig(getAppConfig());
       getLogger().info(ConfigUtils.propertiesAsList(streamsConfig));
+
+      // get the lists of all input and output topics to pre create if any
+      boolean createTopic = Boolean.parseBoolean(
+              (String) streamsConfig.getOrDefault(PRE_CREATE_TOPICS, false));
+      if (createTopic) {
+        List<String> topics = Streams.concat(
+                getInputTopics().stream(),
+                getOutputTopics().stream()
+        ).collect(Collectors.toList());
+
+        KafkaTopicCreator.createTopics(streamsConfig.getProperty(
+                CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, ""),
+                topics);
+      }
+
 
       Map<String, KStream<?, ?>> sourceStreams = new HashMap<>();
       StreamsBuilder streamsBuilder = new StreamsBuilder();
@@ -92,4 +115,8 @@ public abstract class KafkaStreamsApp extends PlatformService {
   public abstract Properties getStreamsConfig(Config jobConfig);
 
   public abstract Logger getLogger();
+
+  public abstract List<String> getInputTopics();
+  public abstract List<String> getOutputTopics();
+
 }
