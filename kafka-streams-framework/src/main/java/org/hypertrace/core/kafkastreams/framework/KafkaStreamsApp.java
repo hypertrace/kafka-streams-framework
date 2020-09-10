@@ -3,8 +3,6 @@ package org.hypertrace.core.kafkastreams.framework;
 import com.google.common.collect.Streams;
 import com.typesafe.config.Config;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,11 +40,11 @@ public abstract class KafkaStreamsApp extends PlatformService {
 
       // get the lists of all input and output topics to pre create if any
       boolean createTopic = Boolean.parseBoolean(
-              (String) streamsConfig.getOrDefault(PRE_CREATE_TOPICS, false));
+              (String) streamsConfig.getOrDefault(PRE_CREATE_TOPICS, "false"));
       if (createTopic) {
         List<String> topics = Streams.concat(
-                getInputTopics().stream(),
-                getOutputTopics().stream()
+                getInputTopics(streamsConfig).stream(),
+                getOutputTopics(streamsConfig).stream()
         ).collect(Collectors.toList());
 
         KafkaTopicCreator.createTopics(streamsConfig.getProperty(
@@ -76,10 +74,10 @@ public abstract class KafkaStreamsApp extends PlatformService {
       app.setStateListener(new LoggingStateListener(app));
       app.setGlobalStateRestoreListener(new LoggingStateRestoreListener());
       app.setUncaughtExceptionHandler((thread, exception) -> {
-            getLogger().error("Thread=[{}] encountered=[{}]. Will exit.", thread.getName(),
-                ExceptionUtils.getStackTrace(exception));
-            System.exit(1);
-          }
+                getLogger().error("Thread=[{}] encountered=[{}]. Will exit.", thread.getName(),
+                        ExceptionUtils.getStackTrace(exception));
+                System.exit(1);
+              }
       );
     } catch (Exception e) {
       getLogger().error("Error initializing - ", e);
@@ -110,13 +108,14 @@ public abstract class KafkaStreamsApp extends PlatformService {
   }
 
   public abstract StreamsBuilder buildTopology(Properties streamsConfig,
-      StreamsBuilder streamsBuilder, Map<String, KStream<?, ?>> sourceStreams);
+                                               StreamsBuilder streamsBuilder, Map<String, KStream<?, ?>> sourceStreams);
 
   public abstract Properties getStreamsConfig(Config jobConfig);
 
   public abstract Logger getLogger();
 
-  public abstract List<String> getInputTopics();
-  public abstract List<String> getOutputTopics();
+  public abstract List<String> getInputTopics(Properties streamsConfig);
+
+  public abstract List<String> getOutputTopics(Properties streamsConfig);
 
 }

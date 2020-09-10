@@ -48,12 +48,12 @@ public class SampleApp extends KafkaStreamsApp {
   }
 
   @Override
-  public List<String> getInputTopics() {
+  public List<String> getInputTopics(Properties streamsConfig) {
     return Arrays.asList(INPUT_TOPIC);
   }
 
   @Override
-  public List<String> getOutputTopics() {
+  public List<String> getOutputTopics(Properties streamsConfig) {
     return Arrays.asList(OUTPUT_TOPIC);
   }
 
