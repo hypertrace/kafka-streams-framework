@@ -53,7 +53,7 @@ public abstract class KafkaStreamsApp extends PlatformService {
       getLogger().info(ConfigUtils.propertiesAsList(properties));
 
       // get the lists of all input and output topics to pre create if any
-      boolean createTopic = getAppConfig().hasPath(PRE_CREATE_TOPICS) && Boolean
+      boolean precreateTopics = getAppConfig().hasPath(PRE_CREATE_TOPICS) && Boolean
           .parseBoolean(getAppConfig().getString(PRE_CREATE_TOPICS));
       if (createTopic) {
         List<String> topics = Streams.concat(
