@@ -53,16 +53,17 @@ public abstract class KafkaStreamsApp extends PlatformService {
       getLogger().info(ConfigUtils.propertiesAsList(properties));
 
       // get the lists of all input and output topics to pre create if any
-      boolean createTopic = getAppConfig().hasPath(PRE_CREATE_TOPICS) && Boolean.parseBoolean(getAppConfig().getString(PRE_CREATE_TOPICS));
+      boolean createTopic = getAppConfig().hasPath(PRE_CREATE_TOPICS) && Boolean
+          .parseBoolean(getAppConfig().getString(PRE_CREATE_TOPICS));
       if (createTopic) {
         List<String> topics = Streams.concat(
-                getInputTopics().stream(),
-                getOutputTopics().stream()
+            getInputTopics().stream(),
+            getOutputTopics().stream()
         ).collect(Collectors.toList());
 
         KafkaTopicCreator.createTopics(properties.getProperty(
-                CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, ""),
-                topics);
+            CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, ""),
+            topics);
       }
 
       Map<String, KStream<?, ?>> sourceStreams = new HashMap<>();
@@ -86,10 +87,10 @@ public abstract class KafkaStreamsApp extends PlatformService {
       app.setStateListener(new LoggingStateListener(app));
       app.setGlobalStateRestoreListener(new LoggingStateRestoreListener());
       app.setUncaughtExceptionHandler((thread, exception) -> {
-                getLogger().error("Thread=[{}] encountered=[{}]. Will exit.", thread.getName(),
-                        ExceptionUtils.getStackTrace(exception));
-                System.exit(1);
-              }
+            getLogger().error("Thread=[{}] encountered=[{}]. Will exit.", thread.getName(),
+                ExceptionUtils.getStackTrace(exception));
+            System.exit(1);
+          }
       );
     } catch (Exception e) {
       getLogger().error("Error initializing - ", e);
@@ -125,17 +126,17 @@ public abstract class KafkaStreamsApp extends PlatformService {
   public Map<String, Object> getBaseStreamsConfig() {
     Map<String, Object> baseStreamsConfig = new HashMap<>();
     baseStreamsConfig.put(StreamsConfig.DEFAULT_TIMESTAMP_EXTRACTOR_CLASS_CONFIG,
-            UseWallclockTimeOnInvalidTimestamp.class);
+        UseWallclockTimeOnInvalidTimestamp.class);
     baseStreamsConfig.put(StreamsConfig.DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG,
-            LogAndContinueExceptionHandler.class);
+        LogAndContinueExceptionHandler.class);
 
     baseStreamsConfig.put(JOB_CONFIG, getAppConfig());
     return baseStreamsConfig;
   }
 
   public abstract StreamsBuilder buildTopology(Map<String, Object> streamsConfig,
-                                               StreamsBuilder streamsBuilder,
-                                               Map<String, KStream<?, ?>> sourceStreams);
+      StreamsBuilder streamsBuilder,
+      Map<String, KStream<?, ?>> sourceStreams);
 
   public abstract Map<String, Object> getStreamsConfig(Config jobConfig);
 
@@ -149,7 +150,7 @@ public abstract class KafkaStreamsApp extends PlatformService {
    * Merge the props into baseProps
    */
   private Map<String, Object> mergeProperties(Map<String, Object> baseProps,
-                                              Map<String, Object> props) {
+      Map<String, Object> props) {
     props.forEach(baseProps::put);
     return baseProps;
   }

@@ -31,8 +31,9 @@ public class SampleApp extends KafkaStreamsApp {
   }
 
   @Override
-  public StreamsBuilder buildTopology(Map<String, Object> streamsConfig, StreamsBuilder streamsBuilder,
-                                      Map<String, KStream<?, ?>> sourceStreams) {
+  public StreamsBuilder buildTopology(Map<String, Object> streamsConfig,
+      StreamsBuilder streamsBuilder,
+      Map<String, KStream<?, ?>> sourceStreams) {
     return retainWordsLongerThan5Letters(streamsBuilder);
   }
 
@@ -42,9 +43,9 @@ public class SampleApp extends KafkaStreamsApp {
     config.put(StreamsConfig.APPLICATION_ID_CONFIG, APP_ID);
     config.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:1234");
     config.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG,
-            Serdes.String().getClass().getName());
+        Serdes.String().getClass().getName());
     config.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG,
-            Serdes.String().getClass().getName());
+        Serdes.String().getClass().getName());
     return config;
   }
 
