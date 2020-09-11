@@ -134,7 +134,8 @@ public abstract class KafkaStreamsApp extends PlatformService {
   }
 
   public abstract StreamsBuilder buildTopology(Map<String, Object> streamsConfig,
-                                               StreamsBuilder streamsBuilder, Map<String, KStream<?, ?>> sourceStreams);
+                                               StreamsBuilder streamsBuilder,
+                                               Map<String, KStream<?, ?>> sourceStreams);
 
   public abstract Map<String, Object> getStreamsConfig(Config jobConfig);
 
@@ -147,7 +148,8 @@ public abstract class KafkaStreamsApp extends PlatformService {
   /**
    * Merge the props into baseProps
    */
-  private Map<String, Object> mergeProperties(Map<String, Object> baseProps, Map<String, Object> props) {
+  private Map<String, Object> mergeProperties(Map<String, Object> baseProps,
+                                              Map<String, Object> props) {
     props.forEach(baseProps::put);
     return baseProps;
   }
