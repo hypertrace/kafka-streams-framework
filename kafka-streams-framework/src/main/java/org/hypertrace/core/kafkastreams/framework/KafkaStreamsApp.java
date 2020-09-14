@@ -62,10 +62,6 @@ public abstract class KafkaStreamsApp extends PlatformService {
       Map<String, Object> mergedProperties = mergeProperties(baseStreamsConfig, streamsConfig);
       mergedProperties = additionalJobConfig(mergedProperties, getAppConfig());
 
-      Properties properties = new Properties();
-      properties.putAll(mergedProperties);
-
-      getLogger().info(ConfigUtils.propertiesAsList(properties));
 
       // get the lists of all input and output topics to pre create if any
       if (getAppConfig().hasPath(PRE_CREATE_TOPICS) &&
@@ -75,8 +71,7 @@ public abstract class KafkaStreamsApp extends PlatformService {
             getOutputTopics(mergedProperties).stream()
         ).collect(Collectors.toList());
 
-        KafkaTopicCreator.createTopics(properties.getProperty(
-            CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, ""),
+        KafkaTopicCreator.createTopics((String) mergedProperties.getOrDefault(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, ""),
             topics);
       }
 
@@ -85,6 +80,10 @@ public abstract class KafkaStreamsApp extends PlatformService {
       streamsBuilder = buildTopology(mergedProperties, streamsBuilder, sourceStreams);
       Topology topology = streamsBuilder.build();
       getLogger().info(topology.describe().toString());
+
+      Properties properties = new Properties();
+      properties.putAll(mergedProperties);
+      getLogger().info(ConfigUtils.propertiesAsList(properties));
 
       app = new KafkaStreams(topology, properties);
 

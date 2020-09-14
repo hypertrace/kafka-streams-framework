@@ -53,6 +53,7 @@ public class SampleApp extends KafkaStreamsApp {
   public Map<String, Object> additionalJobConfig(Map<String, Object> properties, Config jobConfig) {
     return properties;
   }
+
   @Override
   public Logger getLogger() {
     return null;
