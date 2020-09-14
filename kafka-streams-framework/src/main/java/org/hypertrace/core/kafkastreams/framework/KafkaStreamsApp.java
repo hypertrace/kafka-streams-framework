@@ -71,8 +71,8 @@ public abstract class KafkaStreamsApp extends PlatformService {
       if (getAppConfig().hasPath(PRE_CREATE_TOPICS) &&
           getAppConfig().getBoolean(PRE_CREATE_TOPICS)) {
         List<String> topics = Streams.concat(
-            getInputTopics().stream(),
-            getOutputTopics().stream()
+            getInputTopics(mergedProperties).stream(),
+            getOutputTopics(mergedProperties).stream()
         ).collect(Collectors.toList());
 
         KafkaTopicCreator.createTopics(properties.getProperty(
@@ -174,9 +174,9 @@ public abstract class KafkaStreamsApp extends PlatformService {
 
   public abstract Logger getLogger();
 
-  public abstract List<String> getInputTopics();
+  public abstract List<String> getInputTopics(Map<String, Object> properties);
 
-  public abstract List<String> getOutputTopics();
+  public abstract List<String> getOutputTopics(Map<String, Object> properties);
 
   /**
    * Merge the props into baseProps
