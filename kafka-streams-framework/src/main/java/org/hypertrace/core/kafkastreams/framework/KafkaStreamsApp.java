@@ -58,10 +58,7 @@ public abstract class KafkaStreamsApp extends PlatformService {
     try {
       Map<String, Object> baseStreamsConfig = getBaseStreamsConfig();
       Map<String, Object> streamsConfig = getStreamsConfig(getAppConfig());
-
       Map<String, Object> mergedProperties = mergeProperties(baseStreamsConfig, streamsConfig);
-      mergedProperties = additionalJobConfig(mergedProperties, getAppConfig());
-
 
       // get the lists of all input and output topics to pre create if any
       if (getAppConfig().hasPath(PRE_CREATE_TOPICS) &&
@@ -161,7 +158,7 @@ public abstract class KafkaStreamsApp extends PlatformService {
     baseStreamsConfig.put(consumerPrefix(AUTO_OFFSET_RESET_CONFIG), "latest");
     baseStreamsConfig.put(consumerPrefix(AUTO_COMMIT_INTERVAL_MS_CONFIG), "5000");
 
-    //baseStreamsConfig.put(JOB_CONFIG, getAppConfig());
+    baseStreamsConfig.put(getJobConfigKey(), getAppConfig());
     return baseStreamsConfig;
   }
 
@@ -171,7 +168,7 @@ public abstract class KafkaStreamsApp extends PlatformService {
 
   public abstract Map<String, Object> getStreamsConfig(Config jobConfig);
 
-  public abstract Map<String, Object> additionalJobConfig(Map<String, Object> properties, Config jobConfig);
+  public abstract String getJobConfigKey();
 
   public abstract Logger getLogger();
 
