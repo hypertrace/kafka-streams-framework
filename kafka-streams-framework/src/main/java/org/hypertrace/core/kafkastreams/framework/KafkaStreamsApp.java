@@ -15,7 +15,6 @@ import static org.apache.kafka.streams.StreamsConfig.METRICS_RECORDING_LEVEL_CON
 import static org.apache.kafka.streams.StreamsConfig.TOPOLOGY_OPTIMIZATION;
 import static org.apache.kafka.streams.StreamsConfig.consumerPrefix;
 import static org.apache.kafka.streams.StreamsConfig.producerPrefix;
-import static org.hypertrace.core.kafkastreams.framework.constants.KafkaStreamsAppConstants.JOB_CONFIG;
 
 import com.google.common.collect.Streams;
 import com.typesafe.config.Config;
@@ -58,9 +57,10 @@ public abstract class KafkaStreamsApp extends PlatformService {
   protected void doInit() {
     try {
       Map<String, Object> baseStreamsConfig = getBaseStreamsConfig();
-      Map<String, Object> streamsConfig = getStreamsConfig(new HashMap<>(), getAppConfig());
+      Map<String, Object> streamsConfig = getStreamsConfig(getAppConfig());
 
       Map<String, Object> mergedProperties = mergeProperties(baseStreamsConfig, streamsConfig);
+      mergedProperties = additionalJobConfig(mergedProperties);
 
       Properties properties = new Properties();
       properties.putAll(mergedProperties);
@@ -170,7 +170,9 @@ public abstract class KafkaStreamsApp extends PlatformService {
       StreamsBuilder streamsBuilder,
       Map<String, KStream<?, ?>> sourceStreams);
 
-  public abstract Map<String, Object> getStreamsConfig(Map<String, Object> properties, Config jobConfig);
+  public abstract Map<String, Object> getStreamsConfig(Config jobConfig);
+
+  public abstract Map<String, Object> additionalJobConfig(Map<String, Object> properties);
 
   public abstract Logger getLogger();
 
