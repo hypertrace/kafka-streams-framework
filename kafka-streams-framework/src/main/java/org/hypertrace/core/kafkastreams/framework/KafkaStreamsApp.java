@@ -58,7 +58,7 @@ public abstract class KafkaStreamsApp extends PlatformService {
   protected void doInit() {
     try {
       Map<String, Object> baseStreamsConfig = getBaseStreamsConfig();
-      Map<String, Object> streamsConfig = getStreamsConfig(getAppConfig());
+      Map<String, Object> streamsConfig = getStreamsConfig(baseStreamsConfig);
 
       Map<String, Object> mergedProperties = mergeProperties(baseStreamsConfig, streamsConfig);
 
@@ -162,7 +162,7 @@ public abstract class KafkaStreamsApp extends PlatformService {
     baseStreamsConfig.put(consumerPrefix(AUTO_OFFSET_RESET_CONFIG), "latest");
     baseStreamsConfig.put(consumerPrefix(AUTO_COMMIT_INTERVAL_MS_CONFIG), "5000");
 
-    baseStreamsConfig.put(JOB_CONFIG, getAppConfig());
+    //baseStreamsConfig.put(JOB_CONFIG, getAppConfig());
     return baseStreamsConfig;
   }
 
@@ -170,7 +170,7 @@ public abstract class KafkaStreamsApp extends PlatformService {
       StreamsBuilder streamsBuilder,
       Map<String, KStream<?, ?>> sourceStreams);
 
-  public abstract Map<String, Object> getStreamsConfig(Config jobConfig);
+  public abstract Map<String, Object> getStreamsConfig(Map<String, Object> baseProperties);
 
   public abstract Logger getLogger();
 
