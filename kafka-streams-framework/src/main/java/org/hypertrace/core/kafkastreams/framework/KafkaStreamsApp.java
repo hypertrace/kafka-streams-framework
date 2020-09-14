@@ -58,7 +58,7 @@ public abstract class KafkaStreamsApp extends PlatformService {
   protected void doInit() {
     try {
       Map<String, Object> baseStreamsConfig = getBaseStreamsConfig();
-      Map<String, Object> streamsConfig = getStreamsConfig(baseStreamsConfig);
+      Map<String, Object> streamsConfig = getStreamsConfig(new HashMap<>(), getAppConfig());
 
       Map<String, Object> mergedProperties = mergeProperties(baseStreamsConfig, streamsConfig);
 
@@ -170,7 +170,7 @@ public abstract class KafkaStreamsApp extends PlatformService {
       StreamsBuilder streamsBuilder,
       Map<String, KStream<?, ?>> sourceStreams);
 
-  public abstract Map<String, Object> getStreamsConfig(Map<String, Object> baseProperties);
+  public abstract Map<String, Object> getStreamsConfig(Map<String, Object> properties, Config jobConfig);
 
   public abstract Logger getLogger();
 

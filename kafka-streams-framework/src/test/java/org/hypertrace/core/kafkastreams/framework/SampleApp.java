@@ -38,7 +38,7 @@ public class SampleApp extends KafkaStreamsApp {
   }
 
   @Override
-  public Map<String, Object> getStreamsConfig(Map<String, Object> jobConfig) {
+  public Map<String, Object> getStreamsConfig(Map<String, Object> properties, Config jobConfig) {
     Map<String, Object> config = new HashMap<>();
     config.put(StreamsConfig.APPLICATION_ID_CONFIG, APP_ID);
     config.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:1234");
