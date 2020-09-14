@@ -60,7 +60,7 @@ public abstract class KafkaStreamsApp extends PlatformService {
       Map<String, Object> streamsConfig = getStreamsConfig(getAppConfig());
 
       Map<String, Object> mergedProperties = mergeProperties(baseStreamsConfig, streamsConfig);
-      mergedProperties = additionalJobConfig(mergedProperties);
+      mergedProperties = additionalJobConfig(mergedProperties, getAppConfig());
 
       Properties properties = new Properties();
       properties.putAll(mergedProperties);
@@ -172,7 +172,7 @@ public abstract class KafkaStreamsApp extends PlatformService {
 
   public abstract Map<String, Object> getStreamsConfig(Config jobConfig);
 
-  public abstract Map<String, Object> additionalJobConfig(Map<String, Object> properties);
+  public abstract Map<String, Object> additionalJobConfig(Map<String, Object> properties, Config jobConfig);
 
   public abstract Logger getLogger();
 

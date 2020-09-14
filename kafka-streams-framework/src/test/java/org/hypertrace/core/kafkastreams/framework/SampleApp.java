@@ -50,7 +50,7 @@ public class SampleApp extends KafkaStreamsApp {
   }
 
   @Override
-  public Map<String, Object> additionalJobConfig(Map<String, Object> properties) {
+  public Map<String, Object> additionalJobConfig(Map<String, Object> properties, Config jobConfig) {
     return properties;
   }
   @Override
