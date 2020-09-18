@@ -56,32 +56,27 @@ public abstract class KafkaStreamsApp extends PlatformService {
   @Override
   protected void doInit() {
     try {
+      // configure properties
       Map<String, Object> baseStreamsConfig = getBaseStreamsConfig();
-      Map<String, Object> streamsConfig = getStreamsConfig(getAppConfig());
+      Map<String, Object> streamsConfig = getJobStreamsConfig(getAppConfig());
       Map<String, Object> mergedProperties = mergeProperties(baseStreamsConfig, streamsConfig);
 
-      // get the lists of all input and output topics to pre create if any
-      if (getAppConfig().hasPath(PRE_CREATE_TOPICS) &&
-          getAppConfig().getBoolean(PRE_CREATE_TOPICS)) {
-        List<String> topics = Streams.concat(
-            getInputTopics(mergedProperties).stream(),
-            getOutputTopics(mergedProperties).stream()
-        ).collect(Collectors.toList());
-
-        KafkaTopicCreator.createTopics((String) mergedProperties.getOrDefault(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, ""),
-            topics);
-      }
-
+      // build topologies
       Map<String, KStream<?, ?>> sourceStreams = new HashMap<>();
       StreamsBuilder streamsBuilder = new StreamsBuilder();
       streamsBuilder = buildTopology(mergedProperties, streamsBuilder, sourceStreams);
       Topology topology = streamsBuilder.build();
       getLogger().info(topology.describe().toString());
 
+      // finalized properties
       Properties properties = new Properties();
       properties.putAll(mergedProperties);
       getLogger().info(ConfigUtils.propertiesAsList(properties));
 
+      // pre-create input/output topics required for kstream application
+      preCreateTopics(mergedProperties);
+
+      // create kstream app
       app = new KafkaStreams(topology, properties);
 
       // useful for resetting local state - during testing or any other scenarios where
@@ -158,13 +153,20 @@ public abstract class KafkaStreamsApp extends PlatformService {
     baseStreamsConfig.put(consumerPrefix(AUTO_OFFSET_RESET_CONFIG), "latest");
     baseStreamsConfig.put(consumerPrefix(AUTO_COMMIT_INTERVAL_MS_CONFIG), "5000");
 
-    baseStreamsConfig.put(getJobConfigKey(), getAppConfig());
     return baseStreamsConfig;
   }
 
   public abstract StreamsBuilder buildTopology(Map<String, Object> streamsConfig,
       StreamsBuilder streamsBuilder,
       Map<String, KStream<?, ?>> sourceStreams);
+
+  private Map<String, Object> getJobStreamsConfig(Config jobConfig) {
+    Map<String, Object> properties = getStreamsConfig(jobConfig);
+    if (!properties.containsKey(getJobConfigKey())) {
+      properties.put(getJobConfigKey(), jobConfig);
+    }
+    return properties;
+  }
 
   public abstract Map<String, Object> getStreamsConfig(Config jobConfig);
 
@@ -183,5 +185,20 @@ public abstract class KafkaStreamsApp extends PlatformService {
       Map<String, Object> props) {
     props.forEach(baseProps::put);
     return baseProps;
+  }
+
+  private void preCreateTopics(Map<String, Object> properties) {
+    Config jobConfig = (Config) properties.get(getJobConfigKey());
+    if (jobConfig.hasPath(PRE_CREATE_TOPICS) && jobConfig.getBoolean(PRE_CREATE_TOPICS)) {
+      List<String> topics = Streams.concat(
+          getInputTopics(properties).stream(),
+          getOutputTopics(properties).stream()
+      ).collect(Collectors.toList());
+
+      KafkaTopicCreator.createTopics((String) properties.getOrDefault(
+          CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, ""),
+          topics
+      );
+    }
   }
 }
