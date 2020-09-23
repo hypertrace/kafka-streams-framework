@@ -16,10 +16,12 @@ import static org.apache.kafka.streams.StreamsConfig.TOPOLOGY_OPTIMIZATION;
 import static org.apache.kafka.streams.StreamsConfig.consumerPrefix;
 import static org.apache.kafka.streams.StreamsConfig.producerPrefix;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Streams;
 import com.typesafe.config.Config;
 import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,11 +43,15 @@ import org.hypertrace.core.serviceframework.PlatformService;
 import org.hypertrace.core.serviceframework.config.ConfigClient;
 import org.hypertrace.core.serviceframework.config.ConfigUtils;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class KafkaStreamsApp extends PlatformService {
 
+  private static final Logger logger = LoggerFactory.getLogger(KafkaStreamsApp.class);
+
   public static final String CLEANUP_LOCAL_STATE = "cleanup.local.state";
   public static final String PRE_CREATE_TOPICS = "precreate.topics";
+  public static final String KAFKA_STREAMS_CONFIG_KEY = "kafka.streams.config";
 
   protected KafkaStreams app;
 
@@ -160,6 +166,32 @@ public abstract class KafkaStreamsApp extends PlatformService {
       StreamsBuilder streamsBuilder,
       Map<String, KStream<?, ?>> sourceStreams);
 
+  public Map<String, Object> getStreamsConfig(Config jobConfig) {
+    Map<String, Object> streamsConfig = new HashMap<>(
+        ConfigUtils.getFlatMapConfig(jobConfig, getStreamsConfigKey()));
+    return streamsConfig;
+  }
+
+  public String getStreamsConfigKey() {
+    return KAFKA_STREAMS_CONFIG_KEY;
+  }
+
+  public String getJobConfigKey() {
+    return String.format("%s-job-config", getServiceName());
+  }
+
+  public Logger getLogger() {
+    return logger;
+  }
+
+  public List<String> getInputTopics(Map<String, Object> properties) {
+    return new ArrayList<>();
+  }
+
+  public List<String> getOutputTopics(Map<String, Object> properties) {
+    return new ArrayList<>();
+  }
+
   private Map<String, Object> getJobStreamsConfig(Config jobConfig) {
     Map<String, Object> properties = getStreamsConfig(jobConfig);
     if (!properties.containsKey(getJobConfigKey())) {
@@ -167,16 +199,6 @@ public abstract class KafkaStreamsApp extends PlatformService {
     }
     return properties;
   }
-
-  public abstract Map<String, Object> getStreamsConfig(Config jobConfig);
-
-  public abstract String getJobConfigKey();
-
-  public abstract Logger getLogger();
-
-  public abstract List<String> getInputTopics(Map<String, Object> properties);
-
-  public abstract List<String> getOutputTopics(Map<String, Object> properties);
 
   /**
    * Merge the props into baseProps
@@ -195,9 +217,7 @@ public abstract class KafkaStreamsApp extends PlatformService {
           getOutputTopics(properties).stream()
       ).collect(Collectors.toList());
 
-      KafkaTopicCreator.createTopics((String) properties.getOrDefault(
-          CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, ""),
-          topics
+      KafkaTopicCreator.createTopics((String) properties.get(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG), topics
       );
     }
   }
