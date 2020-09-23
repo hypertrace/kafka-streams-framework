@@ -11,6 +11,7 @@ import org.apache.kafka.common.serialization.Serializer;
 import org.apache.kafka.common.utils.Utils;
 
 public class AvroSerializer<T extends SpecificRecordBase> implements Serializer<T> {
+  public static final int INITIAL_SIZE = 16 * 1024;
   private boolean isKey;
 
   @Override
@@ -20,7 +21,18 @@ public class AvroSerializer<T extends SpecificRecordBase> implements Serializer<
 
   @Override
   public byte[] serialize(String topic, T data) {
-    ByteArrayOutputStream baos = new ByteArrayOutputStream(16 * 1024);
+    return serialize(topic, null, data);
+  }
+
+  @Override
+  public byte[] serialize(String topic, Headers headers, T data) {
+    if (isKey) {
+      headers.add("key.schema", Utils.utf8(data.getSchema().toString()));
+    } else {
+      headers.add("value.schema", Utils.utf8(data.getSchema().toString()));
+    }
+
+    ByteArrayOutputStream baos = new ByteArrayOutputStream(INITIAL_SIZE);
     SpecificDatumWriter<T> datumWriter = new SpecificDatumWriter<>(data.getSchema());
     BinaryEncoder encoder = EncoderFactory.get().directBinaryEncoder(baos, null);
     try {
@@ -30,15 +42,5 @@ public class AvroSerializer<T extends SpecificRecordBase> implements Serializer<
       throw new RuntimeException(e);
     }
     return baos.toByteArray();
-  }
-
-  @Override
-  public byte[] serialize(String topic, Headers headers, T data) {
-    if(isKey) {
-      headers.add("key.schema", Utils.utf8(data.getSchema().toString()));
-    } else {
-      headers.add("value.schema", Utils.utf8(data.getSchema().toString()));
-    }
-    return serialize(topic, data);
   }
 }
