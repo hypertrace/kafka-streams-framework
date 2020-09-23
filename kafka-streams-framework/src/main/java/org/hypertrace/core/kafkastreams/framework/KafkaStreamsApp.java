@@ -16,7 +16,6 @@ import static org.apache.kafka.streams.StreamsConfig.TOPOLOGY_OPTIMIZATION;
 import static org.apache.kafka.streams.StreamsConfig.consumerPrefix;
 import static org.apache.kafka.streams.StreamsConfig.producerPrefix;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Streams;
 import com.typesafe.config.Config;
 import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde;
@@ -47,12 +46,10 @@ import org.slf4j.LoggerFactory;
 
 public abstract class KafkaStreamsApp extends PlatformService {
 
-  private static final Logger logger = LoggerFactory.getLogger(KafkaStreamsApp.class);
-
   public static final String CLEANUP_LOCAL_STATE = "cleanup.local.state";
   public static final String PRE_CREATE_TOPICS = "precreate.topics";
   public static final String KAFKA_STREAMS_CONFIG_KEY = "kafka.streams.config";
-
+  private static final Logger logger = LoggerFactory.getLogger(KafkaStreamsApp.class);
   protected KafkaStreams app;
 
   public KafkaStreamsApp(ConfigClient configClient) {
@@ -217,8 +214,10 @@ public abstract class KafkaStreamsApp extends PlatformService {
           getOutputTopics(properties).stream()
       ).collect(Collectors.toList());
 
-      KafkaTopicCreator.createTopics((String) properties.get(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG), topics
-      );
+      KafkaTopicCreator
+          .createTopics((String) properties.get(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG),
+              topics
+          );
     }
   }
 }
