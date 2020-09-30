@@ -14,7 +14,7 @@ public class IgnoreRecordTooLargeHandler implements ProductionExceptionHandler {
   @Override
   public ProductionExceptionHandlerResponse handle(ProducerRecord<byte[], byte[]> record, Exception exception) {
     if (exception instanceof RecordTooLargeException) {
-      LOGGER.error("RecordTooLarge for topic=[{}], partition=[{}], size=[{}].", record.topic(), record.partition(), record.value().length);
+      LOGGER.error("RecordTooLarge for topic=[{}], partition=[{}], size=[{}]. Will skip this record", record.topic(), record.partition(), record.value().length);
       return ProductionExceptionHandlerResponse.CONTINUE;
     } else {
       return ProductionExceptionHandlerResponse.FAIL;
