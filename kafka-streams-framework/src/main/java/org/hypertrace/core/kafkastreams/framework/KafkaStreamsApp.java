@@ -4,10 +4,12 @@ package org.hypertrace.core.kafkastreams.framework;
 import static org.apache.kafka.clients.consumer.ConsumerConfig.AUTO_OFFSET_RESET_CONFIG;
 import static org.apache.kafka.clients.consumer.ConsumerConfig.MAX_PARTITION_FETCH_BYTES_CONFIG;
 import static org.apache.kafka.clients.consumer.ConsumerConfig.MAX_POLL_RECORDS_CONFIG;
+import static org.apache.kafka.clients.producer.ProducerConfig.ACKS_CONFIG;
 import static org.apache.kafka.clients.producer.ProducerConfig.BATCH_SIZE_CONFIG;
 import static org.apache.kafka.clients.producer.ProducerConfig.COMPRESSION_TYPE_CONFIG;
 import static org.apache.kafka.clients.producer.ProducerConfig.LINGER_MS_CONFIG;
 import static org.apache.kafka.clients.producer.ProducerConfig.MAX_REQUEST_SIZE_CONFIG;
+import static org.apache.kafka.common.config.TopicConfig.*;
 import static org.apache.kafka.streams.StreamsConfig.DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG;
 import static org.apache.kafka.streams.StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG;
 import static org.apache.kafka.streams.StreamsConfig.DEFAULT_TIMESTAMP_EXTRACTOR_CLASS_CONFIG;
@@ -17,6 +19,7 @@ import static org.apache.kafka.streams.StreamsConfig.ROCKSDB_CONFIG_SETTER_CLASS
 import static org.apache.kafka.streams.StreamsConfig.TOPOLOGY_OPTIMIZATION;
 import static org.apache.kafka.streams.StreamsConfig.consumerPrefix;
 import static org.apache.kafka.streams.StreamsConfig.producerPrefix;
+import static org.apache.kafka.streams.StreamsConfig.topicPrefix;
 
 import com.google.common.collect.Streams;
 import com.typesafe.config.Config;
@@ -27,8 +30,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.kafka.clients.CommonClientConfigs;
+import org.apache.kafka.common.config.TopicConfig;
 import org.apache.kafka.common.record.CompressionType;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
@@ -151,6 +156,9 @@ public abstract class KafkaStreamsApp extends PlatformService {
     baseStreamsConfig.put(DEFAULT_VALUE_SERDE_CLASS_CONFIG, SpecificAvroSerde.class);
 
     // Default producer configurations
+    // Set acks to all for high availability and prevent dataloss
+    // default = 1
+    baseStreamsConfig.put(producerPrefix(ACKS_CONFIG), "all");
     // Increase linger.ms for better throughput
     // default = 100
     baseStreamsConfig.put(producerPrefix(LINGER_MS_CONFIG), "500");
@@ -166,6 +174,7 @@ public abstract class KafkaStreamsApp extends PlatformService {
     baseStreamsConfig.put(producerPrefix(MAX_REQUEST_SIZE_CONFIG), "1048576");
 
     // Default consumer configurations
+    // Increase to enable receiving large messages
     // default = 1048576
     baseStreamsConfig.put(consumerPrefix(MAX_PARTITION_FETCH_BYTES_CONFIG), "1048576");
     // default - 1000 (kafka streams)
@@ -173,6 +182,9 @@ public abstract class KafkaStreamsApp extends PlatformService {
     //  new/stale application will consume from the latest offsets
     // default - earliest (kafka streams)
     baseStreamsConfig.put(consumerPrefix(AUTO_OFFSET_RESET_CONFIG), "latest");
+
+    // Default changelog configurations
+    baseStreamsConfig.put(topicPrefix(RETENTION_MS_CONFIG), TimeUnit.HOURS.toMillis(12));
 
     return baseStreamsConfig;
   }
