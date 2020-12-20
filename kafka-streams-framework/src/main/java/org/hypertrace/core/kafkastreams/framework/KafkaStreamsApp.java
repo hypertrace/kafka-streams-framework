@@ -3,6 +3,7 @@ package org.hypertrace.core.kafkastreams.framework;
 
 import static org.apache.kafka.clients.consumer.ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG;
 import static org.apache.kafka.clients.consumer.ConsumerConfig.AUTO_OFFSET_RESET_CONFIG;
+import static org.apache.kafka.clients.consumer.ConsumerConfig.MAX_PARTITION_FETCH_BYTES_CONFIG;
 import static org.apache.kafka.clients.consumer.ConsumerConfig.MAX_POLL_RECORDS_CONFIG;
 import static org.apache.kafka.clients.producer.ProducerConfig.BATCH_SIZE_CONFIG;
 import static org.apache.kafka.clients.producer.ProducerConfig.COMPRESSION_TYPE_CONFIG;
@@ -151,13 +152,27 @@ public abstract class KafkaStreamsApp extends PlatformService {
     baseStreamsConfig.put(DEFAULT_VALUE_SERDE_CLASS_CONFIG, SpecificAvroSerde.class);
 
     // Default producer configurations
-    baseStreamsConfig.put(producerPrefix(LINGER_MS_CONFIG), "2000");
-    baseStreamsConfig.put(producerPrefix(BATCH_SIZE_CONFIG), "2097152");
+    // Increase linger.ms for better throughput
+    // default = 100
+    baseStreamsConfig.put(producerPrefix(LINGER_MS_CONFIG), "500");
+    // Increase batch.size for better throughput
+    // default = 16384
+    baseStreamsConfig.put(producerPrefix(BATCH_SIZE_CONFIG), "524288");
+    // Enable compression on producer for better throughput
+    // default - none
     baseStreamsConfig.put(producerPrefix(COMPRESSION_TYPE_CONFIG), CompressionType.GZIP.name);
-    baseStreamsConfig.put(producerPrefix(MAX_REQUEST_SIZE_CONFIG), "10485760");
+    // Allows to send larger messages to broker
+    // Requires tuning on broker, topic and consumer application as well
+    // default = 1048576
+    baseStreamsConfig.put(producerPrefix(MAX_REQUEST_SIZE_CONFIG), "1048576");
 
     // Default consumer configurations
+    // default = 1048576
+    baseStreamsConfig.put(consumerPrefix(MAX_PARTITION_FETCH_BYTES_CONFIG), "1048576");
+    // default - 1000 (kafka streams)
     baseStreamsConfig.put(consumerPrefix(MAX_POLL_RECORDS_CONFIG), "1000");
+    //  new/stale application will consume from the latest offsets
+    // default - earliest (kafka streams)
     baseStreamsConfig.put(consumerPrefix(AUTO_OFFSET_RESET_CONFIG), "latest");
 
     return baseStreamsConfig;
