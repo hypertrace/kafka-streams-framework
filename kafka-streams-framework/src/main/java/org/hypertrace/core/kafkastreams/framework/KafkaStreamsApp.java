@@ -9,7 +9,7 @@ import static org.apache.kafka.clients.producer.ProducerConfig.BATCH_SIZE_CONFIG
 import static org.apache.kafka.clients.producer.ProducerConfig.COMPRESSION_TYPE_CONFIG;
 import static org.apache.kafka.clients.producer.ProducerConfig.LINGER_MS_CONFIG;
 import static org.apache.kafka.clients.producer.ProducerConfig.MAX_REQUEST_SIZE_CONFIG;
-import static org.apache.kafka.common.config.TopicConfig.*;
+import static org.apache.kafka.common.config.TopicConfig.RETENTION_MS_CONFIG;
 import static org.apache.kafka.streams.StreamsConfig.DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG;
 import static org.apache.kafka.streams.StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG;
 import static org.apache.kafka.streams.StreamsConfig.DEFAULT_TIMESTAMP_EXTRACTOR_CLASS_CONFIG;
@@ -33,10 +33,10 @@ import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.kafka.clients.CommonClientConfigs;
-import org.apache.kafka.common.config.TopicConfig;
 import org.apache.kafka.common.record.CompressionType;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
+import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.errors.LogAndContinueExceptionHandler;
 import org.apache.kafka.streams.kstream.KStream;
@@ -60,6 +60,10 @@ public abstract class KafkaStreamsApp extends PlatformService {
   private static final Logger logger = LoggerFactory.getLogger(KafkaStreamsApp.class);
   protected KafkaStreams app;
 
+  // Visible for testing only
+  protected Topology topology;
+  protected Map<String, Object> streamsConfig;
+
   public KafkaStreamsApp(ConfigClient configClient) {
     super(configClient);
   }
@@ -68,32 +72,30 @@ public abstract class KafkaStreamsApp extends PlatformService {
   protected void doInit() {
     try {
       // configure properties
-      Map<String, Object> baseStreamsConfig = getBaseStreamsConfig();
-      Map<String, Object> streamsConfig = getJobStreamsConfig(getAppConfig());
-      Map<String, Object> mergedProperties = mergeProperties(baseStreamsConfig, streamsConfig);
+      streamsConfig = mergeProperties(getBaseStreamsConfig(), getJobStreamsConfig(getAppConfig()));
 
       // build topologies
       Map<String, KStream<?, ?>> sourceStreams = new HashMap<>();
       StreamsBuilder streamsBuilder = new StreamsBuilder();
-      streamsBuilder = buildTopology(mergedProperties, streamsBuilder, sourceStreams);
-      Topology topology = streamsBuilder.build();
-      getLogger().info(topology.describe().toString());
+      streamsBuilder = buildTopology(streamsConfig, streamsBuilder, sourceStreams);
+      this.topology = streamsBuilder.build();
+      getLogger().info("", topology.describe().toString());
 
-      // finalized properties
-      Properties properties = new Properties();
-      properties.putAll(mergedProperties);
-      getLogger().info(ConfigUtils.propertiesAsList(properties));
+      getLogger().info("Finalized kafka streams configuration: {}", streamsConfig);
 
       // pre-create input/output topics required for kstream application
-      preCreateTopics(mergedProperties);
+      preCreateTopics(streamsConfig);
+
+      Properties streamsConfigProps = new Properties();
+      streamsConfigProps.putAll(streamsConfig);
 
       // create kstream app
-      app = new KafkaStreams(topology, properties);
+      app = new KafkaStreams(topology, streamsConfigProps);
 
       // useful for resetting local state - during testing or any other scenarios where
       // state (rocksdb) needs to be reset
-      if (properties.containsKey(CLEANUP_LOCAL_STATE)) {
-        boolean cleanup = Boolean.parseBoolean((String) properties.get(CLEANUP_LOCAL_STATE));
+      if (streamsConfig.containsKey(CLEANUP_LOCAL_STATE)) {
+        boolean cleanup = Boolean.parseBoolean((String) streamsConfig.get(CLEANUP_LOCAL_STATE));
         if (cleanup) {
           getLogger().info("=== Resetting local state ===");
           app.cleanUp();

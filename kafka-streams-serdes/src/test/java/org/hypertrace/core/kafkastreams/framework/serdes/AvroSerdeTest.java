@@ -35,6 +35,20 @@ public class AvroSerdeTest {
   }
 
   @Test
+  public void testGenericAndSpecificAvroSerdeCombination() {
+    AvroSerde specificSerde = new AvroSerde();
+    GenericAvroSerde genericSerde = new GenericAvroSerde();
+
+    final TestRecord serializedRecord = TestRecord.newBuilder().setId(1l).setName("name-1").build();
+
+    final byte[] bytes = specificSerde.serializer().serialize("topic-name", serializedRecord);
+    final Record deserializedRecord = (Record) genericSerde.deserializer().deserialize("topic-name", bytes);
+
+    Assertions.assertEquals(serializedRecord.getId(), deserializedRecord.get("id"));
+    Assertions.assertEquals(serializedRecord.getName(), deserializedRecord.get("name"));
+  }
+
+  @Test
   public void testGenericAvroSerde() {
     GenericAvroSerde serde = new GenericAvroSerde();
     final TestRecord serializedRecord = TestRecord.newBuilder().setId(1l).setName("name-1").build();
