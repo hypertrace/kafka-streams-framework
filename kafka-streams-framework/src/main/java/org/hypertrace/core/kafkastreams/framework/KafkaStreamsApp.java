@@ -79,7 +79,6 @@ public abstract class KafkaStreamsApp extends PlatformService {
       StreamsBuilder streamsBuilder = new StreamsBuilder();
       streamsBuilder = buildTopology(streamsConfig, streamsBuilder, sourceStreams);
       this.topology = streamsBuilder.build();
-      getLogger().info("", topology.describe().toString());
 
       getLogger().info("Finalized kafka streams configuration: {}", streamsConfig);
 
@@ -144,7 +143,9 @@ public abstract class KafkaStreamsApp extends PlatformService {
   public Map<String, Object> getBaseStreamsConfig() {
     Map<String, Object> baseStreamsConfig = new HashMap<>();
 
-    // Default streams configurations
+    // ##########################
+    // Streams configurations
+    // ##########################
     baseStreamsConfig.put(TOPOLOGY_OPTIMIZATION, "all");
     baseStreamsConfig.put(METRICS_RECORDING_LEVEL_CONFIG, "INFO");
     baseStreamsConfig
@@ -153,11 +154,15 @@ public abstract class KafkaStreamsApp extends PlatformService {
         LogAndContinueExceptionHandler.class);
     baseStreamsConfig.put(ROCKSDB_CONFIG_SETTER_CLASS_CONFIG, RocksDBStateStoreConfigSetter.class);
 
-    // Default serde configurations
+    // ##########################
+    // Default SerDe configurations
+    // ##########################
     baseStreamsConfig.put(DEFAULT_KEY_SERDE_CLASS_CONFIG, SpecificAvroSerde.class);
     baseStreamsConfig.put(DEFAULT_VALUE_SERDE_CLASS_CONFIG, SpecificAvroSerde.class);
 
-    // Default producer configurations
+    // ##########################
+    // Producer configurations
+    // ##########################
     // Set acks to all for high availability and prevent dataloss
     // default = 1
     baseStreamsConfig.put(producerPrefix(ACKS_CONFIG), "all");
@@ -170,22 +175,16 @@ public abstract class KafkaStreamsApp extends PlatformService {
     // Enable compression on producer for better throughput
     // default - none
     baseStreamsConfig.put(producerPrefix(COMPRESSION_TYPE_CONFIG), CompressionType.GZIP.name);
-    // Allows to send larger messages to broker
-    // Requires tuning on broker, topic and consumer application as well
-    // default = 1048576
-    baseStreamsConfig.put(producerPrefix(MAX_REQUEST_SIZE_CONFIG), "1048576");
 
-    // Default consumer configurations
-    // Increase to enable receiving large messages
-    // default = 1048576
-    baseStreamsConfig.put(consumerPrefix(MAX_PARTITION_FETCH_BYTES_CONFIG), "1048576");
-    // default - 1000 (kafka streams)
-    baseStreamsConfig.put(consumerPrefix(MAX_POLL_RECORDS_CONFIG), "1000");
-    //  new/stale application will consume from the latest offsets
+    // ##########################
+    // Consumer configurations
+    // ##########################
     // default - earliest (kafka streams)
     baseStreamsConfig.put(consumerPrefix(AUTO_OFFSET_RESET_CONFIG), "latest");
 
-    // Default changelog configurations
+    // ##########################
+    // Changelog topic configurations
+    // ##########################
     baseStreamsConfig.put(topicPrefix(RETENTION_MS_CONFIG), TimeUnit.HOURS.toMillis(12));
 
     return baseStreamsConfig;
