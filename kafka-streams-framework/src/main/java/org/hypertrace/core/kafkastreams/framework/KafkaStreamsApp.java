@@ -1,13 +1,12 @@
 package org.hypertrace.core.kafkastreams.framework;
 
 
-import static org.apache.kafka.clients.consumer.ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG;
 import static org.apache.kafka.clients.consumer.ConsumerConfig.AUTO_OFFSET_RESET_CONFIG;
-import static org.apache.kafka.clients.consumer.ConsumerConfig.MAX_POLL_RECORDS_CONFIG;
+import static org.apache.kafka.clients.producer.ProducerConfig.ACKS_CONFIG;
 import static org.apache.kafka.clients.producer.ProducerConfig.BATCH_SIZE_CONFIG;
 import static org.apache.kafka.clients.producer.ProducerConfig.COMPRESSION_TYPE_CONFIG;
 import static org.apache.kafka.clients.producer.ProducerConfig.LINGER_MS_CONFIG;
-import static org.apache.kafka.clients.producer.ProducerConfig.MAX_REQUEST_SIZE_CONFIG;
+import static org.apache.kafka.common.config.TopicConfig.RETENTION_MS_CONFIG;
 import static org.apache.kafka.streams.StreamsConfig.DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG;
 import static org.apache.kafka.streams.StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG;
 import static org.apache.kafka.streams.StreamsConfig.DEFAULT_TIMESTAMP_EXTRACTOR_CLASS_CONFIG;
@@ -17,6 +16,7 @@ import static org.apache.kafka.streams.StreamsConfig.ROCKSDB_CONFIG_SETTER_CLASS
 import static org.apache.kafka.streams.StreamsConfig.TOPOLOGY_OPTIMIZATION;
 import static org.apache.kafka.streams.StreamsConfig.consumerPrefix;
 import static org.apache.kafka.streams.StreamsConfig.producerPrefix;
+import static org.apache.kafka.streams.StreamsConfig.topicPrefix;
 
 import com.google.common.collect.Streams;
 import com.typesafe.config.Config;
@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.common.record.CompressionType;
@@ -55,6 +56,10 @@ public abstract class KafkaStreamsApp extends PlatformService {
   private static final Logger logger = LoggerFactory.getLogger(KafkaStreamsApp.class);
   protected KafkaStreams app;
 
+  // Visible for testing only
+  protected Topology topology;
+  protected Map<String, Object> streamsConfig;
+
   public KafkaStreamsApp(ConfigClient configClient) {
     super(configClient);
   }
@@ -63,32 +68,29 @@ public abstract class KafkaStreamsApp extends PlatformService {
   protected void doInit() {
     try {
       // configure properties
-      Map<String, Object> baseStreamsConfig = getBaseStreamsConfig();
-      Map<String, Object> streamsConfig = getJobStreamsConfig(getAppConfig());
-      Map<String, Object> mergedProperties = mergeProperties(baseStreamsConfig, streamsConfig);
+      streamsConfig = mergeProperties(getBaseStreamsConfig(), getJobStreamsConfig(getAppConfig()));
 
       // build topologies
       Map<String, KStream<?, ?>> sourceStreams = new HashMap<>();
       StreamsBuilder streamsBuilder = new StreamsBuilder();
-      streamsBuilder = buildTopology(mergedProperties, streamsBuilder, sourceStreams);
-      Topology topology = streamsBuilder.build();
-      getLogger().info(topology.describe().toString());
+      streamsBuilder = buildTopology(streamsConfig, streamsBuilder, sourceStreams);
+      this.topology = streamsBuilder.build();
 
-      // finalized properties
-      Properties properties = new Properties();
-      properties.putAll(mergedProperties);
-      getLogger().info(ConfigUtils.propertiesAsList(properties));
+      getLogger().info("Finalized kafka streams configuration: {}", streamsConfig);
 
       // pre-create input/output topics required for kstream application
-      preCreateTopics(mergedProperties);
+      preCreateTopics(streamsConfig);
+
+      Properties streamsConfigProps = new Properties();
+      streamsConfigProps.putAll(streamsConfig);
 
       // create kstream app
-      app = new KafkaStreams(topology, properties);
+      app = new KafkaStreams(topology, streamsConfigProps);
 
       // useful for resetting local state - during testing or any other scenarios where
       // state (rocksdb) needs to be reset
-      if (properties.containsKey(CLEANUP_LOCAL_STATE)) {
-        boolean cleanup = Boolean.parseBoolean((String) properties.get(CLEANUP_LOCAL_STATE));
+      if (streamsConfig.containsKey(CLEANUP_LOCAL_STATE)) {
+        boolean cleanup = Boolean.parseBoolean((String) streamsConfig.get(CLEANUP_LOCAL_STATE));
         if (cleanup) {
           getLogger().info("=== Resetting local state ===");
           app.cleanUp();
@@ -137,7 +139,9 @@ public abstract class KafkaStreamsApp extends PlatformService {
   public Map<String, Object> getBaseStreamsConfig() {
     Map<String, Object> baseStreamsConfig = new HashMap<>();
 
-    // Default streams configurations
+    // ##########################
+    // Streams configurations
+    // ##########################
     baseStreamsConfig.put(TOPOLOGY_OPTIMIZATION, "all");
     baseStreamsConfig.put(METRICS_RECORDING_LEVEL_CONFIG, "INFO");
     baseStreamsConfig
@@ -146,19 +150,38 @@ public abstract class KafkaStreamsApp extends PlatformService {
         LogAndContinueExceptionHandler.class);
     baseStreamsConfig.put(ROCKSDB_CONFIG_SETTER_CLASS_CONFIG, RocksDBStateStoreConfigSetter.class);
 
-    // Default serde configurations
+    // ##########################
+    // Default SerDe configurations
+    // ##########################
     baseStreamsConfig.put(DEFAULT_KEY_SERDE_CLASS_CONFIG, SpecificAvroSerde.class);
     baseStreamsConfig.put(DEFAULT_VALUE_SERDE_CLASS_CONFIG, SpecificAvroSerde.class);
 
-    // Default producer configurations
-    baseStreamsConfig.put(producerPrefix(LINGER_MS_CONFIG), "2000");
-    baseStreamsConfig.put(producerPrefix(BATCH_SIZE_CONFIG), "2097152");
+    // ##########################
+    // Producer configurations
+    // ##########################
+    // Set acks to all for high availability and prevent dataloss
+    // default = 1
+    baseStreamsConfig.put(producerPrefix(ACKS_CONFIG), "all");
+    // Increase linger.ms for better throughput
+    // default = 100
+    baseStreamsConfig.put(producerPrefix(LINGER_MS_CONFIG), "500");
+    // Increase batch.size for better throughput
+    // default = 16384
+    baseStreamsConfig.put(producerPrefix(BATCH_SIZE_CONFIG), "524288");
+    // Enable compression on producer for better throughput
+    // default - none
     baseStreamsConfig.put(producerPrefix(COMPRESSION_TYPE_CONFIG), CompressionType.GZIP.name);
-    baseStreamsConfig.put(producerPrefix(MAX_REQUEST_SIZE_CONFIG), "10485760");
 
-    // Default consumer configurations
-    baseStreamsConfig.put(consumerPrefix(MAX_POLL_RECORDS_CONFIG), "1000");
+    // ##########################
+    // Consumer configurations
+    // ##########################
+    // default - earliest (kafka streams)
     baseStreamsConfig.put(consumerPrefix(AUTO_OFFSET_RESET_CONFIG), "latest");
+
+    // ##########################
+    // Changelog topic configurations
+    // ##########################
+    baseStreamsConfig.put(topicPrefix(RETENTION_MS_CONFIG), TimeUnit.HOURS.toMillis(12));
 
     return baseStreamsConfig;
   }

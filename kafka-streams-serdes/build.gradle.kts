@@ -11,10 +11,16 @@ tasks.test {
 }
 
 dependencies {
-    api("org.apache.kafka:kafka-streams:5.5.1-ccs")
+    api("org.apache.kafka:kafka-streams:6.0.1-ccs")
     implementation("org.apache.avro:avro:1.9.2")
-    implementation("org.apache.kafka:kafka-clients:5.5.1-ccs")
+    implementation("org.apache.kafka:kafka-clients:6.0.1-ccs")
     testImplementation("org.junit.jupiter:junit-jupiter:5.7.0")
+    constraints {
+        api("com.fasterxml.jackson.core:jackson-databind:2.11.0") {
+            because("XML External Entity (XXE) Injection (new) [High Severity][https://snyk.io/vuln/SNYK-JAVA-COMFASTERXMLJACKSONCORE-1048302] in com.fasterxml.jackson.core:jackson-databind@2.10.5\n" +
+                "   introduced by com.fasterxml.jackson.core:jackson-databind@2.10.5")
+        }
+    }
 }
 
 // Disabling compatibility check for the test avro definitions.
