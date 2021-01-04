@@ -21,6 +21,7 @@ import static org.apache.kafka.streams.StreamsConfig.topicPrefix;
 import com.google.common.collect.Streams;
 import com.typesafe.config.Config;
 import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde;
+import io.micrometer.core.instrument.binder.kafka.KafkaStreamsMetrics;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -29,8 +30,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
-import io.micrometer.core.instrument.binder.kafka.KafkaStreamsMetrics;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.common.record.CompressionType;
 import org.apache.kafka.streams.KafkaStreams;

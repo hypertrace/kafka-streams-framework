@@ -10,8 +10,12 @@ import org.rocksdb.Filter;
 import org.rocksdb.InfoLogLevel;
 import org.rocksdb.Options;
 
+/**
+ * Replaced with org.hypertrace.core.kafkastreams.framework.rocksdb.BoundedMemoryConfigSetter
+ * This class will be deleted in future versions of the framework.
+ */
+@Deprecated
 public class RocksDBStateStoreConfigSetter implements RocksDBConfigSetter {
-
   private static final String ROCKS_DB_PREFIX = "rocksdb.";
   private static final String LOG_LEVEL_CONFIG = ROCKS_DB_PREFIX + "log.level";
   private static final String BLOCK_CACHE_SIZE = ROCKS_DB_PREFIX + "block.cache.size";
