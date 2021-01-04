@@ -42,10 +42,10 @@ public class RocksDBCacheProvider {
   private Cache cache;
   private WriteBufferManager writeBufferManager;
 
-  private long cacheTotalCapacity = DEFAULT_CACHE_TOTAL_CAPACITY;
-  private double blockCacheRatio = DEFAULT_CACHE_BLOCK_CACHE_RATIO;
-  private double writeBuffersRatio = DEFAULT_CACHE_WRITE_BUFFERS_RATIO;
-  private double highPriorityPoolRatio = DEFAULT_CACHE_HIGH_PRIORITY_POOL_RATIO;
+  private long cacheTotalCapacity;
+  private double blockCacheRatio;
+  private double writeBuffersRatio;
+  private double highPriorityPoolRatio;
 
   /**
    * Singleton
@@ -60,10 +60,12 @@ public class RocksDBCacheProvider {
 
   protected synchronized void initCache(Options options, Map<String, Object> configs) {
     if (cache == null) {
+      cacheTotalCapacity = DEFAULT_CACHE_TOTAL_CAPACITY;
       if (configs.containsKey(CACHE_TOTAL_CAPACITY)) {
         cacheTotalCapacity = Long.valueOf(String.valueOf(configs.get(CACHE_TOTAL_CAPACITY)));
       }
 
+      blockCacheRatio = DEFAULT_CACHE_BLOCK_CACHE_RATIO;
       if (configs.containsKey(CACHE_BLOCK_CACHE_RATIO)) {
         blockCacheRatio = Double.valueOf(String.valueOf(configs.get(CACHE_BLOCK_CACHE_RATIO)));
       }
@@ -75,6 +77,7 @@ public class RocksDBCacheProvider {
                 configs.get(CACHE_BLOCK_CACHE_RATIO) + ", Allowed value range: (0.0, 1.0)"));
       }
 
+      writeBuffersRatio = DEFAULT_CACHE_WRITE_BUFFERS_RATIO;
       if (configs.containsKey(CACHE_WRITE_BUFFERS_RATIO)) {
         writeBuffersRatio = Double.valueOf(String.valueOf(configs.get(CACHE_WRITE_BUFFERS_RATIO)));
       }
@@ -86,6 +89,7 @@ public class RocksDBCacheProvider {
                 configs.get(CACHE_WRITE_BUFFERS_RATIO) + ", Allowed value range: (0.0, 1.0)"));
       }
 
+      highPriorityPoolRatio = DEFAULT_CACHE_HIGH_PRIORITY_POOL_RATIO;
       if (configs.containsKey(CACHE_HIGH_PRIORITY_POOL_RATIO)) {
         highPriorityPoolRatio = Double
             .valueOf(String.valueOf(configs.get(CACHE_HIGH_PRIORITY_POOL_RATIO)));

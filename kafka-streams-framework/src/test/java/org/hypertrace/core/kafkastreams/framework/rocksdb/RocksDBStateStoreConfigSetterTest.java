@@ -1,8 +1,11 @@
 package org.hypertrace.core.kafkastreams.framework.rocksdb;
 
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.BLOCK_SIZE;
+import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.CACHE_BLOCK_CACHE_RATIO;
+import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.CACHE_HIGH_PRIORITY_POOL_RATIO;
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.CACHE_INDEX_AND_FILTER_BLOCKS;
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.CACHE_TOTAL_CAPACITY;
+import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.CACHE_WRITE_BUFFERS_RATIO;
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.COMPACTION_STYLE;
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.COMPRESSION_TYPE;
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.DEFAULT_CACHE_BLOCK_CACHE_RATIO;
@@ -11,13 +14,18 @@ import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.MAX_WRITE_BUFFERS;
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.WRITE_BUFFER_SIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Stream;
+import org.apache.kafka.common.config.ConfigException;
 import org.apache.kafka.streams.state.RocksDBConfigSetter;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.rocksdb.BlockBasedTableConfig;
 import org.rocksdb.CompactionStyle;
 import org.rocksdb.CompressionType;
@@ -112,5 +120,29 @@ class RocksDBStateStoreConfigSetterTest {
     configs.put(DIRECT_READS_ENABLED, true);
     configSetter.setConfig(storeName, options, configs);
     assertEquals(options.useDirectReads(), true);
+  }
+
+  @ParameterizedTest
+  @MethodSource("invalidCacheRatioProvider")
+  public void testInvalidCacheRatioConfigs(Map<String, Object> invalidConfigs) {
+    assertThrows(ConfigException.class, () -> {
+      configs.putAll(invalidConfigs);
+      configSetter.setConfig(storeName, options, invalidConfigs);
+      assertEquals(options.useDirectReads(), true);
+    });
+  }
+
+  // Data provider for negative tests
+  static Stream<Map<String, Object>> invalidCacheRatioProvider() {
+    return Stream.of(
+        Map.of(CACHE_BLOCK_CACHE_RATIO, -0.1),
+        Map.of(CACHE_BLOCK_CACHE_RATIO, 1.1),
+        Map.of(CACHE_WRITE_BUFFERS_RATIO, -0.1),
+        Map.of(CACHE_WRITE_BUFFERS_RATIO, 1.1),
+        Map.of(CACHE_HIGH_PRIORITY_POOL_RATIO, -0.1),
+        Map.of(CACHE_HIGH_PRIORITY_POOL_RATIO, 1.1),
+        Map.of(CACHE_BLOCK_CACHE_RATIO, 0.5, CACHE_WRITE_BUFFERS_RATIO, 0.4,
+            CACHE_HIGH_PRIORITY_POOL_RATIO, 0.2)
+    );
   }
 }
