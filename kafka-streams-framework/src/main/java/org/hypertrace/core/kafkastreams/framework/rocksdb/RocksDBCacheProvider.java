@@ -1,12 +1,9 @@
 package org.hypertrace.core.kafkastreams.framework.rocksdb;
 
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.BLOCK_SIZE;
-import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.CACHE_BLOCK_CACHE_RATIO;
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.CACHE_HIGH_PRIORITY_POOL_RATIO;
-import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.CACHE_INDEX_AND_FILTER_BLOCKS;
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.CACHE_TOTAL_CAPACITY;
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.CACHE_WRITE_BUFFERS_RATIO;
-import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.DEFAULT_CACHE_BLOCK_CACHE_RATIO;
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.DEFAULT_CACHE_HIGH_PRIORITY_POOL_RATIO;
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.DEFAULT_CACHE_TOTAL_CAPACITY;
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.DEFAULT_CACHE_WRITE_BUFFERS_RATIO;
@@ -43,7 +40,6 @@ public class RocksDBCacheProvider {
   private WriteBufferManager writeBufferManager;
 
   private long cacheTotalCapacity;
-  private double blockCacheRatio;
   private double writeBuffersRatio;
   private double highPriorityPoolRatio;
 
@@ -63,18 +59,6 @@ public class RocksDBCacheProvider {
       cacheTotalCapacity = DEFAULT_CACHE_TOTAL_CAPACITY;
       if (configs.containsKey(CACHE_TOTAL_CAPACITY)) {
         cacheTotalCapacity = Long.valueOf(String.valueOf(configs.get(CACHE_TOTAL_CAPACITY)));
-      }
-
-      blockCacheRatio = DEFAULT_CACHE_BLOCK_CACHE_RATIO;
-      if (configs.containsKey(CACHE_BLOCK_CACHE_RATIO)) {
-        blockCacheRatio = Double.valueOf(String.valueOf(configs.get(CACHE_BLOCK_CACHE_RATIO)));
-      }
-
-      if (blockCacheRatio < 0.0 || blockCacheRatio > 1.0) {
-        throw new ConfigException(
-            "Invalid high priority write buffers ratio configured. Config key: "
-                + CACHE_BLOCK_CACHE_RATIO + ", configured value: " + String.valueOf(
-                configs.get(CACHE_BLOCK_CACHE_RATIO) + ", Allowed value range: (0.0, 1.0)"));
       }
 
       writeBuffersRatio = DEFAULT_CACHE_WRITE_BUFFERS_RATIO;
@@ -101,7 +85,7 @@ public class RocksDBCacheProvider {
             configs.get(CACHE_HIGH_PRIORITY_POOL_RATIO) + ", Allowed value range: (0.0, 1.0)"));
       }
 
-      double aggregatedRatio = blockCacheRatio + writeBuffersRatio + highPriorityPoolRatio;
+      double aggregatedRatio = writeBuffersRatio + highPriorityPoolRatio;
       if (aggregatedRatio > 1.0) {
         throw new ConfigException("Sum total of the cache ratios: " + aggregatedRatio
             + " is greater than 1.0."
@@ -119,9 +103,8 @@ public class RocksDBCacheProvider {
 
       LOG.info(
           "RocksDB shared cache initialized successfully. Total cache size(MB): {},"
-              + " block cache ratio: {}, write buffers ratio: {}, high priority pool ratio: {}",
-          cacheTotalCapacity / (1024 * 1024), blockCacheRatio, writeBuffersRatio,
-          highPriorityPoolRatio);
+              + " write buffers ratio: {}, high priority pool ratio: {}",
+          cacheTotalCapacity / (1024 * 1024), writeBuffersRatio, highPriorityPoolRatio);
     }
 
     final BlockBasedTableConfig tableConfig = (BlockBasedTableConfig) options.tableFormatConfig();
@@ -130,8 +113,6 @@ public class RocksDBCacheProvider {
     if (configs.containsKey(BLOCK_SIZE)) {
       tableConfig.setBlockSize(Long.valueOf(String.valueOf(configs.get(BLOCK_SIZE))));
     }
-
-    tableConfig.setBlockCacheSize((long) (cacheTotalCapacity * blockCacheRatio));
 
     // ######### Write buffers (memtables) #########
     // number of write buffers
@@ -146,11 +127,7 @@ public class RocksDBCacheProvider {
     }
 
     // ######### Index and filter blocks cache #########
-    if (configs.containsKey(CACHE_INDEX_AND_FILTER_BLOCKS)) {
-      tableConfig.setCacheIndexAndFilterBlocks(
-          Boolean.valueOf(String.valueOf(configs.get(CACHE_INDEX_AND_FILTER_BLOCKS))));
-    }
-
+    tableConfig.setCacheIndexAndFilterBlocks(true);
     tableConfig.setCacheIndexAndFilterBlocksWithHighPriority(true);
     tableConfig.setPinTopLevelIndexAndFilter(true);
 

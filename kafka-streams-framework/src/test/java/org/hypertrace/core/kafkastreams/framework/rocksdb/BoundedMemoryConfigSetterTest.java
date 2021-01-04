@@ -1,14 +1,10 @@
 package org.hypertrace.core.kafkastreams.framework.rocksdb;
 
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.BLOCK_SIZE;
-import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.CACHE_BLOCK_CACHE_RATIO;
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.CACHE_HIGH_PRIORITY_POOL_RATIO;
-import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.CACHE_INDEX_AND_FILTER_BLOCKS;
-import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.CACHE_TOTAL_CAPACITY;
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.CACHE_WRITE_BUFFERS_RATIO;
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.COMPACTION_STYLE;
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.COMPRESSION_TYPE;
-import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.DEFAULT_CACHE_BLOCK_CACHE_RATIO;
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.DIRECT_READS_ENABLED;
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.LOG_LEVEL_CONFIG;
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.MAX_WRITE_BUFFERS;
@@ -64,15 +60,6 @@ class BoundedMemoryConfigSetterTest {
   }
 
   @Test
-  public void testDeafultBlockCache() {
-    long totalMemoryCapacity = 64 * 1024 * 1024;
-    configs.put(CACHE_TOTAL_CAPACITY, totalMemoryCapacity);
-    configSetter.setConfig(storeName, options, configs);
-    assertEquals(tableConfig.blockCacheSize(),
-        (long) (totalMemoryCapacity * DEFAULT_CACHE_BLOCK_CACHE_RATIO));
-  }
-
-  @Test
   public void testSetConfigWriteBufferSize() {
     configs.put(WRITE_BUFFER_SIZE, 8388608L);
     configSetter.setConfig(storeName, options, configs);
@@ -108,14 +95,6 @@ class BoundedMemoryConfigSetterTest {
   }
 
   @Test
-  public void testSetConfigCacheIndexAndFilterBlocks() {
-    configs.put(CACHE_INDEX_AND_FILTER_BLOCKS, true);
-    configSetter.setConfig(storeName, options, configs);
-    assertEquals(((BlockBasedTableConfig) options.tableFormatConfig()).cacheIndexAndFilterBlocks(),
-        true);
-  }
-
-  @Test
   public void testSetConfigUseDirectReads() {
     configs.put(DIRECT_READS_ENABLED, true);
     configSetter.setConfig(storeName, options, configs);
@@ -135,14 +114,11 @@ class BoundedMemoryConfigSetterTest {
   // Data provider for negative tests
   static Stream<Map<String, Object>> invalidCacheRatioProvider() {
     return Stream.of(
-        Map.of(CACHE_BLOCK_CACHE_RATIO, -0.1),
-        Map.of(CACHE_BLOCK_CACHE_RATIO, 1.1),
         Map.of(CACHE_WRITE_BUFFERS_RATIO, -0.1),
         Map.of(CACHE_WRITE_BUFFERS_RATIO, 1.1),
         Map.of(CACHE_HIGH_PRIORITY_POOL_RATIO, -0.1),
         Map.of(CACHE_HIGH_PRIORITY_POOL_RATIO, 1.1),
-        Map.of(CACHE_BLOCK_CACHE_RATIO, 0.5, CACHE_WRITE_BUFFERS_RATIO, 0.4,
-            CACHE_HIGH_PRIORITY_POOL_RATIO, 0.2)
+        Map.of(CACHE_WRITE_BUFFERS_RATIO, 0.9, CACHE_HIGH_PRIORITY_POOL_RATIO, 0.2)
     );
   }
 }
