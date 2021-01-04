@@ -40,6 +40,7 @@ import org.apache.kafka.streams.errors.LogAndContinueExceptionHandler;
 import org.apache.kafka.streams.kstream.KStream;
 import org.hypertrace.core.kafkastreams.framework.listeners.LoggingStateListener;
 import org.hypertrace.core.kafkastreams.framework.listeners.LoggingStateRestoreListener;
+import org.hypertrace.core.kafkastreams.framework.rocksdb.BoundedMemoryConfigSetter;
 import org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBStateStoreConfigSetter;
 import org.hypertrace.core.kafkastreams.framework.timestampextractors.UseWallclockTimeOnInvalidTimestamp;
 import org.hypertrace.core.kafkastreams.framework.topics.creator.KafkaTopicCreator;
