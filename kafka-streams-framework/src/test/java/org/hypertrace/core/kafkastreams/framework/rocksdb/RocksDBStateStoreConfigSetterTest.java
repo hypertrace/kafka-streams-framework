@@ -1,10 +1,22 @@
 package org.hypertrace.core.kafkastreams.framework.rocksdb;
 
+import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.BLOCK_SIZE;
+import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.CACHE_INDEX_AND_FILTER_BLOCKS;
+import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.CACHE_TOTAL_CAPACITY;
+import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.COMPACTION_STYLE;
+import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.COMPRESSION_TYPE;
+import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.DEFAULT_CACHE_BLOCK_CACHE_RATIO;
+import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.DIRECT_READS_ENABLED;
+import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.LOG_LEVEL_CONFIG;
+import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.MAX_WRITE_BUFFERS;
+import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.WRITE_BUFFER_SIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.kafka.streams.state.RocksDBConfigSetter;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.rocksdb.BlockBasedTableConfig;
 import org.rocksdb.CompactionStyle;
@@ -14,91 +26,82 @@ import org.rocksdb.Options;
 
 class RocksDBStateStoreConfigSetterTest {
 
+  private final String storeName = "test-store";
+  private Options options;
+  private Map<String, Object> configs;
+  private RocksDBConfigSetter configSetter;
+  private BlockBasedTableConfig tableConfig;
+
+  @BeforeEach
+  public void setUp() {
+    RocksDBCacheProvider.get().testDestroy();
+    options = new Options();
+    configs = new HashMap<>();
+    tableConfig = new BlockBasedTableConfig();
+    options.setTableFormatConfig(tableConfig);
+    configSetter = new RocksDBStateStoreConfigSetter();
+  }
+
+  @AfterEach
+  public void tearDown() {
+    RocksDBCacheProvider.get().testDestroy();
+  }
+
   @Test
   public void testSetConfigBlockSize() {
-    String storeName = "test-store";
-    Options options = new Options();
-    Map<String, Object> configs = new HashMap<>();
-    configs.put("rocksdb.block.size", 8388608L);
-    RocksDBConfigSetter configSetter = new RocksDBStateStoreConfigSetter();
+    configs.put(BLOCK_SIZE, 8388608L);
     configSetter.setConfig(storeName, options, configs);
     assertEquals(((BlockBasedTableConfig) options.tableFormatConfig()).blockSize(), 8388608L);
     configSetter.close(storeName, options);
   }
 
   @Test
-  public void testSetConfigBlockCacheSize() {
-    String storeName = "test-store";
-    Options options = new Options();
-    Map<String, Object> configs = new HashMap<>();
-    configs.put("rocksdb.block.cache.size", 33554432L);
-    RocksDBConfigSetter configSetter = new RocksDBStateStoreConfigSetter();
+  public void testDeafultBlockCache() {
+    long totalMemoryCapacity = 64 * 1024 * 1024;
+    configs.put(CACHE_TOTAL_CAPACITY, totalMemoryCapacity);
     configSetter.setConfig(storeName, options, configs);
-    assertEquals(((BlockBasedTableConfig) options.tableFormatConfig()).blockCacheSize(), 33554432L);
+    assertEquals(tableConfig.blockCacheSize(),
+        (long) (totalMemoryCapacity * DEFAULT_CACHE_BLOCK_CACHE_RATIO));
   }
 
   @Test
   public void testSetConfigWriteBufferSize() {
-    String storeName = "test-store";
-    Options options = new Options();
-    Map<String, Object> configs = new HashMap<>();
-    configs.put("rocksdb.write.buffer.size", 8388608L);
-    RocksDBConfigSetter configSetter = new RocksDBStateStoreConfigSetter();
+    configs.put(WRITE_BUFFER_SIZE, 8388608L);
     configSetter.setConfig(storeName, options, configs);
     assertEquals(options.writeBufferSize(), 8388608L);
   }
 
   @Test
   public void testSetConfigCompressionType() {
-    String storeName = "test-store";
-    Options options = new Options();
-    Map<String, Object> configs = new HashMap<>();
-    configs.put("rocksdb.compression.type", "SNAPPY_COMPRESSION");
-    RocksDBConfigSetter configSetter = new RocksDBStateStoreConfigSetter();
+    configs.put(COMPRESSION_TYPE, "SNAPPY_COMPRESSION");
     configSetter.setConfig(storeName, options, configs);
     assertEquals(options.compressionType(), CompressionType.SNAPPY_COMPRESSION);
   }
 
   @Test
   public void testSetConfigCompactionStyle() {
-    String storeName = "test-store";
-    Options options = new Options();
-    Map<String, Object> configs = new HashMap<>();
-    configs.put("rocksdb.compaction.style", "UNIVERSAL");
-    RocksDBConfigSetter configSetter = new RocksDBStateStoreConfigSetter();
+    configs.put(COMPACTION_STYLE, "UNIVERSAL");
     configSetter.setConfig(storeName, options, configs);
     assertEquals(options.compactionStyle(), CompactionStyle.UNIVERSAL);
   }
 
   @Test
   public void testSetConfigLogLevel() {
-    String storeName = "test-store";
-    Options options = new Options();
-    Map<String, Object> configs = new HashMap<>();
-    configs.put("rocksdb.log.level", "INFO_LEVEL");
-    RocksDBConfigSetter configSetter = new RocksDBStateStoreConfigSetter();
+    configs.put(LOG_LEVEL_CONFIG, "INFO_LEVEL");
     configSetter.setConfig(storeName, options, configs);
     assertEquals(options.infoLogLevel(), InfoLogLevel.INFO_LEVEL);
   }
 
   @Test
   public void testSetConfigMaxWriteBuffer() {
-    String storeName = "test-store";
-    Options options = new Options();
-    Map<String, Object> configs = new HashMap<>();
-    configs.put("rocksdb.max.write.buffers", 2);
-    RocksDBConfigSetter configSetter = new RocksDBStateStoreConfigSetter();
+    configs.put(MAX_WRITE_BUFFERS, 2);
     configSetter.setConfig(storeName, options, configs);
     assertEquals(options.maxWriteBufferNumber(), 2);
   }
 
   @Test
   public void testSetConfigCacheIndexAndFilterBlocks() {
-    String storeName = "test-store";
-    Options options = new Options();
-    Map<String, Object> configs = new HashMap<>();
-    configs.put("rocksdb.cache.index.and.filter.blocks", true);
-    RocksDBConfigSetter configSetter = new RocksDBStateStoreConfigSetter();
+    configs.put(CACHE_INDEX_AND_FILTER_BLOCKS, true);
     configSetter.setConfig(storeName, options, configs);
     assertEquals(((BlockBasedTableConfig) options.tableFormatConfig()).cacheIndexAndFilterBlocks(),
         true);
@@ -106,13 +109,8 @@ class RocksDBStateStoreConfigSetterTest {
 
   @Test
   public void testSetConfigUseDirectReads() {
-    String storeName = "test-store";
-    Options options = new Options();
-    Map<String, Object> configs = new HashMap<>();
-    configs.put("rocksdb.direct.reads.enabled", true);
-    RocksDBConfigSetter configSetter = new RocksDBStateStoreConfigSetter();
+    configs.put(DIRECT_READS_ENABLED, true);
     configSetter.setConfig(storeName, options, configs);
     assertEquals(options.useDirectReads(), true);
   }
-
 }
