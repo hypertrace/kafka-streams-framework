@@ -1,12 +1,14 @@
-name: test
+name: build 
 on:
   push:
     branches:
       - main
-  pull_request:
+  pull_request_target:
+    branches: 
+      - main
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-20.04
     steps:
        # Set fetch-depth: 0 to fetch commit history and tags for use in version calculation
@@ -31,30 +33,21 @@ jobs:
       - name: Unit test
         uses: hypertrace/github-actions/gradle@main
         with: 
-          args: jacocoTestReport
+          args: build
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1
+  snyk-scan:
+    runs-on: ubuntu-20.04
+    steps:
+    # Set fetch-depth: 0 to fetch commit history and tags for use in version calculation
+      - name: Check out code
+        uses: actions/checkout@v2.3.4
         with:
-          name: unit test reports
-          fail_ci_if_error: true
-          flags: unit
-
-      - name: copy test reports
-        uses: hypertrace/github-actions/gradle@main
-        with: 
-          args: copyAllReports --output-dir=/tmp/test-reports
-
-      - name: Archive test reports
-        uses: actions/upload-artifact@v1
-        with:
-          name: test-reports
-          path: /tmp/test-reports
-        if: always()
-     
-      - name: Publish Unit Test Results
-        uses: docker://ghcr.io/enricomi/publish-unit-test-result-action:v1.6
-        if: always()
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          files: ./**/build/test-results/**/*.xml
+          ref: ${{github.event.pull_request.head.ref}}
+          repository: ${{github.event.pull_request.head.repo.full_name}}
+          fetch-depth: 0
+      - name: Setup snyk
+        uses: snyk/actions/setup@0.3.0
+      - name: Snyk test
+        run: snyk test --all-sub-projects --org=hypertrace --severity-threshold=low --policy-path=.snyk --configuration-matching='^runtimeClasspath$'
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
