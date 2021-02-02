@@ -17,8 +17,8 @@ import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.TestInputTopic;
 import org.apache.kafka.streams.TestOutputTopic;
 import org.apache.kafka.streams.TopologyTestDriver;
+import org.apache.kafka.streams.errors.LogAndContinueExceptionHandler;
 import org.hypertrace.core.kafkastreams.framework.rocksdb.BoundedMemoryConfigSetter;
-import org.hypertrace.core.kafkastreams.framework.timestampextractors.UseWallclockTimeOnInvalidTimestamp;
 import org.hypertrace.core.serviceframework.config.ConfigClientFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -78,7 +78,7 @@ public class SampleAppTest {
     assertThat(baseStreamsConfig.get(DEFAULT_VALUE_SERDE_CLASS_CONFIG), is(
         SpecificAvroSerde.class));
     assertThat(baseStreamsConfig.get(DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG),
-        is(UseWallclockTimeOnInvalidTimestamp.class));
-    assertThat(producerPrefix(ACKS_CONFIG), is("all"));
+        is(LogAndContinueExceptionHandler.class));
+    assertThat(baseStreamsConfig.get(producerPrefix(ACKS_CONFIG)), is("all"));
   }
 }
