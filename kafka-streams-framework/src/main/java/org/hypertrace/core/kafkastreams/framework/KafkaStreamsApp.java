@@ -39,7 +39,7 @@ import org.apache.kafka.streams.errors.LogAndContinueExceptionHandler;
 import org.apache.kafka.streams.kstream.KStream;
 import org.hypertrace.core.kafkastreams.framework.listeners.LoggingStateListener;
 import org.hypertrace.core.kafkastreams.framework.listeners.LoggingStateRestoreListener;
-import org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBStateStoreConfigSetter;
+import org.hypertrace.core.kafkastreams.framework.rocksdb.BoundedMemoryConfigSetter;
 import org.hypertrace.core.kafkastreams.framework.timestampextractors.UseWallclockTimeOnInvalidTimestamp;
 import org.hypertrace.core.kafkastreams.framework.topics.creator.KafkaTopicCreator;
 import org.hypertrace.core.kafkastreams.framework.util.ExceptionUtils;
@@ -158,7 +158,7 @@ public abstract class KafkaStreamsApp extends PlatformService {
         .put(DEFAULT_TIMESTAMP_EXTRACTOR_CLASS_CONFIG, UseWallclockTimeOnInvalidTimestamp.class);
     baseStreamsConfig.put(DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG,
         LogAndContinueExceptionHandler.class);
-    baseStreamsConfig.put(ROCKSDB_CONFIG_SETTER_CLASS_CONFIG, RocksDBStateStoreConfigSetter.class);
+    baseStreamsConfig.put(ROCKSDB_CONFIG_SETTER_CLASS_CONFIG, BoundedMemoryConfigSetter.class);
 
     // ##########################
     // Default SerDe configurations
@@ -201,9 +201,8 @@ public abstract class KafkaStreamsApp extends PlatformService {
       Map<String, KStream<?, ?>> sourceStreams);
 
   public Map<String, Object> getStreamsConfig(Config jobConfig) {
-    Map<String, Object> streamsConfig = new HashMap<>(
+    return new HashMap<>(
         ConfigUtils.getFlatMapConfig(jobConfig, getStreamsConfigKey()));
-    return streamsConfig;
   }
 
   public String getStreamsConfigKey() {
