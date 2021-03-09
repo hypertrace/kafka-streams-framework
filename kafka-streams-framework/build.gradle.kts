@@ -16,8 +16,8 @@ dependencies {
     api("io.confluent:kafka-streams-avro-serde:6.1.0")
 
     implementation("com.google.guava:guava:30.1-jre")
-    implementation("org.hypertrace.core.serviceframework:platform-metrics:0.1.18")
-    implementation("org.hypertrace.core.serviceframework:platform-service-framework:0.1.18")
+    implementation("org.hypertrace.core.serviceframework:platform-metrics:0.1.21")
+    implementation("org.hypertrace.core.serviceframework:platform-service-framework:0.1.21")
     implementation("org.apache.kafka:kafka-clients:6.1.0-ccs")
 
     testImplementation("org.apache.kafka:kafka-streams-test-utils:6.1.0-ccs")
