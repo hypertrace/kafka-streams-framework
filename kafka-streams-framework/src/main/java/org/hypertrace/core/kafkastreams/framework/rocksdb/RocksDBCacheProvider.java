@@ -134,8 +134,12 @@ public class RocksDBCacheProvider {
 
     options.setWriteBufferManager(writeBufferManager);
 
-    tableConfig.blockCache().close();
-    tableConfig.setBlockCache(cache);
+    final Cache oldCache = tableConfig.blockCache();
+    if(oldCache != null) {
+      LOG.info("Releasing old rocksdb cache before setting shared cache.");
+      oldCache.close();
+    }
+    tableConfig.setBlockCache(this.cache);
     options.setTableFormatConfig(tableConfig);
   }
 
