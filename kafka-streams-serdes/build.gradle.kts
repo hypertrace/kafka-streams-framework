@@ -11,9 +11,9 @@ tasks.test {
 }
 
 dependencies {
-    api("org.apache.kafka:kafka-streams:6.1.0-ccs")
+    api("org.apache.kafka:kafka-streams:6.0.1-ccs")
     implementation("org.apache.avro:avro:1.10.2")
-    implementation("org.apache.kafka:kafka-clients:6.1.0-ccs")
+    implementation("org.apache.kafka:kafka-clients:6.0.1-ccs")
     testImplementation("org.junit.jupiter:junit-jupiter:5.7.0")
     constraints {
         api("com.fasterxml.jackson.core:jackson-databind:2.11.0") {
