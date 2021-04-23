@@ -13,7 +13,6 @@ import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.
 import com.google.common.annotations.VisibleForTesting;
 import java.util.Map;
 import org.apache.kafka.common.config.ConfigException;
-import org.apache.kafka.streams.state.internals.BlockBasedTableConfigWithAccessibleCache;
 import org.rocksdb.BlockBasedTableConfig;
 import org.rocksdb.Cache;
 import org.rocksdb.LRUCache;
@@ -108,7 +107,7 @@ public class RocksDBCacheProvider {
           cacheTotalCapacity / (1024 * 1024), writeBuffersRatio, highPriorityPoolRatio);
     }
 
-    final BlockBasedTableConfigWithAccessibleCache tableConfig = (BlockBasedTableConfigWithAccessibleCache) options.tableFormatConfig();
+    final BlockBasedTableConfig tableConfig = (BlockBasedTableConfig) options.tableFormatConfig();
 
     // ######### Block cache (Read buffers) #########
     if (configs.containsKey(BLOCK_SIZE)) {
@@ -134,12 +133,7 @@ public class RocksDBCacheProvider {
 
     options.setWriteBufferManager(writeBufferManager);
 
-    final Cache oldCache = tableConfig.blockCache();
-    if(oldCache != null) {
-      LOG.info("Releasing old rocksdb cache before setting shared cache.");
-      oldCache.close();
-    }
-    tableConfig.setBlockCache(this.cache);
+    tableConfig.setBlockCache(cache);
     options.setTableFormatConfig(tableConfig);
   }
 

@@ -17,7 +17,6 @@ import java.util.Map;
 import java.util.stream.Stream;
 import org.apache.kafka.common.config.ConfigException;
 import org.apache.kafka.streams.state.RocksDBConfigSetter;
-import org.apache.kafka.streams.state.internals.BlockBasedTableConfigWithAccessibleCache;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,7 +26,6 @@ import org.rocksdb.BlockBasedTableConfig;
 import org.rocksdb.CompactionStyle;
 import org.rocksdb.CompressionType;
 import org.rocksdb.InfoLogLevel;
-import org.rocksdb.LRUCache;
 import org.rocksdb.Options;
 
 class BoundedMemoryConfigSetterTest {
@@ -43,9 +41,7 @@ class BoundedMemoryConfigSetterTest {
     RocksDBCacheProvider.get().testDestroy();
     options = new Options();
     configs = new HashMap<>();
-    tableConfig = new BlockBasedTableConfigWithAccessibleCache();
-    // mimic kafka streams
-    tableConfig.setBlockCache(new LRUCache(32 * 1024));
+    tableConfig = new BlockBasedTableConfig();
     options.setTableFormatConfig(tableConfig);
     configSetter = new BoundedMemoryConfigSetter();
   }
