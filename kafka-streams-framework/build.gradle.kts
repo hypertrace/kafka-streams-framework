@@ -25,6 +25,6 @@ dependencies {
     testImplementation("org.junit-pioneer:junit-pioneer:1.1.0")
     testImplementation("org.mockito:mockito-core:3.6.28")
     testImplementation("org.hamcrest:hamcrest-core:2.2")
-    testRuntimeOnly("org.apache.logging.log4j:log4j-slf4j-impl:2.14.0")
+    testRuntimeOnly("org.apache.logging.log4j:log4j-slf4j-impl:2.15.0")
 }
 
