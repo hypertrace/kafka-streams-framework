@@ -24,6 +24,7 @@ import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde;
 import io.micrometer.core.instrument.binder.kafka.KafkaStreamsMetrics;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -55,6 +56,9 @@ public abstract class KafkaStreamsApp extends PlatformService {
   public static final String CLEANUP_LOCAL_STATE = "cleanup.local.state";
   public static final String PRE_CREATE_TOPICS = "precreate.topics";
   public static final String KAFKA_STREAMS_CONFIG_KEY = "kafka.streams.config";
+  public static final String INPUT_TOPIC_CONFIG_KEY = "input.topic";
+  public static final String OUTPUT_TOPIC_CONFIG_KEY = "output.topic";
+
   private static final Logger logger = LoggerFactory.getLogger(KafkaStreamsApp.class);
   protected KafkaStreams app;
   private KafkaStreamsMetrics metrics;
@@ -218,11 +222,15 @@ public abstract class KafkaStreamsApp extends PlatformService {
   }
 
   public List<String> getInputTopics(Map<String, Object> properties) {
-    return new ArrayList<>();
+    Config jobConfig = (Config) properties.get(getJobConfigKey());
+    return jobConfig != null ?
+        Arrays.asList(jobConfig.getString(INPUT_TOPIC_CONFIG_KEY)) : new ArrayList<>();
   }
 
   public List<String> getOutputTopics(Map<String, Object> properties) {
-    return new ArrayList<>();
+    Config jobConfig = (Config) properties.get(getJobConfigKey());
+    return jobConfig != null ?
+        Arrays.asList(jobConfig.getString(OUTPUT_TOPIC_CONFIG_KEY)) : new ArrayList<>();
   }
 
   private Map<String, Object> getJobStreamsConfig(Config jobConfig) {
