@@ -16,9 +16,9 @@ dependencies {
   implementation("org.apache.kafka:kafka-clients:6.0.1-ccs")
   testImplementation("org.junit.jupiter:junit-jupiter:5.7.0")
   constraints {
-    api("com.fasterxml.jackson.core:jackson-databind:2.11.0") {
-      because("XML External Entity (XXE) Injection (new) [High Severity][https://snyk.io/vuln/SNYK-JAVA-COMFASTERXMLJACKSONCORE-1048302] in com.fasterxml.jackson.core:jackson-databind@2.10.5\n" +
-          "   introduced by com.fasterxml.jackson.core:jackson-databind@2.10.5")
+    api("com.fasterxml.jackson.core:jackson-databind:2.12.6") {
+      because("Denial of Service (DoS) [Medium Severity][https://snyk.io/vuln/SNYK-JAVA-COMFASTERXMLJACKSONCORE-2326698] in com.fasterxml.jackson.core:jackson-databind@2.12.2\n" +
+              "    introduced by org.apache.avro:avro@1.10.2 > com.fasterxml.jackson.core:jackson-databind@2.12.2 and 2 other path(s)")
     }
     implementation("org.apache.commons:commons-compress:1.21") {
       because("Multiple Vulnerabilities [https://nvd.nist.gov/vuln/detail/CVE-2021-35515] [https://nvd.nist.gov/vuln/detail/CVE-2021-35516] [https://nvd.nist.gov/vuln/detail/CVE-2021-35517] [https://nvd.nist.gov/vuln/detail/CVE-2021-36090] in org.apache.commons:commons-compress@1.20")
