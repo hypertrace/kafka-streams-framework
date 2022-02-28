@@ -112,6 +112,8 @@ public abstract class KafkaStreamsApp extends PlatformService {
             System.exit(1);
           }
       );
+
+      getLogger().info("kafka streams topologies: {}", topology.describe());
     } catch (Exception e) {
       getLogger().error("Error initializing - ", e);
       e.printStackTrace();
