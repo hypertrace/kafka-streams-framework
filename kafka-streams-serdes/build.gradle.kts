@@ -16,7 +16,7 @@ dependencies {
   implementation("org.apache.kafka:kafka-clients:6.0.1-ccs")
   testImplementation("org.junit.jupiter:junit-jupiter:5.7.0")
   constraints {
-    api("com.fasterxml.jackson.core:jackson-databind:2.12.6") {
+    api("com.fasterxml.jackson.core:jackson-databind:2.13.3") {
       because("Denial of Service (DoS) [Medium Severity][https://snyk.io/vuln/SNYK-JAVA-COMFASTERXMLJACKSONCORE-2326698] in com.fasterxml.jackson.core:jackson-databind@2.12.2\n" +
               "    introduced by org.apache.avro:avro@1.10.2 > com.fasterxml.jackson.core:jackson-databind@2.12.2 and 2 other path(s)")
     }
