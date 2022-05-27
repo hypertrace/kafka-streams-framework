@@ -24,6 +24,9 @@ dependencies {
     api("org.glassfish.jersey.core:jersey-common:2.34") {
       because("https://snyk.io/vuln/SNYK-JAVA-ORGGLASSFISHJERSEYCORE-1255637")
     }
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.13.3") {
+      because("https://snyk.io/vuln/SNYK-JAVA-COMFASTERXMLJACKSONCORE-2421244")
+    }
   }
 
   testImplementation("org.apache.kafka:kafka-streams-test-utils:6.0.1-ccs")
