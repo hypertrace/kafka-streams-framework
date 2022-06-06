@@ -12,13 +12,13 @@ tasks.test {
 dependencies {
   api(project(":kafka-streams-serdes"))
   api("com.typesafe:config:1.4.1")
-  api("org.apache.kafka:kafka-streams:6.0.1-ccs")
-  api("io.confluent:kafka-streams-avro-serde:6.0.1")
+  api("org.apache.kafka:kafka-streams:7.1.1-ccs")
+  api("io.confluent:kafka-streams-avro-serde:7.1.1")
 
   implementation("com.google.guava:guava:30.1-jre")
   implementation("org.hypertrace.core.serviceframework:platform-metrics:0.1.31")
   implementation("org.hypertrace.core.serviceframework:platform-service-framework:0.1.31")
-  implementation("org.apache.kafka:kafka-clients:6.0.1-ccs")
+  implementation("org.apache.kafka:kafka-clients:7.1.1-ccs")
 
   constraints {
     api("org.glassfish.jersey.core:jersey-common:2.34") {
@@ -26,7 +26,7 @@ dependencies {
     }
   }
 
-  testImplementation("org.apache.kafka:kafka-streams-test-utils:6.0.1-ccs")
+  testImplementation("org.apache.kafka:kafka-streams-test-utils:7.1.1-ccs")
   testImplementation("org.junit.jupiter:junit-jupiter:5.7.0")
   testImplementation("org.junit-pioneer:junit-pioneer:1.1.0")
   testImplementation("org.mockito:mockito-core:3.6.28")
