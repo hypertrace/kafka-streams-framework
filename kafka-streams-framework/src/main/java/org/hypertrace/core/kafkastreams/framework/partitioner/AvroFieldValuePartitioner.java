@@ -73,26 +73,31 @@ public class AvroFieldValuePartitioner<V extends GenericRecord>
   private int calculatePartition(String topic, String key, int numPartitions) {
     PartitionGroupConfig groupConfig = this.getPartitionGroup(key);
     if (!this.parititonIteratorByTopicAndGroup.contains(topic, groupConfig)) {
-      List<Integer> availableTopicPartitions =
-          this.getAvailablePartitionsForTopic(topic, numPartitions);
-      int totalPartitions = availableTopicPartitions.size();
-      int fromIndex = (int) (groupConfig.getNormalizedFractionalStart() * totalPartitions);
-      int toIndex = (int) (groupConfig.getNormalizedFractionalEnd() * totalPartitions);
-      List<Integer> assignedPartitions = availableTopicPartitions.subList(fromIndex, toIndex);
-      LOG.info(
-          "topic: {}, group config: {}, member: {}, available partitions:{}, assigned partitions: {}",
-          topic,
-          groupConfig,
-          key,
-          availableTopicPartitions,
-          assignedPartitions);
-      // Using cyclic iterator
-      Iterator<Integer> partitionIterator = Iterables.cycle(assignedPartitions).iterator();
-      this.parititonIteratorByTopicAndGroup.put(topic, groupConfig, partitionIterator);
+      synchronized (parititonIteratorByTopicAndGroup) {
+        List<Integer> availableTopicPartitions =
+            this.getAvailablePartitionsForTopic(topic, numPartitions);
+        int totalPartitions = availableTopicPartitions.size();
+        int fromIndex = (int) (groupConfig.getNormalizedFractionalStart() * totalPartitions);
+        int toIndex = (int) (groupConfig.getNormalizedFractionalEnd() * totalPartitions);
+        List<Integer> assignedPartitions = availableTopicPartitions.subList(fromIndex, toIndex);
+        LOG.info(
+            "topic: {}, group config: {}, member: {}, available partitions:{}, assigned partitions: {}",
+            topic,
+            groupConfig,
+            key,
+            availableTopicPartitions,
+            assignedPartitions);
+        // Using cyclic iterator
+        Iterator<Integer> partitionIterator = Iterables.cycle(assignedPartitions).iterator();
+        this.parititonIteratorByTopicAndGroup.put(topic, groupConfig, partitionIterator);
+      }
     }
 
-    return Objects.requireNonNull(this.parititonIteratorByTopicAndGroup.get(topic, groupConfig))
-        .next();
+    Iterator<Integer> iterator =
+        Objects.requireNonNull(this.parititonIteratorByTopicAndGroup.get(topic, groupConfig));
+    synchronized (iterator) {
+      return iterator.next();
+    }
   }
 
   private PartitionGroupConfig getPartitionGroup(String key) {
