@@ -3,6 +3,7 @@ plugins {
   jacoco
   id("org.hypertrace.publish-plugin")
   id("org.hypertrace.jacoco-report-plugin")
+  id("org.hypertrace.avro-plugin")
 }
 
 tasks.test {
@@ -10,6 +11,9 @@ tasks.test {
 }
 
 dependencies {
+  annotationProcessor("org.projectlombok:lombok:1.18.24")
+  compileOnly("org.projectlombok:lombok:1.18.24")
+
   api(project(":kafka-streams-serdes"))
   api("com.typesafe:config:1.4.1")
   api("org.apache.kafka:kafka-streams:6.0.1-ccs")
@@ -32,5 +36,14 @@ dependencies {
   testImplementation("org.mockito:mockito-core:3.6.28")
   testImplementation("org.hamcrest:hamcrest-core:2.2")
   testRuntimeOnly("org.apache.logging.log4j:log4j-slf4j-impl:2.15.0")
+}
+
+// Disabling compatibility check for the test avro definitions.
+tasks.named<org.hypertrace.gradle.avro.CheckAvroCompatibility>("avroCompatibilityCheck") {
+  enabled = false
+}
+
+tasks.named<org.hypertrace.gradle.avro.CheckAvroCompatibility>("avroCompatibilityCheck") {
+  setAgainstFiles(null)
 }
 
