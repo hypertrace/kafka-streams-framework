@@ -6,7 +6,6 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.typesafe.config.ConfigFactory;
 import org.apache.avro.generic.GenericRecord;
-import org.apache.kafka.clients.producer.Partitioner;
 import org.apache.kafka.common.Cluster;
 import org.apache.kafka.common.Node;
 import org.apache.kafka.common.PartitionInfo;
@@ -54,7 +53,7 @@ public class AvroFieldValuePartitionerTest {
 
   @Test
   public void testWithSingleTopic() {
-    Partitioner partitioner = new AvroFieldValuePartitioner();
+    AvroFieldValuePartitioner<GenericRecord> partitioner = new AvroFieldValuePartitioner<>();
     // TOPIC_A: total partitions:8, excluded:{4,5,6,7}, available:{0,1,2,3}
     // default group: weight=25%,  parts:{0}
     // group1: members:{tenant1}, weight=50%, parts:{1,2}
@@ -132,7 +131,7 @@ public class AvroFieldValuePartitionerTest {
 
   @Test
   public void testWithMultipleTopics() {
-    Partitioner partitioner = new AvroFieldValuePartitioner();
+    AvroFieldValuePartitioner<GenericRecord> partitioner = new AvroFieldValuePartitioner<>();
     Map<String, String> streamConfigs = Maps.newHashMap();
 
     // TOPIC_A: total partitions:8, excluded:{4,5,6,7}, available:{0,1,2,3}
@@ -311,7 +310,7 @@ public class AvroFieldValuePartitionerTest {
   private Map<Integer, Integer> produce(
       Cluster testCluster,
       String topic,
-      Partitioner partitioner,
+      AvroFieldValuePartitioner<GenericRecord> partitioner,
       Supplier<GenericRecord> genericRecordSupplier,
       String fieldName,
       String fieldValue,
@@ -321,7 +320,8 @@ public class AvroFieldValuePartitionerTest {
 
     for (int i = 0; i < msgCount; ++i) {
       GenericRecord record = newRecord(genericRecordSupplier, fieldName, fieldValue);
-      topicPartition = partitioner.partition(topic, null, null, record, null, testCluster);
+      topicPartition =
+          partitioner.partition(topic, null, record, testCluster.partitionCountForTopic(topic));
       Integer topicPartitionCount = topicPartitionCounter.get(topicPartition);
       if (null == topicPartitionCount) topicPartitionCount = 0;
       topicPartitionCounter.put(topicPartition, topicPartitionCount + 1);
