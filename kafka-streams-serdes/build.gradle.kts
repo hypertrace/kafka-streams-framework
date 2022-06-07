@@ -14,7 +14,7 @@ dependencies {
   api("org.apache.kafka:kafka-streams:6.0.1-ccs")
   api("org.apache.avro:avro:1.10.2")
   implementation("org.apache.kafka:kafka-clients:6.0.1-ccs")
-  testImplementation("org.junit.jupiter:junit-jupiter:5.7.0")
+  testImplementation("org.junit.jupiter:junit-jupiter:5.8.2")
   constraints {
     api("com.fasterxml.jackson.core:jackson-databind:2.13.2.1") {
       because("Denial of Service (DoS) [Medium Severity][https://snyk.io/vuln/SNYK-JAVA-COMFASTERXMLJACKSONCORE-2326698] in com.fasterxml.jackson.core:jackson-databind@2.12.2\n" +
@@ -29,4 +29,7 @@ dependencies {
 // Disabling compatibility check for the test avro definitions.
 tasks.named<org.hypertrace.gradle.avro.CheckAvroCompatibility>("avroCompatibilityCheck") {
   enabled = false
+}
+repositories {
+  mavenCentral()
 }
