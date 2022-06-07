@@ -49,7 +49,4 @@ dependencies {
 tasks.named<org.hypertrace.gradle.avro.CheckAvroCompatibility>("avroCompatibilityCheck") {
   setAgainstFiles(null)
 }
-repositories {
-  mavenCentral()
-}
 
