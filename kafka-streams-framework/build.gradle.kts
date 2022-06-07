@@ -19,14 +19,21 @@ dependencies {
   api("org.apache.kafka:kafka-streams:6.0.1-ccs")
   api("io.confluent:kafka-streams-avro-serde:6.0.1")
 
+
   implementation("com.google.guava:guava:30.1-jre")
+  implementation("org.apache.kafka:kafka-clients:6.0.1-ccs")
   implementation("org.hypertrace.core.serviceframework:platform-metrics:0.1.31")
   implementation("org.hypertrace.core.serviceframework:platform-service-framework:0.1.31")
-  implementation("org.apache.kafka:kafka-clients:6.0.1-ccs")
 
   constraints {
     api("org.glassfish.jersey.core:jersey-common:2.34") {
       because("https://snyk.io/vuln/SNYK-JAVA-ORGGLASSFISHJERSEYCORE-1255637")
+    }
+
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.13.2.1") {
+      because("Denial of Service (DoS) [High Severity]" +
+              "[https://snyk.io/vuln/SNYK-JAVA-COMFASTERXMLJACKSONCORE-2421244] " +
+              "in com.fasterxml.jackson.core:jackson-databind@2.13.1")
     }
   }
 
@@ -39,10 +46,6 @@ dependencies {
 }
 
 // Disabling compatibility check for the test avro definitions.
-tasks.named<org.hypertrace.gradle.avro.CheckAvroCompatibility>("avroCompatibilityCheck") {
-  enabled = false
-}
-
 tasks.named<org.hypertrace.gradle.avro.CheckAvroCompatibility>("avroCompatibilityCheck") {
   setAgainstFiles(null)
 }

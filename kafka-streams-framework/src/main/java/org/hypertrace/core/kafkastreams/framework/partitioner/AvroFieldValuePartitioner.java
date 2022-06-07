@@ -5,11 +5,10 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Table;
 import com.google.common.util.concurrent.RateLimiter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.kafka.common.Configurable;
 import org.apache.kafka.streams.processor.StreamPartitioner;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Iterator;
 import java.util.List;
@@ -35,9 +34,9 @@ import static org.hypertrace.core.kafkastreams.framework.partitioner.AvroFieldVa
  * avro.field.value.partitioner.default.group.weight = 50
  * </pre>
  */
+@Slf4j
 public class AvroFieldValuePartitioner<V extends GenericRecord>
     implements StreamPartitioner<Object, V>, Configurable {
-  private static final Logger LOG = LoggerFactory.getLogger(AvroFieldValuePartitioner.class);
   // log threshold - once per minute
   private static final RateLimiter LOG_RATE_LIMIER = RateLimiter.create(1 / 60.0);
 
@@ -54,11 +53,11 @@ public class AvroFieldValuePartitioner<V extends GenericRecord>
 
   @Override
   public Integer partition(String topic, Object ignoredKey, V value, int numPartitions) {
-    Integer partition;
+    Integer partition = null;
     String partitionKey = this.getPartitionKeyFromRecord(topic, value).orElse("");
     partition = this.calculatePartition(topic, partitionKey, numPartitions);
     if (LOG_RATE_LIMIER.tryAcquire()) {
-      LOG.info("topic: {}, partition key: {}, partition: {}", topic, partition);
+      log.info("topic: {}, partition key: {}, partition: {}", topic, partitionKey, partition);
     }
     return partition;
   }
@@ -80,7 +79,7 @@ public class AvroFieldValuePartitioner<V extends GenericRecord>
         int fromIndex = (int) (groupConfig.getNormalizedFractionalStart() * totalPartitions);
         int toIndex = (int) (groupConfig.getNormalizedFractionalEnd() * totalPartitions);
         List<Integer> assignedPartitions = availableTopicPartitions.subList(fromIndex, toIndex);
-        LOG.info(
+        log.info(
             "topic: {}, group config: {}, member: {}, available partitions:{}, assigned partitions: {}",
             topic,
             groupConfig,
