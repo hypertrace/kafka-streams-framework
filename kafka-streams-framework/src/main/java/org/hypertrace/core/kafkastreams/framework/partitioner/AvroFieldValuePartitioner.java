@@ -3,10 +3,8 @@ package org.hypertrace.core.kafkastreams.framework.partitioner;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Table;
-import com.google.common.collect.Tables;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.avro.generic.GenericRecord;
-import org.apache.kafka.common.Configurable;
 import org.apache.kafka.streams.processor.StreamPartitioner;
 
 import java.util.Iterator;
@@ -38,13 +36,13 @@ import static org.hypertrace.core.kafkastreams.framework.partitioner.AvroFieldVa
  */
 @Slf4j
 public class AvroFieldValuePartitioner<V extends GenericRecord>
-    implements StreamPartitioner<Object, V>, Configurable {
-  private AvroFieldValuePartitionerConfig partitionerConfig;
-  private final Table<String, AvroFieldValuePartitionerConfig.PartitionGroupConfig, Iterator<Integer>>
-          partitionIteratorByTopicAndGroup = HashBasedTable.create();
+    implements StreamPartitioner<Object, V> {
+  private final AvroFieldValuePartitionerConfig partitionerConfig;
+  private final Table<
+          String, AvroFieldValuePartitionerConfig.PartitionGroupConfig, Iterator<Integer>>
+      partitionIteratorByTopicAndGroup = HashBasedTable.create();
 
-  @Override
-  public void configure(Map<String, ?> configs) {
+  public AvroFieldValuePartitioner(Map<String, ?> configs) {
     this.partitionerConfig = new AvroFieldValuePartitionerConfig(configs);
   }
 
@@ -64,21 +62,21 @@ public class AvroFieldValuePartitioner<V extends GenericRecord>
   private int calculatePartition(String topic, String key, int numPartitions) {
     PartitionGroupConfig groupConfig = this.getPartitionGroup(key);
     if (!this.partitionIteratorByTopicAndGroup.contains(topic, groupConfig)) {
-        List<Integer> availableTopicPartitions =
-            this.getAvailablePartitionsForTopic(topic, numPartitions);
-        int totalPartitions = availableTopicPartitions.size();
-        int fromIndex = (int) (groupConfig.getNormalizedFractionalStart() * totalPartitions);
-        int toIndex = (int) (groupConfig.getNormalizedFractionalEnd() * totalPartitions);
-        List<Integer> assignedPartitions = availableTopicPartitions.subList(fromIndex, toIndex);
-        log.info(
-            "topic: {}, group config: {}, member: {}, available partitions:{}, assigned partitions: {}",
-            topic,
-            groupConfig,
-            key,
-            availableTopicPartitions,
-            assignedPartitions);
-        // Using cyclic iterator
-        Iterator<Integer> partitionIterator = Iterables.cycle(assignedPartitions).iterator();
+      List<Integer> availableTopicPartitions =
+          this.getAvailablePartitionsForTopic(topic, numPartitions);
+      int totalPartitions = availableTopicPartitions.size();
+      int fromIndex = (int) (groupConfig.getNormalizedFractionalStart() * totalPartitions);
+      int toIndex = (int) (groupConfig.getNormalizedFractionalEnd() * totalPartitions);
+      List<Integer> assignedPartitions = availableTopicPartitions.subList(fromIndex, toIndex);
+      log.info(
+          "topic: {}, group config: {}, member: {}, available partitions:{}, assigned partitions: {}",
+          topic,
+          groupConfig,
+          key,
+          availableTopicPartitions,
+          assignedPartitions);
+      // Using cyclic iterator
+      Iterator<Integer> partitionIterator = Iterables.cycle(assignedPartitions).iterator();
       synchronized (partitionIteratorByTopicAndGroup) {
         this.partitionIteratorByTopicAndGroup.put(topic, groupConfig, partitionIterator);
       }
@@ -99,7 +97,8 @@ public class AvroFieldValuePartitioner<V extends GenericRecord>
 
   private List<Integer> getAvailablePartitionsForTopic(String topic, int totalPartitionCount) {
     return IntStream.range(0, totalPartitionCount)
-            .boxed()
-            .filter(not(partitionerConfig.getExcludedPartitionsByTopic().get(topic)::contains))
-            .collect(toUnmodifiableList());  }
+        .boxed()
+        .filter(not(partitionerConfig.getExcludedPartitionsByTopic().get(topic)::contains))
+        .collect(toUnmodifiableList());
+  }
 }

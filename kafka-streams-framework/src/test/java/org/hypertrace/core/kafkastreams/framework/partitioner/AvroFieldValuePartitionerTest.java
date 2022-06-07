@@ -53,7 +53,6 @@ public class AvroFieldValuePartitionerTest {
 
   @Test
   public void testWithSingleTopic() {
-    AvroFieldValuePartitioner<GenericRecord> partitioner = new AvroFieldValuePartitioner<>();
     // TOPIC_A: total partitions:8, excluded:{4,5,6,7}, available:{0,1,2,3}
     // default group: weight=25%,  parts:{0}
     // group1: members:{tenant1}, weight=50%, parts:{1,2}
@@ -68,7 +67,7 @@ public class AvroFieldValuePartitionerTest {
     streamConfigs.put("avro.field.value.partitioner.groups.group2.weight", "25");
     streamConfigs.put("avro.field.value.partitioner.default.group.weight", "25");
 
-    partitioner.configure(streamConfigs);
+    AvroFieldValuePartitioner<GenericRecord> partitioner = new AvroFieldValuePartitioner<>(streamConfigs);
     Map<Integer, Integer> topicPartitionCounter;
 
     // `tenant-1` weight = 50% i.e, 1,2 partitions are assigned to tenant-1
@@ -131,7 +130,6 @@ public class AvroFieldValuePartitionerTest {
 
   @Test
   public void testWithMultipleTopics() {
-    AvroFieldValuePartitioner<GenericRecord> partitioner = new AvroFieldValuePartitioner<>();
     Map<String, String> streamConfigs = Maps.newHashMap();
 
     // TOPIC_A: total partitions:8, excluded:{4,5,6,7}, available:{0,1,2,3}
@@ -154,7 +152,7 @@ public class AvroFieldValuePartitionerTest {
     streamConfigs.put("avro.field.value.partitioner.groups.group2.weight", "25");
     streamConfigs.put("avro.field.value.partitioner.default.group.weight", "25");
 
-    partitioner.configure(streamConfigs);
+    AvroFieldValuePartitioner<GenericRecord> partitioner = new AvroFieldValuePartitioner<>(streamConfigs);
     Map<Integer, Integer> topicPartitionCounter;
 
     // ###############
