@@ -5,9 +5,6 @@ import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.AtomicDouble;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
 import lombok.Value;
 
 import java.util.Collection;
@@ -18,8 +15,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-@NoArgsConstructor
-@Getter
+@Value
 class AvroFieldValuePartitionerConfig {
   private static final Splitter SPLITTER = Splitter.on(",").omitEmptyStrings().trimResults();
 
@@ -40,16 +36,15 @@ class AvroFieldValuePartitionerConfig {
   Map<String, PartitionGroupConfig> groupConfigByMember;
 
   @Value
-  @ToString
   static class PartitionGroupConfig {
     // This represents some range between 0-1 (e.g. 0.6-0.8) that specifies this group's share
     double normalizedFractionalStart;
     double normalizedFractionalEnd;
   }
 
-  public void configure(Map<String, ?> streamConfigMap) {
-    this.fieldNameByTopic = Maps.newHashMap();
-    this.excludedPartitionsByTopic = Maps.newHashMap();
+  public AvroFieldValuePartitionerConfig(Map<String, ?> streamConfigMap) {
+    final Map<String, String> fieldNameByTopic = Maps.newHashMap();
+    final Map<String, Set<Integer>> excludedPartitionsByTopic = Maps.newHashMap();
 
     Map<String, Object> partitionerConfigProps =
         streamConfigMap.entrySet().stream()
@@ -78,6 +73,8 @@ class AvroFieldValuePartitionerConfig {
               excludedPartitionsByTopic.put(topic, excludedPartitions);
             });
 
+    this.fieldNameByTopic = Map.copyOf(fieldNameByTopic);
+    this.excludedPartitionsByTopic = Map.copyOf(excludedPartitionsByTopic);
     double defaultWeight = partitionerConfig.getDouble(DEFAULT_GROUP_WEIGHT);
 
     Config groupsConfig =
@@ -115,14 +112,6 @@ class AvroFieldValuePartitionerConfig {
             .map(Map::entrySet)
             .flatMap(Collection::stream)
             .collect(Collectors.toUnmodifiableMap(Entry::getKey, Entry::getValue));
-  }
-
-  public boolean isTopicConfigured(String topic) {
-    return fieldNameByTopic.containsKey(topic);
-  }
-
-  public String getFieldName(String topic) {
-    return fieldNameByTopic.get(topic);
   }
 
   private static Map<String, PartitionGroupConfig> buildKeyValueMapForConfig(

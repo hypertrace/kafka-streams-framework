@@ -2,9 +2,8 @@ package org.hypertrace.core.kafkastreams.framework.partitioner;
 
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Table;
-import com.google.common.util.concurrent.RateLimiter;
+import com.google.common.collect.Tables;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.kafka.common.Configurable;
@@ -15,7 +14,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.IntStream;
 
+import static java.util.function.Predicate.not;
+import static java.util.stream.Collectors.toUnmodifiableList;
 import static org.hypertrace.core.kafkastreams.framework.partitioner.AvroFieldValuePartitionerConfig.PartitionGroupConfig;
 
 /**
@@ -37,33 +39,23 @@ import static org.hypertrace.core.kafkastreams.framework.partitioner.AvroFieldVa
 @Slf4j
 public class AvroFieldValuePartitioner<V extends GenericRecord>
     implements StreamPartitioner<Object, V>, Configurable {
-  // log threshold - once per minute
-  private static final RateLimiter LOG_RATE_LIMIER = RateLimiter.create(1 / 60.0);
-
-  private AvroFieldValuePartitionerConfig partionerConfig;
-  private Table<String, AvroFieldValuePartitionerConfig.PartitionGroupConfig, Iterator<Integer>>
-      parititonIteratorByTopicAndGroup;
+  private AvroFieldValuePartitionerConfig partitionerConfig;
+  private final Table<String, AvroFieldValuePartitionerConfig.PartitionGroupConfig, Iterator<Integer>>
+          partitionIteratorByTopicAndGroup = HashBasedTable.create();
 
   @Override
   public void configure(Map<String, ?> configs) {
-    this.partionerConfig = new AvroFieldValuePartitionerConfig();
-    this.partionerConfig.configure(configs);
-    this.parititonIteratorByTopicAndGroup = HashBasedTable.create();
+    this.partitionerConfig = new AvroFieldValuePartitionerConfig(configs);
   }
 
   @Override
   public Integer partition(String topic, Object ignoredKey, V value, int numPartitions) {
-    Integer partition = null;
     String partitionKey = this.getPartitionKeyFromRecord(topic, value).orElse("");
-    partition = this.calculatePartition(topic, partitionKey, numPartitions);
-    if (LOG_RATE_LIMIER.tryAcquire()) {
-      log.info("topic: {}, partition key: {}, partition: {}", topic, partitionKey, partition);
-    }
-    return partition;
+    return this.calculatePartition(topic, partitionKey, numPartitions);
   }
 
   private Optional<String> getPartitionKeyFromRecord(String topic, GenericRecord record) {
-    return Optional.ofNullable(partionerConfig.getFieldNameByTopic().get(topic))
+    return Optional.ofNullable(partitionerConfig.getFieldNameByTopic().get(topic))
         .filter(record::hasField)
         .map(record::get)
         .map(Object::toString);
@@ -71,8 +63,7 @@ public class AvroFieldValuePartitioner<V extends GenericRecord>
 
   private int calculatePartition(String topic, String key, int numPartitions) {
     PartitionGroupConfig groupConfig = this.getPartitionGroup(key);
-    if (!this.parititonIteratorByTopicAndGroup.contains(topic, groupConfig)) {
-      synchronized (parititonIteratorByTopicAndGroup) {
+    if (!this.partitionIteratorByTopicAndGroup.contains(topic, groupConfig)) {
         List<Integer> availableTopicPartitions =
             this.getAvailablePartitionsForTopic(topic, numPartitions);
         int totalPartitions = availableTopicPartitions.size();
@@ -88,30 +79,27 @@ public class AvroFieldValuePartitioner<V extends GenericRecord>
             assignedPartitions);
         // Using cyclic iterator
         Iterator<Integer> partitionIterator = Iterables.cycle(assignedPartitions).iterator();
-        this.parititonIteratorByTopicAndGroup.put(topic, groupConfig, partitionIterator);
+      synchronized (partitionIteratorByTopicAndGroup) {
+        this.partitionIteratorByTopicAndGroup.put(topic, groupConfig, partitionIterator);
       }
     }
 
     Iterator<Integer> iterator =
-        Objects.requireNonNull(this.parititonIteratorByTopicAndGroup.get(topic, groupConfig));
+        Objects.requireNonNull(this.partitionIteratorByTopicAndGroup.get(topic, groupConfig));
     synchronized (iterator) {
       return iterator.next();
     }
   }
 
   private PartitionGroupConfig getPartitionGroup(String key) {
-    return this.partionerConfig
+    return this.partitionerConfig
         .getGroupConfigByMember()
-        .getOrDefault(key, this.partionerConfig.getDefaultGroupConfig());
+        .getOrDefault(key, this.partitionerConfig.getDefaultGroupConfig());
   }
 
   private List<Integer> getAvailablePartitionsForTopic(String topic, int totalPartitionCount) {
-    List<Integer> availablePartitions = Lists.newArrayList();
-    for (int i = 0; i < totalPartitionCount; i++) {
-      if (!partionerConfig.getExcludedPartitionsByTopic().get(topic).contains(i)) {
-        availablePartitions.add(i);
-      }
-    }
-    return availablePartitions;
-  }
+    return IntStream.range(0, totalPartitionCount)
+            .boxed()
+            .filter(not(partitionerConfig.getExcludedPartitionsByTopic().get(topic)::contains))
+            .collect(toUnmodifiableList());  }
 }

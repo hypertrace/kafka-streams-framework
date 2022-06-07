@@ -19,8 +19,8 @@ dependencies {
   api("org.apache.kafka:kafka-streams:6.0.1-ccs")
   api("io.confluent:kafka-streams-avro-serde:6.0.1")
 
-
   implementation("com.google.guava:guava:30.1-jre")
+  implementation("org.apache.avro:avro:1.10.2")
   implementation("org.apache.kafka:kafka-clients:6.0.1-ccs")
   implementation("org.hypertrace.core.serviceframework:platform-metrics:0.1.31")
   implementation("org.hypertrace.core.serviceframework:platform-service-framework:0.1.31")

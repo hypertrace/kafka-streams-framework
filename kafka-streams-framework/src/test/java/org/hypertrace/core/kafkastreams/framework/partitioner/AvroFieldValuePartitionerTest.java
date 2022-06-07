@@ -276,8 +276,7 @@ public class AvroFieldValuePartitionerTest {
     properties.put("other.stream.config.key", "value");
     properties.put("jobConfig", ConfigFactory.empty());
 
-    AvroFieldValuePartitionerConfig config = new AvroFieldValuePartitionerConfig();
-    config.configure(properties);
+    AvroFieldValuePartitionerConfig config = new AvroFieldValuePartitionerConfig(properties);
 
     assertEquals(2, config.getExcludedPartitionsByTopic().size());
     assertEquals("customer_id", config.getFieldNameByTopic().get("topic1"));
@@ -297,8 +296,7 @@ public class AvroFieldValuePartitionerTest {
     properties.put("avro.field.value.partitioner.topics.topic2.field.name", "tenant_id");
     properties.put("avro.field.value.partitioner.default.group.weight", "50");
 
-    AvroFieldValuePartitionerConfig config = new AvroFieldValuePartitionerConfig();
-    config.configure(properties);
+    AvroFieldValuePartitionerConfig config = new AvroFieldValuePartitionerConfig(properties);
 
     assertEquals(2, config.getExcludedPartitionsByTopic().size());
     assertEquals("customer_id", config.getFieldNameByTopic().get("topic1"));
