@@ -7,7 +7,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.KStream;
 import org.hypertrace.core.serviceframework.config.ConfigClient;
@@ -23,7 +22,7 @@ public abstract class ConsolidatedKafkaStreamsApp extends KafkaStreamsApp {
   static final String ENV_POD_NAME_KEY = "pod.name";
   static final String ENV_CONTAINER_NAME_KEY = "container.name";
 
-  private Map<String, Pair<String, KafkaStreamsApp>> jobNameToSubTopology = new HashMap<>();
+  private final Map<String, SubTopologyKStreamApp> jobNameToSubTopologyKStreamApp = new HashMap<>();
 
   public ConsolidatedKafkaStreamsApp(
       ConfigClient configClient) {
@@ -46,16 +45,16 @@ public abstract class ConsolidatedKafkaStreamsApp extends KafkaStreamsApp {
   }
 
   public void doStop() {
-    jobNameToSubTopology.values()
-        .forEach(pair -> pair.getRight().doCleanUpForConsolidatedDeployment());
+    jobNameToSubTopologyKStreamApp.values()
+        .forEach(subTopologyKStreamApp -> subTopologyKStreamApp.getInstance().doCleanUpForConsolidatedKStreamApp());
     super.doStop();
   }
 
   @Override
   public List<String> getInputTopics(Map<String, Object> properties) {
     Set<String> inputTopics = new HashSet<>();
-    for (Map.Entry<String, Pair<String, KafkaStreamsApp>> entry : jobNameToSubTopology.entrySet()) {
-      List<String> subTopologyInputTopics = entry.getValue().getRight().getInputTopics(properties);
+    for (Map.Entry<String, SubTopologyKStreamApp> entry : jobNameToSubTopologyKStreamApp.entrySet()) {
+      List<String> subTopologyInputTopics = entry.getValue().getInstance().getInputTopics(properties);
       inputTopics.addAll(subTopologyInputTopics);
     }
     return new ArrayList<>(inputTopics);
@@ -64,8 +63,8 @@ public abstract class ConsolidatedKafkaStreamsApp extends KafkaStreamsApp {
   @Override
   public List<String> getOutputTopics(Map<String, Object> properties) {
     Set<String> outputTopics = new HashSet<>();
-    for (Map.Entry<String, Pair<String, KafkaStreamsApp>> entry : jobNameToSubTopology.entrySet()) {
-      List<String> subTopologyOutputTopics = entry.getValue().getRight()
+    for (Map.Entry<String, SubTopologyKStreamApp> entry : jobNameToSubTopologyKStreamApp.entrySet()) {
+      List<String> subTopologyOutputTopics = entry.getValue().getInstance()
           .getOutputTopics(properties);
       outputTopics.addAll(subTopologyOutputTopics);
     }
@@ -81,7 +80,8 @@ public abstract class ConsolidatedKafkaStreamsApp extends KafkaStreamsApp {
       Map<String, KStream<?, ?>> inputStreams) {
     // create an instance and retains is reference to be used later in other methods
     KafkaStreamsApp subTopology = getSubTopologyInstance(subTopologyName);
-    jobNameToSubTopology.put(subTopologyName, Pair.of(subTopology.getJobConfigKey(), subTopology));
+    jobNameToSubTopologyKStreamApp
+        .put(subTopologyName, new SubTopologyKStreamApp (subTopology.getJobConfigKey(), subTopology));
 
     // need to use its own copy as input/output topics are different
     Config subTopologyJobConfig = getSubJobConfig(subTopologyName);
@@ -101,13 +101,14 @@ public abstract class ConsolidatedKafkaStreamsApp extends KafkaStreamsApp {
     addProperties(properties, flattenSubTopologyConfig);
 
     // initialize any dependencies
-    subTopology.doInitForConsolidatedDeployment(subTopologyJobConfig);
+    subTopology.doInitForConsolidatedKStreamApp(subTopologyJobConfig);
 
     // build the sub-topology
     streamsBuilder = subTopology.buildTopology(properties, streamsBuilder, inputStreams);
 
     // retain per job key and its topology
-    jobNameToSubTopology.put(subTopologyName, Pair.of(subTopology.getJobConfigKey(), subTopology));
+    jobNameToSubTopologyKStreamApp
+        .put(subTopologyName, new SubTopologyKStreamApp (subTopology.getJobConfigKey(), subTopology));
     return streamsBuilder;
   }
 
@@ -134,6 +135,25 @@ public abstract class ConsolidatedKafkaStreamsApp extends KafkaStreamsApp {
             baseProps.put(k, v);
           }
         });
+  }
+
+  static class SubTopologyKStreamApp {
+    private final String subTopologyName;
+    private final KafkaStreamsApp instance;
+
+    public SubTopologyKStreamApp(String subTopologyName,
+        KafkaStreamsApp instance) {
+      this.subTopologyName = subTopologyName;
+      this.instance = instance;
+    }
+
+    public String getSubTopologyName() {
+      return subTopologyName;
+    }
+
+    public KafkaStreamsApp getInstance() {
+      return instance;
+    }
   }
 
 }

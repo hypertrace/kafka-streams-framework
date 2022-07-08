@@ -145,12 +145,12 @@ public abstract class KafkaStreamsApp extends PlatformService {
    * Any dependencies that need to be initialized need to be done here
    * @param subTopologyJobConfig
    */
-  protected void doInitForConsolidatedDeployment(Config subTopologyJobConfig){}
+  protected void doInitForConsolidatedKStreamApp(Config subTopologyJobConfig){}
 
   /**
    * Cleanup any dependencies before the {@link ConsolidatedKafkaStreamsApp#doStop()} is invoked
    */
-  protected void doCleanUpForConsolidatedDeployment(){}
+  protected void doCleanUpForConsolidatedKStreamApp(){}
 
   @Override
   public boolean healthCheck() {

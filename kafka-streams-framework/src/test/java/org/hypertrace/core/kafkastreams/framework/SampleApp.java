@@ -17,11 +17,11 @@ public class SampleApp extends KafkaStreamsApp {
   }
 
   @Override
-  protected void doInitForConsolidatedDeployment(Config subTopologyJobConfig) {
+  protected void doInitForConsolidatedKStreamApp(Config subTopologyJobConfig) {
   }
 
   @Override
-  protected void doCleanUpForConsolidatedDeployment() {
+  protected void doCleanUpForConsolidatedKStreamApp() {
   }
 
   @Override
