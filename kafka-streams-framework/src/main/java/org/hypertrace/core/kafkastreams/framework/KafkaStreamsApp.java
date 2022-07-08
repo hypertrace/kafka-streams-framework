@@ -140,6 +140,18 @@ public abstract class KafkaStreamsApp extends PlatformService {
     app.close(Duration.ofSeconds(30));
   }
 
+  /**
+   * This method is invoked just before a subtopology is created
+   * Any dependencies that need to be initialized need to be done here
+   * @param subTopologyJobConfig
+   */
+  protected void doInitForConsolidatedKStreamApp(Config subTopologyJobConfig){}
+
+  /**
+   * Cleanup any dependencies before the {@link ConsolidatedKafkaStreamsApp#doStop()} is invoked
+   */
+  protected void doCleanUpForConsolidatedKStreamApp(){}
+
   @Override
   public boolean healthCheck() {
     return app.state().isRunningOrRebalancing();
