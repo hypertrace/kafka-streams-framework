@@ -1,6 +1,7 @@
 package org.hypertrace.core.kafkastreams.framework;
 
 
+import com.typesafe.config.Config;
 import java.util.Map;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.KStream;
@@ -13,6 +14,14 @@ public class SampleApp extends KafkaStreamsApp {
 
   public SampleApp(ConfigClient configClient) {
     super(configClient);
+  }
+
+  @Override
+  protected void doInitForConsolidatedDeployment(Config subTopologyJobConfig) {
+  }
+
+  @Override
+  protected void doCleanUpForConsolidatedDeployment() {
   }
 
   @Override
