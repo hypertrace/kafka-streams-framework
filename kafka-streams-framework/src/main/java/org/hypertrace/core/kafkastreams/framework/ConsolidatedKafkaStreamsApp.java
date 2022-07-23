@@ -18,9 +18,7 @@ import org.hypertrace.core.serviceframework.config.ConfigUtils;
 public abstract class ConsolidatedKafkaStreamsApp extends KafkaStreamsApp {
 
   static final String SUB_TOPOLOGY_NAMES_CONFIG_KEY = "sub.topology.names";
-  static final String ENV_CLUSTER_NAME_KEY = "cluster.name";
-  static final String ENV_POD_NAME_KEY = "pod.name";
-  static final String ENV_CONTAINER_NAME_KEY = "container.name";
+  static final String CONFIG_OVERRIDES = "overrides";
 
   private final Map<String, SubTopologyKStreamApp> jobNameToSubTopologyKStreamApp = new HashMap<>();
 
@@ -119,9 +117,9 @@ public abstract class ConsolidatedKafkaStreamsApp extends KafkaStreamsApp {
   private Config getSubJobConfig(String jobName) {
     return configClient.getConfig(
         jobName,
-        ConfigUtils.getEnvironmentProperty(ENV_CLUSTER_NAME_KEY),
-        ConfigUtils.getEnvironmentProperty(ENV_POD_NAME_KEY),
-        ConfigUtils.getEnvironmentProperty(ENV_CONTAINER_NAME_KEY));
+        CONFIG_OVERRIDES,
+        null,
+        null);
   }
 
   private Config getJobConfig(Map<String, Object> properties) {

@@ -52,3 +52,13 @@ tasks.named<org.hypertrace.gradle.avro.CheckAvroCompatibility>("avroCompatibilit
   setAgainstFiles(null)
 }
 
+if(project.hasProperty("includeSource")) {
+  tasks {
+    withType<Jar> {
+      from(sourceSets["main"].allSource)
+      duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    }
+  }
+}
+
+
