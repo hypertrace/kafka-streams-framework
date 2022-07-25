@@ -22,8 +22,8 @@ dependencies {
   implementation("com.google.guava:guava:31.1-jre")
   implementation("org.apache.avro:avro:1.10.2")
   implementation("org.apache.kafka:kafka-clients:6.0.1-ccs")
-  implementation("org.hypertrace.core.serviceframework:platform-metrics:0.1.31")
-  implementation("org.hypertrace.core.serviceframework:platform-service-framework:0.1.31")
+  implementation("org.hypertrace.core.serviceframework:platform-metrics:0.1.39")
+  implementation("org.hypertrace.core.serviceframework:platform-service-framework:0.1.39")
   implementation("org.apache.commons:commons-lang3:3.12.0")
 
 
@@ -51,4 +51,14 @@ dependencies {
 tasks.named<org.hypertrace.gradle.avro.CheckAvroCompatibility>("avroCompatibilityCheck") {
   setAgainstFiles(null)
 }
+
+if(project.hasProperty("includeSource")) {
+  tasks {
+    withType<Jar> {
+      from(sourceSets["main"].allSource)
+      duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    }
+  }
+}
+
 
