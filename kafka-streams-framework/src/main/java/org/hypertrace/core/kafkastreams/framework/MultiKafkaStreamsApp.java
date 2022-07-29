@@ -6,20 +6,20 @@ import java.util.List;
 import org.hypertrace.core.serviceframework.PlatformService;
 import org.hypertrace.core.serviceframework.config.ConfigClient;
 
-public abstract class MultiKafkaStreamInstanceApp extends PlatformService {
+public abstract class MultiKafkaStreamsApp extends PlatformService {
 
-  static final String SUB_TOPOLOGY_NAMES_CONFIG_KEY = "sub.topology.names";
+  private static final String STREAMS_APPS = "streams.apps";
 
   private final List<KafkaStreamsApp> appsList = new ArrayList<>();
 
-  public MultiKafkaStreamInstanceApp(ConfigClient configClient) {
+  public MultiKafkaStreamsApp(ConfigClient configClient) {
     super(configClient);
   }
 
   @Override
   protected void doInit() {
     Config appConfig = getAppConfig();
-    List<String> apps = appConfig.getStringList(SUB_TOPOLOGY_NAMES_CONFIG_KEY);
+    List<String> apps = appConfig.getStringList(STREAMS_APPS);
     for (String app : apps) {
       appsList.add(getSubTopologyInstance(app));
     }

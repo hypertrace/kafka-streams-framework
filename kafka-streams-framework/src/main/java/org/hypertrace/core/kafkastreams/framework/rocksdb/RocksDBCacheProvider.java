@@ -45,9 +45,11 @@ public class RocksDBCacheProvider {
 
   private static final Logger LOG = LoggerFactory.getLogger(RocksDBCacheProvider.class);
 
+  public static final String APPLICATION_ID = "application.id";
+
   private static final RocksDBCacheProvider PROVIDER = new RocksDBCacheProvider();
 
-  private final ConcurrentMap<String, CacheWrapper> cacheConfigPerApplicationId = new ConcurrentHashMap<>();
+  private final ConcurrentMap<String, CacheWrapper> applicationCaches = new ConcurrentHashMap<>();
 
   /**
    * Singleton
@@ -61,12 +63,12 @@ public class RocksDBCacheProvider {
   }
 
   private CacheWrapper getCacheWrapper(String applicationId) {
-    return cacheConfigPerApplicationId.computeIfAbsent(applicationId,
+    return applicationCaches.computeIfAbsent(applicationId,
         s -> new CacheWrapper());
   }
 
   protected synchronized void initCache(Options options, Map<String, Object> configs) {
-    String applicationId = (String) configs.get("application.id");
+    String applicationId = (String) configs.get(APPLICATION_ID);
     CacheWrapper cacheWrapper = getCacheWrapper(applicationId);
 
     if (cacheWrapper.cache == null) {
@@ -159,7 +161,7 @@ public class RocksDBCacheProvider {
 
   @VisibleForTesting
   protected void testDestroy() {
-    for (CacheWrapper cacheWrapper : cacheConfigPerApplicationId.values()) {
+    for (CacheWrapper cacheWrapper : applicationCaches.values()) {
       if (cacheWrapper.writeBufferManager != null) {
         cacheWrapper.writeBufferManager.close();
         cacheWrapper.writeBufferManager = null;
