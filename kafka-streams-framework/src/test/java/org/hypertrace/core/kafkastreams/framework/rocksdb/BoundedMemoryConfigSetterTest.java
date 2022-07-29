@@ -41,6 +41,7 @@ class BoundedMemoryConfigSetterTest {
     RocksDBCacheProvider.get().testDestroy();
     options = new Options();
     configs = new HashMap<>();
+    configs.put("application.id", "test-app");
     tableConfig = new BlockBasedTableConfig();
     options.setTableFormatConfig(tableConfig);
     configSetter = new BoundedMemoryConfigSetter();
@@ -106,7 +107,7 @@ class BoundedMemoryConfigSetterTest {
   public void testInvalidCacheRatioConfigs(Map<String, Object> invalidConfigs) {
     assertThrows(ConfigException.class, () -> {
       configs.putAll(invalidConfigs);
-      configSetter.setConfig(storeName, options, invalidConfigs);
+      configSetter.setConfig(storeName, options, configs);
       assertEquals(options.useDirectReads(), true);
     });
   }
