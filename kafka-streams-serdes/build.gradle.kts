@@ -12,7 +12,7 @@ tasks.test {
 
 dependencies {
   api("org.apache.kafka:kafka-streams:6.0.1-ccs")
-  api("org.apache.avro:avro:1.10.2")
+  api("org.apache.avro:avro:1.11.0")
   implementation("org.apache.kafka:kafka-clients:6.0.1-ccs")
   testImplementation("org.junit.jupiter:junit-jupiter:5.8.2")
   constraints {
