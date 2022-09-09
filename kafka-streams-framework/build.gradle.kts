@@ -38,7 +38,7 @@ tasks.named<org.hypertrace.gradle.avro.CheckAvroCompatibility>("avroCompatibilit
   setAgainstFiles(null)
 }
 
-if(project.hasProperty("includeSource")) {
+if (project.hasProperty("includeSource")) {
   tasks {
     withType<Jar> {
       from(sourceSets["main"].allSource)
@@ -46,5 +46,3 @@ if(project.hasProperty("includeSource")) {
     }
   }
 }
-
-

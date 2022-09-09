@@ -53,10 +53,12 @@ public class SampleAppTest {
 
   @Test
   public void shouldIncludeValueWithLengthGreaterThanFive() {
-    inputTopic = td.createInputTopic(SampleApp.INPUT_TOPIC, Serdes.String().serializer(),
-        Serdes.String().serializer());
-    outputTopic = td.createOutputTopic(SampleApp.OUTPUT_TOPIC, Serdes.String().deserializer(),
-        Serdes.String().deserializer());
+    inputTopic =
+        td.createInputTopic(
+            SampleApp.INPUT_TOPIC, Serdes.String().serializer(), Serdes.String().serializer());
+    outputTopic =
+        td.createOutputTopic(
+            SampleApp.OUTPUT_TOPIC, Serdes.String().deserializer(), Serdes.String().deserializer());
 
     assertThat(outputTopic.isEmpty(), is(true));
 
@@ -71,13 +73,14 @@ public class SampleAppTest {
   @Test
   public void baseStreamsConfigTest() {
     Map<String, Object> baseStreamsConfig = sampleApp.getBaseStreamsConfig();
-    assertThat(baseStreamsConfig.get(ROCKSDB_CONFIG_SETTER_CLASS_CONFIG), is(
-        BoundedMemoryConfigSetter.class));
-    assertThat(baseStreamsConfig.get(DEFAULT_KEY_SERDE_CLASS_CONFIG), is(
-        SpecificAvroSerde.class));
-    assertThat(baseStreamsConfig.get(DEFAULT_VALUE_SERDE_CLASS_CONFIG), is(
-        SpecificAvroSerde.class));
-    assertThat(baseStreamsConfig.get(DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG),
+    assertThat(
+        baseStreamsConfig.get(ROCKSDB_CONFIG_SETTER_CLASS_CONFIG),
+        is(BoundedMemoryConfigSetter.class));
+    assertThat(baseStreamsConfig.get(DEFAULT_KEY_SERDE_CLASS_CONFIG), is(SpecificAvroSerde.class));
+    assertThat(
+        baseStreamsConfig.get(DEFAULT_VALUE_SERDE_CLASS_CONFIG), is(SpecificAvroSerde.class));
+    assertThat(
+        baseStreamsConfig.get(DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG),
         is(LogAndContinueExceptionHandler.class));
     assertThat(baseStreamsConfig.get(producerPrefix(ACKS_CONFIG)), is("all"));
   }

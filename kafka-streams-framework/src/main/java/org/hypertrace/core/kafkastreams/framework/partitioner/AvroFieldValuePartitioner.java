@@ -1,22 +1,21 @@
 package org.hypertrace.core.kafkastreams.framework.partitioner;
 
+import static java.util.function.Predicate.not;
+import static java.util.stream.Collectors.toUnmodifiableList;
+import static org.hypertrace.core.kafkastreams.framework.partitioner.AvroFieldValuePartitionerConfig.PartitionGroupConfig;
+
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Table;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.avro.generic.GenericRecord;
-import org.apache.kafka.streams.processor.StreamPartitioner;
-
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.IntStream;
-
-import static java.util.function.Predicate.not;
-import static java.util.stream.Collectors.toUnmodifiableList;
-import static org.hypertrace.core.kafkastreams.framework.partitioner.AvroFieldValuePartitionerConfig.PartitionGroupConfig;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.avro.generic.GenericRecord;
+import org.apache.kafka.streams.processor.StreamPartitioner;
 
 /**
  * Example config:

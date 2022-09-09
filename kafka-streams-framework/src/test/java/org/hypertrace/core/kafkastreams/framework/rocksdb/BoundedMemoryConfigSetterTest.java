@@ -20,7 +20,6 @@ import org.apache.kafka.common.config.ConfigException;
 import org.apache.kafka.streams.state.RocksDBConfigSetter;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.rocksdb.BlockBasedTableConfig;
@@ -58,8 +57,8 @@ class BoundedMemoryConfigSetterTest {
     configs.put(APPLICATION_ID, config.get(APPLICATION_ID));
     configs.put(BLOCK_SIZE, config.get(BLOCK_SIZE));
     configSetter.setConfig(storeName, options, configs);
-    assertEquals(((BlockBasedTableConfig) options.tableFormatConfig()).blockSize(),
-        config.get(BLOCK_SIZE));
+    assertEquals(
+        ((BlockBasedTableConfig) options.tableFormatConfig()).blockSize(), config.get(BLOCK_SIZE));
     configSetter.close(storeName, options);
   }
 
@@ -84,8 +83,8 @@ class BoundedMemoryConfigSetterTest {
   public void testSetConfigCompactionStyle(Map<String, Object> config) {
     configs.putAll(config);
     configSetter.setConfig(storeName, options, configs);
-    assertEquals(options.compactionStyle(),
-        CompactionStyle.valueOf((String) configs.get(COMPACTION_STYLE)));
+    assertEquals(
+        options.compactionStyle(), CompactionStyle.valueOf((String) configs.get(COMPACTION_STYLE)));
   }
 
   @ParameterizedTest
@@ -93,7 +92,8 @@ class BoundedMemoryConfigSetterTest {
   public void testSetConfigLogLevel(Map<String, Object> config) {
     configs.putAll(config);
     configSetter.setConfig(storeName, options, configs);
-    assertEquals(options.infoLogLevel(), InfoLogLevel.valueOf((String) configs.get(LOG_LEVEL_CONFIG) ));
+    assertEquals(
+        options.infoLogLevel(), InfoLogLevel.valueOf((String) configs.get(LOG_LEVEL_CONFIG)));
   }
 
   @ParameterizedTest
@@ -115,13 +115,14 @@ class BoundedMemoryConfigSetterTest {
   @ParameterizedTest
   @MethodSource("invalidCacheRatioProvider")
   public void testInvalidCacheRatioConfigs(Map<String, Object> invalidConfigs) {
-    assertThrows(ConfigException.class, () -> {
-      configs.putAll(invalidConfigs);
-      configSetter.setConfig(storeName, options, configs);
-      assertEquals(options.useDirectReads(), true);
-    });
+    assertThrows(
+        ConfigException.class,
+        () -> {
+          configs.putAll(invalidConfigs);
+          configSetter.setConfig(storeName, options, configs);
+          assertEquals(options.useDirectReads(), true);
+        });
   }
-
 
   // Data provider for negative tests
   static Stream<Map<String, Object>> invalidCacheRatioProvider() {
@@ -130,38 +131,67 @@ class BoundedMemoryConfigSetterTest {
         Map.of(CACHE_WRITE_BUFFERS_RATIO, 1.1, APPLICATION_ID, "app-2"),
         Map.of(CACHE_HIGH_PRIORITY_POOL_RATIO, -0.1, APPLICATION_ID, "app-3"),
         Map.of(CACHE_HIGH_PRIORITY_POOL_RATIO, 1.1, APPLICATION_ID, "app-2"),
-        Map.of(CACHE_WRITE_BUFFERS_RATIO, 0.9, CACHE_HIGH_PRIORITY_POOL_RATIO, 0.2, APPLICATION_ID, "app-5")
-    );
+        Map.of(
+            CACHE_WRITE_BUFFERS_RATIO,
+            0.9,
+            CACHE_HIGH_PRIORITY_POOL_RATIO,
+            0.2,
+            APPLICATION_ID,
+            "app-5"));
   }
 
   static Stream<Map<String, Object>> configProvider() {
     return Stream.of(
         Map.of(
-            APPLICATION_ID, "app-1",
-            BLOCK_SIZE, 8388608L,
-            WRITE_BUFFER_SIZE, 8388608L,
-            COMPRESSION_TYPE, "SNAPPY_COMPRESSION",
-            COMPACTION_STYLE, CompactionStyle.LEVEL.toString(),
-            LOG_LEVEL_CONFIG, InfoLogLevel.INFO_LEVEL.toString(),
-            MAX_WRITE_BUFFERS, 2,
-            DIRECT_READS_ENABLED, true),
+            APPLICATION_ID,
+            "app-1",
+            BLOCK_SIZE,
+            8388608L,
+            WRITE_BUFFER_SIZE,
+            8388608L,
+            COMPRESSION_TYPE,
+            "SNAPPY_COMPRESSION",
+            COMPACTION_STYLE,
+            CompactionStyle.LEVEL.toString(),
+            LOG_LEVEL_CONFIG,
+            InfoLogLevel.INFO_LEVEL.toString(),
+            MAX_WRITE_BUFFERS,
+            2,
+            DIRECT_READS_ENABLED,
+            true),
         Map.of(
-            APPLICATION_ID, "app-2",
-            BLOCK_SIZE, 8388609L,
-            WRITE_BUFFER_SIZE, 8388607L,
-            COMPRESSION_TYPE, "SNAPPY_COMPRESSION",
-            COMPACTION_STYLE, CompactionStyle.UNIVERSAL.toString(),
-            LOG_LEVEL_CONFIG, InfoLogLevel.DEBUG_LEVEL.toString(),
-            MAX_WRITE_BUFFERS, 3,
-            DIRECT_READS_ENABLED, true),
-        Map.of(APPLICATION_ID, "app-3",
-            BLOCK_SIZE, 8388607L,
-            WRITE_BUFFER_SIZE, 8388609L,
-            COMPRESSION_TYPE, "SNAPPY_COMPRESSION",
-            COMPACTION_STYLE, CompactionStyle.FIFO.toString(),
-            LOG_LEVEL_CONFIG, InfoLogLevel.ERROR_LEVEL.toString(),
-            MAX_WRITE_BUFFERS, 4,
-            DIRECT_READS_ENABLED, false)
-    );
+            APPLICATION_ID,
+            "app-2",
+            BLOCK_SIZE,
+            8388609L,
+            WRITE_BUFFER_SIZE,
+            8388607L,
+            COMPRESSION_TYPE,
+            "SNAPPY_COMPRESSION",
+            COMPACTION_STYLE,
+            CompactionStyle.UNIVERSAL.toString(),
+            LOG_LEVEL_CONFIG,
+            InfoLogLevel.DEBUG_LEVEL.toString(),
+            MAX_WRITE_BUFFERS,
+            3,
+            DIRECT_READS_ENABLED,
+            true),
+        Map.of(
+            APPLICATION_ID,
+            "app-3",
+            BLOCK_SIZE,
+            8388607L,
+            WRITE_BUFFER_SIZE,
+            8388609L,
+            COMPRESSION_TYPE,
+            "SNAPPY_COMPRESSION",
+            COMPACTION_STYLE,
+            CompactionStyle.FIFO.toString(),
+            LOG_LEVEL_CONFIG,
+            InfoLogLevel.ERROR_LEVEL.toString(),
+            MAX_WRITE_BUFFERS,
+            4,
+            DIRECT_READS_ENABLED,
+            false));
   }
 }

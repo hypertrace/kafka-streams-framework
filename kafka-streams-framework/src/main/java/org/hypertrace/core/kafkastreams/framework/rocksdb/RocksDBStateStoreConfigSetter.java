@@ -11,8 +11,8 @@ import org.rocksdb.InfoLogLevel;
 import org.rocksdb.Options;
 
 /**
- * Replaced with org.hypertrace.core.kafkastreams.framework.rocksdb.BoundedMemoryConfigSetter
- * This class will be deleted in future versions of the framework.
+ * Replaced with org.hypertrace.core.kafkastreams.framework.rocksdb.BoundedMemoryConfigSetter This
+ * class will be deleted in future versions of the framework.
  */
 @Deprecated
 public class RocksDBStateStoreConfigSetter implements RocksDBConfigSetter {
@@ -56,8 +56,8 @@ public class RocksDBStateStoreConfigSetter implements RocksDBConfigSetter {
     options.setTableFormatConfig(tableConfig);
 
     if (configs.containsKey(MAX_WRITE_BUFFERS)) {
-      options
-          .setMaxWriteBufferNumber(Integer.valueOf(String.valueOf(configs.get(MAX_WRITE_BUFFERS))));
+      options.setMaxWriteBufferNumber(
+          Integer.valueOf(String.valueOf(configs.get(MAX_WRITE_BUFFERS))));
     }
 
     if (configs.containsKey(WRITE_BUFFER_SIZE)) {
@@ -82,12 +82,12 @@ public class RocksDBStateStoreConfigSetter implements RocksDBConfigSetter {
     }
 
     if (configs.containsKey(OPTIMIZE_FOR_POINT_LOOKUPS)) {
-      Boolean optimizeForPointLookups = Boolean
-          .valueOf(String.valueOf(configs.get(OPTIMIZE_FOR_POINT_LOOKUPS)));
+      Boolean optimizeForPointLookups =
+          Boolean.valueOf(String.valueOf(configs.get(OPTIMIZE_FOR_POINT_LOOKUPS)));
       if (optimizeForPointLookups) {
         long blockCacheSizeMb =
-            ((BlockBasedTableConfig) options.tableFormatConfig()).blockCacheSize() / (1024L
-                * 1024L);
+            ((BlockBasedTableConfig) options.tableFormatConfig()).blockCacheSize()
+                / (1024L * 1024L);
         options.optimizeForPointLookup(blockCacheSizeMb);
       }
     }

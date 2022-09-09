@@ -11,8 +11,8 @@ public class RocksDBConfigs {
 
   public static final String CACHE_WRITE_BUFFERS_RATIO = rocksdbPrefix("cache.write.buffers.ratio");
   public static final Double DEFAULT_CACHE_WRITE_BUFFERS_RATIO = 0.4;
-  public static final String CACHE_HIGH_PRIORITY_POOL_RATIO = rocksdbPrefix(
-      "cache.high.priority.pool.ratio");
+  public static final String CACHE_HIGH_PRIORITY_POOL_RATIO =
+      rocksdbPrefix("cache.high.priority.pool.ratio");
   public static final Double DEFAULT_CACHE_HIGH_PRIORITY_POOL_RATIO = 0.2;
 
   // ####### Block Cache (Read cache) #######

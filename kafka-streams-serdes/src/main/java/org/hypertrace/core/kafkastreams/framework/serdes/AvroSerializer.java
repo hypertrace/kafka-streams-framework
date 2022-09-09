@@ -13,7 +13,7 @@ public class AvroSerializer<T extends SpecificRecordBase> implements Serializer<
 
   @Override
   public byte[] serialize(String topic, T data) {
-    if(data == null) {
+    if (data == null) {
       return new byte[0];
     }
 

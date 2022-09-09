@@ -23,20 +23,23 @@ public class LoggingStateRestoreListener implements StateRestoreListener {
     long toRestore = end - start;
     totalToRestore.put(topicPartition, toRestore);
     startTimes.put(topicPartition, System.currentTimeMillis());
-    LOGGER
-        .info("Starting restoration for [{}] on topic-partition [{}] total to restore [{}]", store,
-            topicPartition, toRestore);
+    LOGGER.info(
+        "Starting restoration for [{}] on topic-partition [{}] total to restore [{}]",
+        store,
+        topicPartition,
+        toRestore);
   }
 
   @Override
-  public void onBatchRestored(TopicPartition topicPartition, String store, long start,
-      long batchCompleted) {
+  public void onBatchRestored(
+      TopicPartition topicPartition, String store, long start, long batchCompleted) {
     NumberFormat formatter = new DecimalFormat("#.##");
 
     long currentProgress = batchCompleted + restoredSoFar.getOrDefault(topicPartition, 0L);
     double percentComplete = (double) currentProgress / totalToRestore.get(topicPartition);
 
-    LOGGER.info("Completed [{}] for [{}]% of total restoration for [{}] on [{}]",
+    LOGGER.info(
+        "Completed [{}] for [{}]% of total restoration for [{}] on [{}]",
         batchCompleted, formatter.format(percentComplete * 100.00), store, topicPartition);
     restoredSoFar.put(topicPartition, currentProgress);
   }
@@ -46,7 +49,9 @@ public class LoggingStateRestoreListener implements StateRestoreListener {
     long startTs = startTimes.remove(topicPartition);
     LOGGER.info(
         "Restoration completed for [{}] on topic-partition [{}]. Total restored [{}] records. Duration [{}]",
-        store, topicPartition, totalRestored,
+        store,
+        topicPartition,
+        totalRestored,
         Duration.between(Instant.ofEpochMilli(startTs), Instant.now()));
     restoredSoFar.remove(topicPartition);
     totalToRestore.remove(topicPartition);

@@ -15,14 +15,16 @@ public class Service1 extends KafkaStreamsApp {
   }
 
   @Override
-  public StreamsBuilder buildTopology(Map<String, Object> streamsConfig,
-      StreamsBuilder streamsBuilder, Map<String, KStream<?, ?>> sourceStreams) {
+  public StreamsBuilder buildTopology(
+      Map<String, Object> streamsConfig,
+      StreamsBuilder streamsBuilder,
+      Map<String, KStream<?, ?>> sourceStreams) {
     KStream<String, String> stream = streamsBuilder.stream(INPUT_TOPIC);
     stream.filter((k, v) -> v.length() > 5).to(OUTPUT_TOPIC);
     return streamsBuilder;
   }
 
-  public String getServiceName(){
+  public String getServiceName() {
     return "service1";
   }
 }

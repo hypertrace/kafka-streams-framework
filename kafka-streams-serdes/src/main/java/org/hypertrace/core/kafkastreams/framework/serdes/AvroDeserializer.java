@@ -2,7 +2,6 @@ package org.hypertrace.core.kafkastreams.framework.serdes;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.util.Map;
 import org.apache.avro.Schema;
 import org.apache.avro.Schema.Parser;
 import org.apache.avro.io.BinaryDecoder;
@@ -12,14 +11,12 @@ import org.apache.avro.specific.SpecificDatumReader;
 import org.apache.avro.specific.SpecificRecord;
 import org.apache.avro.specific.SpecificRecordBase;
 import org.apache.kafka.common.errors.SerializationException;
-import org.apache.kafka.common.header.Headers;
 import org.apache.kafka.common.serialization.Deserializer;
-import org.apache.kafka.common.utils.Utils;
 
 public class AvroDeserializer<T extends SpecificRecordBase> implements Deserializer<T> {
   @Override
   public T deserialize(String topic, byte[] data) {
-    if(data == null || data.length == 0) {
+    if (data == null || data.length == 0) {
       return null;
     }
     try {
@@ -42,8 +39,8 @@ public class AvroDeserializer<T extends SpecificRecordBase> implements Deseriali
       try {
         return readerClass.newInstance().getSchema();
       } catch (Exception e) {
-        throw new SerializationException("Error while serializing: " + writerSchema.getFullName(),
-            e);
+        throw new SerializationException(
+            "Error while serializing: " + writerSchema.getFullName(), e);
       }
     }
   }

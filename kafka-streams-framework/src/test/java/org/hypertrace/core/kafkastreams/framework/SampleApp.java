@@ -1,6 +1,5 @@
 package org.hypertrace.core.kafkastreams.framework;
 
-
 import com.typesafe.config.Config;
 import java.util.Map;
 import org.apache.kafka.streams.StreamsBuilder;
@@ -17,15 +16,14 @@ public class SampleApp extends KafkaStreamsApp {
   }
 
   @Override
-  protected void doInitForConsolidatedKStreamApp(Config subTopologyJobConfig) {
-  }
+  protected void doInitForConsolidatedKStreamApp(Config subTopologyJobConfig) {}
 
   @Override
-  protected void doCleanUpForConsolidatedKStreamApp() {
-  }
+  protected void doCleanUpForConsolidatedKStreamApp() {}
 
   @Override
-  public StreamsBuilder buildTopology(Map<String, Object> streamsConfig,
+  public StreamsBuilder buildTopology(
+      Map<String, Object> streamsConfig,
       StreamsBuilder streamsBuilder,
       Map<String, KStream<?, ?>> sourceStreams) {
     KStream<String, String> stream = streamsBuilder.stream(INPUT_TOPIC);

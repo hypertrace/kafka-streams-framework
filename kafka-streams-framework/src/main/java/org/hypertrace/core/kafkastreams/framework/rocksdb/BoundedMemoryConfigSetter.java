@@ -39,12 +39,12 @@ public class BoundedMemoryConfigSetter implements RocksDBConfigSetter {
     }
 
     if (configs.containsKey(OPTIMIZE_FOR_POINT_LOOKUPS)) {
-      Boolean optimizeForPointLookups = Boolean
-          .valueOf(String.valueOf(configs.get(OPTIMIZE_FOR_POINT_LOOKUPS)));
+      Boolean optimizeForPointLookups =
+          Boolean.valueOf(String.valueOf(configs.get(OPTIMIZE_FOR_POINT_LOOKUPS)));
       if (optimizeForPointLookups) {
         long blockCacheSizeMb =
-            ((BlockBasedTableConfig) options.tableFormatConfig()).blockCacheSize() / (1024L
-                * 1024L);
+            ((BlockBasedTableConfig) options.tableFormatConfig()).blockCacheSize()
+                / (1024L * 1024L);
         options.optimizeForPointLookup(blockCacheSizeMb);
       }
     }

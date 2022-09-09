@@ -27,7 +27,6 @@ public class ConsolidatedServiceTest {
   private TestInputTopic<String, String> inputTopic2;
   private TestOutputTopic<String, String> outputTopic2;
 
-
   @BeforeEach
   public void setup() {
     underTest = new ConsolidatedService(ConfigClientFactory.getClient());
@@ -46,15 +45,19 @@ public class ConsolidatedServiceTest {
 
   @Test
   public void checkDataFlowsThroughBothSubTopologies() {
-    inputTopic1 = td.createInputTopic(Service1.INPUT_TOPIC, Serdes.String().serializer(),
-        Serdes.String().serializer());
-    outputTopic1 = td.createOutputTopic(Service1.OUTPUT_TOPIC, Serdes.String().deserializer(),
-        Serdes.String().deserializer());
+    inputTopic1 =
+        td.createInputTopic(
+            Service1.INPUT_TOPIC, Serdes.String().serializer(), Serdes.String().serializer());
+    outputTopic1 =
+        td.createOutputTopic(
+            Service1.OUTPUT_TOPIC, Serdes.String().deserializer(), Serdes.String().deserializer());
 
-    inputTopic2 = td.createInputTopic(Service2.INPUT_TOPIC, Serdes.String().serializer(),
-        Serdes.String().serializer());
-    outputTopic2 = td.createOutputTopic(Service2.OUTPUT_TOPIC, Serdes.String().deserializer(),
-        Serdes.String().deserializer());
+    inputTopic2 =
+        td.createInputTopic(
+            Service2.INPUT_TOPIC, Serdes.String().serializer(), Serdes.String().serializer());
+    outputTopic2 =
+        td.createOutputTopic(
+            Service2.OUTPUT_TOPIC, Serdes.String().deserializer(), Serdes.String().deserializer());
 
     assertThat(outputTopic1.isEmpty(), is(true));
     assertThat(outputTopic2.isEmpty(), is(true));
@@ -71,5 +74,4 @@ public class ConsolidatedServiceTest {
     assertThat(outputTopic1.isEmpty(), is(true));
     assertThat(outputTopic2.isEmpty(), is(true));
   }
-
 }

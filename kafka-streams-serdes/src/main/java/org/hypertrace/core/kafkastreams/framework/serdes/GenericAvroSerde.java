@@ -11,8 +11,8 @@ import org.apache.kafka.common.serialization.Serializer;
  * Kafka streams Serde implementation for Avro records and this SerDe does not depend on schema
  * registry service. This implementation prepends writer schema of the producer avro record to
  * payload itself.
- * <p>
- * WARNING: This can impact performance severely and not meant to be used in production
+ *
+ * <p>WARNING: This can impact performance severely and not meant to be used in production
  * environments. This can used for hypertrace local deployments and tests as well.
  */
 public class GenericAvroSerde<T extends GenericRecord> implements Serde<T> {
