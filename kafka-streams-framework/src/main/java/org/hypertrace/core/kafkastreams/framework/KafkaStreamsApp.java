@@ -1,6 +1,5 @@
 package org.hypertrace.core.kafkastreams.framework;
 
-
 import static org.apache.kafka.clients.consumer.ConsumerConfig.AUTO_OFFSET_RESET_CONFIG;
 import static org.apache.kafka.clients.producer.ProducerConfig.ACKS_CONFIG;
 import static org.apache.kafka.clients.producer.ProducerConfig.BATCH_SIZE_CONFIG;
@@ -106,12 +105,15 @@ public abstract class KafkaStreamsApp extends PlatformService {
 
       app.setStateListener(new LoggingStateListener(app));
       app.setGlobalStateRestoreListener(new LoggingStateRestoreListener());
-      app.setUncaughtExceptionHandler((thread, exception) -> {
-            getLogger().error("Thread=[{}] encountered=[{}]. Will exit.", thread.getName(),
-                ExceptionUtils.getStackTrace(exception));
+      app.setUncaughtExceptionHandler(
+          (thread, exception) -> {
+            getLogger()
+                .error(
+                    "Thread=[{}] encountered=[{}]. Will exit.",
+                    thread.getName(),
+                    ExceptionUtils.getStackTrace(exception));
             System.exit(1);
-          }
-      );
+          });
 
       getLogger().info("kafka streams topologies: {}", topology.describe());
     } catch (Exception e) {
@@ -141,16 +143,15 @@ public abstract class KafkaStreamsApp extends PlatformService {
   }
 
   /**
-   * This method is invoked just before a subtopology is created
-   * Any dependencies that need to be initialized need to be done here
+   * This method is invoked just before a subtopology is created Any dependencies that need to be
+   * initialized need to be done here
+   *
    * @param subTopologyJobConfig
    */
-  protected void doInitForConsolidatedKStreamApp(Config subTopologyJobConfig){}
+  protected void doInitForConsolidatedKStreamApp(Config subTopologyJobConfig) {}
 
-  /**
-   * Cleanup any dependencies before the {@link ConsolidatedKafkaStreamsApp#doStop()} is invoked
-   */
-  protected void doCleanUpForConsolidatedKStreamApp(){}
+  /** Cleanup any dependencies before the {@link ConsolidatedKafkaStreamsApp#doStop()} is invoked */
+  protected void doCleanUpForConsolidatedKStreamApp() {}
 
   @Override
   public boolean healthCheck() {
@@ -168,9 +169,10 @@ public abstract class KafkaStreamsApp extends PlatformService {
     // ##########################
     baseStreamsConfig.put(TOPOLOGY_OPTIMIZATION, "all");
     baseStreamsConfig.put(METRICS_RECORDING_LEVEL_CONFIG, "INFO");
-    baseStreamsConfig
-        .put(DEFAULT_TIMESTAMP_EXTRACTOR_CLASS_CONFIG, UseWallclockTimeOnInvalidTimestamp.class);
-    baseStreamsConfig.put(DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG,
+    baseStreamsConfig.put(
+        DEFAULT_TIMESTAMP_EXTRACTOR_CLASS_CONFIG, UseWallclockTimeOnInvalidTimestamp.class);
+    baseStreamsConfig.put(
+        DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG,
         LogAndContinueExceptionHandler.class);
     baseStreamsConfig.put(ROCKSDB_CONFIG_SETTER_CLASS_CONFIG, BoundedMemoryConfigSetter.class);
 
@@ -210,13 +212,13 @@ public abstract class KafkaStreamsApp extends PlatformService {
     return baseStreamsConfig;
   }
 
-  public abstract StreamsBuilder buildTopology(Map<String, Object> streamsConfig,
+  public abstract StreamsBuilder buildTopology(
+      Map<String, Object> streamsConfig,
       StreamsBuilder streamsBuilder,
       Map<String, KStream<?, ?>> sourceStreams);
 
   public Map<String, Object> getStreamsConfig(Config jobConfig) {
-    return new HashMap<>(
-        ConfigUtils.getFlatMapConfig(jobConfig, getStreamsConfigKey()));
+    return new HashMap<>(ConfigUtils.getFlatMapConfig(jobConfig, getStreamsConfigKey()));
   }
 
   public String getStreamsConfigKey() {
@@ -247,11 +249,9 @@ public abstract class KafkaStreamsApp extends PlatformService {
     return properties;
   }
 
-  /**
-   * Merge the props into baseProps
-   */
-  private Map<String, Object> mergeProperties(Map<String, Object> baseProps,
-      Map<String, Object> props) {
+  /** Merge the props into baseProps */
+  private Map<String, Object> mergeProperties(
+      Map<String, Object> baseProps, Map<String, Object> props) {
     props.forEach(baseProps::put);
     return baseProps;
   }
@@ -259,15 +259,12 @@ public abstract class KafkaStreamsApp extends PlatformService {
   private void preCreateTopics(Map<String, Object> properties) {
     Config jobConfig = (Config) properties.get(getJobConfigKey());
     if (jobConfig.hasPath(PRE_CREATE_TOPICS) && jobConfig.getBoolean(PRE_CREATE_TOPICS)) {
-      List<String> topics = Streams.concat(
-          getInputTopics(properties).stream(),
-          getOutputTopics(properties).stream()
-      ).collect(Collectors.toList());
+      List<String> topics =
+          Streams.concat(getInputTopics(properties).stream(), getOutputTopics(properties).stream())
+              .collect(Collectors.toList());
 
-      KafkaTopicCreator
-          .createTopics((String) properties.get(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG),
-              topics
-          );
+      KafkaTopicCreator.createTopics(
+          (String) properties.get(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG), topics);
     }
   }
 }

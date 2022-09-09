@@ -1,17 +1,14 @@
 package org.hypertrace.core.kafkastreams.framework.partitioner;
 
+import static java.util.Arrays.asList;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.typesafe.config.ConfigFactory;
-import org.apache.avro.generic.GenericRecord;
-import org.apache.kafka.common.Cluster;
-import org.apache.kafka.common.Node;
-import org.apache.kafka.common.PartitionInfo;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -19,10 +16,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
-
-import static java.util.Arrays.asList;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.apache.avro.generic.GenericRecord;
+import org.apache.kafka.common.Cluster;
+import org.apache.kafka.common.Node;
+import org.apache.kafka.common.PartitionInfo;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class AvroFieldValuePartitionerTest {
   private static final String TOPIC_A = "TOPIC_A";
@@ -67,7 +66,8 @@ public class AvroFieldValuePartitionerTest {
     streamConfigs.put("avro.field.value.partitioner.groups.group2.weight", "25");
     streamConfigs.put("avro.field.value.partitioner.default.group.weight", "25");
 
-    AvroFieldValuePartitioner<GenericRecord> partitioner = new AvroFieldValuePartitioner<>(streamConfigs);
+    AvroFieldValuePartitioner<GenericRecord> partitioner =
+        new AvroFieldValuePartitioner<>(streamConfigs);
     Map<Integer, Integer> topicPartitionCounter;
 
     // `tenant-1` weight = 50% i.e, 1,2 partitions are assigned to tenant-1
@@ -152,7 +152,8 @@ public class AvroFieldValuePartitionerTest {
     streamConfigs.put("avro.field.value.partitioner.groups.group2.weight", "25");
     streamConfigs.put("avro.field.value.partitioner.default.group.weight", "25");
 
-    AvroFieldValuePartitioner<GenericRecord> partitioner = new AvroFieldValuePartitioner<>(streamConfigs);
+    AvroFieldValuePartitioner<GenericRecord> partitioner =
+        new AvroFieldValuePartitioner<>(streamConfigs);
     Map<Integer, Integer> topicPartitionCounter;
 
     // ###############

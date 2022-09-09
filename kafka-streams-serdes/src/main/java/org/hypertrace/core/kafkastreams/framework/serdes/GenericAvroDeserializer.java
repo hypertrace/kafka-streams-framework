@@ -13,7 +13,7 @@ import org.apache.kafka.common.serialization.Deserializer;
 public class GenericAvroDeserializer<T extends GenericRecord> implements Deserializer<T> {
   @Override
   public T deserialize(String topic, byte[] data) {
-    if(data == null || data.length == 0) {
+    if (data == null || data.length == 0) {
       return null;
     }
     try {

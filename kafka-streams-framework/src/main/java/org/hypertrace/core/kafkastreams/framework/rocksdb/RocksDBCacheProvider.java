@@ -28,9 +28,9 @@ import org.slf4j.LoggerFactory;
  * major types of memory off the heap. This class creates a off-heap cache of configured capacity
  * for all the buffers (cache_index_and_filter_blocks, memtables and data blocks cached) and this
  * cache is shared across all the instances.
- * <p>
- * Read https://kafka.apache.org/26/documentation/streams/developer-guide/memory-mgmt.html#id3 for
- * more details.
+ *
+ * <p>Read https://kafka.apache.org/26/documentation/streams/developer-guide/memory-mgmt.html#id3
+ * for more details.
  */
 public class RocksDBCacheProvider {
 
@@ -51,9 +51,7 @@ public class RocksDBCacheProvider {
 
   private final ConcurrentMap<String, CacheWrapper> applicationCaches = new ConcurrentHashMap<>();
 
-  /**
-   * Singleton
-   */
+  /** Singleton */
   private RocksDBCacheProvider() {
     // Do nothing - Lazy initialization
   }
@@ -63,8 +61,7 @@ public class RocksDBCacheProvider {
   }
 
   private CacheWrapper getCacheWrapper(String applicationId) {
-    return applicationCaches.computeIfAbsent(applicationId,
-        s -> new CacheWrapper());
+    return applicationCaches.computeIfAbsent(applicationId, s -> new CacheWrapper());
   }
 
   protected synchronized void initCache(Options options, Map<String, Object> configs) {
@@ -74,58 +71,68 @@ public class RocksDBCacheProvider {
     if (cacheWrapper.cache == null) {
       cacheWrapper.cacheTotalCapacity = DEFAULT_CACHE_TOTAL_CAPACITY;
       if (configs.containsKey(CACHE_TOTAL_CAPACITY)) {
-        cacheWrapper.cacheTotalCapacity = Long
-            .valueOf(String.valueOf(configs.get(CACHE_TOTAL_CAPACITY)));
+        cacheWrapper.cacheTotalCapacity =
+            Long.valueOf(String.valueOf(configs.get(CACHE_TOTAL_CAPACITY)));
       }
 
       cacheWrapper.writeBuffersRatio = DEFAULT_CACHE_WRITE_BUFFERS_RATIO;
       if (configs.containsKey(CACHE_WRITE_BUFFERS_RATIO)) {
-        cacheWrapper.writeBuffersRatio = Double
-            .valueOf(String.valueOf(configs.get(CACHE_WRITE_BUFFERS_RATIO)));
+        cacheWrapper.writeBuffersRatio =
+            Double.valueOf(String.valueOf(configs.get(CACHE_WRITE_BUFFERS_RATIO)));
       }
 
       if (cacheWrapper.writeBuffersRatio < 0.0 || cacheWrapper.writeBuffersRatio > 1.0) {
         throw new ConfigException(
             "Invalid high priority write buffers ratio configured. Config key: "
-                + CACHE_WRITE_BUFFERS_RATIO + ", configured value: " + String.valueOf(
-                configs.get(CACHE_WRITE_BUFFERS_RATIO) + ", Allowed value range: (0.0, 1.0)"));
+                + CACHE_WRITE_BUFFERS_RATIO
+                + ", configured value: "
+                + String.valueOf(
+                    configs.get(CACHE_WRITE_BUFFERS_RATIO) + ", Allowed value range: (0.0, 1.0)"));
       }
 
       cacheWrapper.highPriorityPoolRatio = DEFAULT_CACHE_HIGH_PRIORITY_POOL_RATIO;
       if (configs.containsKey(CACHE_HIGH_PRIORITY_POOL_RATIO)) {
-        cacheWrapper.highPriorityPoolRatio = Double
-            .valueOf(String.valueOf(configs.get(CACHE_HIGH_PRIORITY_POOL_RATIO)));
+        cacheWrapper.highPriorityPoolRatio =
+            Double.valueOf(String.valueOf(configs.get(CACHE_HIGH_PRIORITY_POOL_RATIO)));
       }
 
       if (cacheWrapper.highPriorityPoolRatio < 0.0 || cacheWrapper.highPriorityPoolRatio > 1.0) {
-        throw new ConfigException("Invalid high priority cache pool ratio configured. Config key: "
-            + CACHE_HIGH_PRIORITY_POOL_RATIO + ", configured value: " + String.valueOf(
-            configs.get(CACHE_HIGH_PRIORITY_POOL_RATIO) + ", Allowed value range: (0.0, 1.0)"));
+        throw new ConfigException(
+            "Invalid high priority cache pool ratio configured. Config key: "
+                + CACHE_HIGH_PRIORITY_POOL_RATIO
+                + ", configured value: "
+                + String.valueOf(
+                    configs.get(CACHE_HIGH_PRIORITY_POOL_RATIO)
+                        + ", Allowed value range: (0.0, 1.0)"));
       }
 
       double aggregatedRatio = cacheWrapper.writeBuffersRatio + cacheWrapper.highPriorityPoolRatio;
       if (aggregatedRatio > 1.0) {
-        throw new ConfigException("Sum total of the cache ratios: " + aggregatedRatio
-            + " is greater than 1.0."
-            + " Configure all the cache ratios appropriately.");
+        throw new ConfigException(
+            "Sum total of the cache ratios: "
+                + aggregatedRatio
+                + " is greater than 1.0."
+                + " Configure all the cache ratios appropriately.");
       }
 
       // Strict capacity limit can't be used due to a bug in RocksDB
       // numShardBits = -1 means it is automatically determined
       // Read https://kafka.apache.org/26/documentation/streams/developer-guide/memory-mgmt.html#id3
-      cacheWrapper.cache = new LRUCache(cacheWrapper.cacheTotalCapacity, -1, false,
-          cacheWrapper.highPriorityPoolRatio);
+      cacheWrapper.cache =
+          new LRUCache(
+              cacheWrapper.cacheTotalCapacity, -1, false, cacheWrapper.highPriorityPoolRatio);
 
-      long writeBuffersTotalCapacity = (long) (cacheWrapper.writeBuffersRatio
-          * cacheWrapper.cacheTotalCapacity);
+      long writeBuffersTotalCapacity =
+          (long) (cacheWrapper.writeBuffersRatio * cacheWrapper.cacheTotalCapacity);
       // makes write buffers are allocated from shared cache
-      cacheWrapper.writeBufferManager = new WriteBufferManager(writeBuffersTotalCapacity,
-          cacheWrapper.cache);
+      cacheWrapper.writeBufferManager =
+          new WriteBufferManager(writeBuffersTotalCapacity, cacheWrapper.cache);
 
       LOG.info(
           "RocksDB shared cache initialized successfully. Total cache size(MB): {},"
               + " write buffers ratio: {}, high priority pool ratio: {}",
-          cacheWrapper.cacheTotalCapacity / (1024 * 1024), cacheWrapper.writeBuffersRatio,
+          cacheWrapper.cacheTotalCapacity / (1024 * 1024),
+          cacheWrapper.writeBuffersRatio,
           cacheWrapper.highPriorityPoolRatio);
     }
 
@@ -139,8 +146,8 @@ public class RocksDBCacheProvider {
     // ######### Write buffers (memtables) #########
     // number of write buffers
     if (configs.containsKey(MAX_WRITE_BUFFERS)) {
-      options
-          .setMaxWriteBufferNumber(Integer.valueOf(String.valueOf(configs.get(MAX_WRITE_BUFFERS))));
+      options.setMaxWriteBufferNumber(
+          Integer.valueOf(String.valueOf(configs.get(MAX_WRITE_BUFFERS))));
     }
 
     // Size per write buffer

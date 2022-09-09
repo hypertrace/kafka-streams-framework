@@ -12,12 +12,9 @@ import org.apache.kafka.common.errors.TopicExistsException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Helper class for creating required topics before starting streaming application
- */
+/** Helper class for creating required topics before starting streaming application */
 public class KafkaTopicCreator {
   private static final Logger LOGGER = LoggerFactory.getLogger(KafkaTopicCreator.class);
-
 
   private static final int numPartitions = 1;
   private static final short numReplications = 1;
@@ -31,27 +28,30 @@ public class KafkaTopicCreator {
 
     AdminClient client = AdminClient.create(adminProps);
 
-    List<NewTopic> newTopics = topics.stream().
-            map(topic -> new NewTopic(topic, numPartitions, numReplications))
+    List<NewTopic> newTopics =
+        topics.stream()
+            .map(topic -> new NewTopic(topic, numPartitions, numReplications))
             .collect(Collectors.toList());
 
     CreateTopicsResult result = client.createTopics(newTopics);
 
     try {
-      result.values().forEach((topic, response) -> {
-        try {
-          response.get();
-        } catch (InterruptedException | ExecutionException e) {
-          if (!(e.getCause() instanceof TopicExistsException)) {
-            throw new IllegalStateException(e);
-          }
-          LOGGER.info("Topic already exists : {}", topic);
-        }
-      });
+      result
+          .values()
+          .forEach(
+              (topic, response) -> {
+                try {
+                  response.get();
+                } catch (InterruptedException | ExecutionException e) {
+                  if (!(e.getCause() instanceof TopicExistsException)) {
+                    throw new IllegalStateException(e);
+                  }
+                  LOGGER.info("Topic already exists : {}", topic);
+                }
+              });
       LOGGER.info("Successfully created all topics : {}", topics);
     } finally {
       client.close();
     }
   }
-
 }

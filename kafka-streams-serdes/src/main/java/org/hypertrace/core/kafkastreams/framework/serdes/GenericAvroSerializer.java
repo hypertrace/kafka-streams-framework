@@ -13,7 +13,7 @@ public class GenericAvroSerializer<T extends GenericRecord> implements Serialize
 
   @Override
   public byte[] serialize(String topic, T data) {
-    if(data == null) {
+    if (data == null) {
       return new byte[0];
     }
 

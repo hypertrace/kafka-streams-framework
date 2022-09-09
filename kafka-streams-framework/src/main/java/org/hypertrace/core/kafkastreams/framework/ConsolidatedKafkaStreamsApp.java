@@ -10,11 +10,8 @@ import java.util.Set;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.KStream;
 import org.hypertrace.core.serviceframework.config.ConfigClient;
-import org.hypertrace.core.serviceframework.config.ConfigUtils;
 
-/**
- * Base class for consolidating multiple independent KafkaStreamApps
- */
+/** Base class for consolidating multiple independent KafkaStreamApps */
 public abstract class ConsolidatedKafkaStreamsApp extends KafkaStreamsApp {
 
   static final String SUB_TOPOLOGY_NAMES_CONFIG_KEY = "sub.topology.names";
@@ -22,8 +19,7 @@ public abstract class ConsolidatedKafkaStreamsApp extends KafkaStreamsApp {
 
   private final Map<String, SubTopologyKStreamApp> jobNameToSubTopologyKStreamApp = new HashMap<>();
 
-  public ConsolidatedKafkaStreamsApp(
-      ConfigClient configClient) {
+  public ConsolidatedKafkaStreamsApp(ConfigClient configClient) {
     super(configClient);
   }
 
@@ -43,16 +39,21 @@ public abstract class ConsolidatedKafkaStreamsApp extends KafkaStreamsApp {
   }
 
   public void doStop() {
-    jobNameToSubTopologyKStreamApp.values()
-        .forEach(subTopologyKStreamApp -> subTopologyKStreamApp.getInstance().doCleanUpForConsolidatedKStreamApp());
+    jobNameToSubTopologyKStreamApp
+        .values()
+        .forEach(
+            subTopologyKStreamApp ->
+                subTopologyKStreamApp.getInstance().doCleanUpForConsolidatedKStreamApp());
     super.doStop();
   }
 
   @Override
   public List<String> getInputTopics(Map<String, Object> properties) {
     Set<String> inputTopics = new HashSet<>();
-    for (Map.Entry<String, SubTopologyKStreamApp> entry : jobNameToSubTopologyKStreamApp.entrySet()) {
-      List<String> subTopologyInputTopics = entry.getValue().getInstance().getInputTopics(properties);
+    for (Map.Entry<String, SubTopologyKStreamApp> entry :
+        jobNameToSubTopologyKStreamApp.entrySet()) {
+      List<String> subTopologyInputTopics =
+          entry.getValue().getInstance().getInputTopics(properties);
       inputTopics.addAll(subTopologyInputTopics);
     }
     return new ArrayList<>(inputTopics);
@@ -61,9 +62,10 @@ public abstract class ConsolidatedKafkaStreamsApp extends KafkaStreamsApp {
   @Override
   public List<String> getOutputTopics(Map<String, Object> properties) {
     Set<String> outputTopics = new HashSet<>();
-    for (Map.Entry<String, SubTopologyKStreamApp> entry : jobNameToSubTopologyKStreamApp.entrySet()) {
-      List<String> subTopologyOutputTopics = entry.getValue().getInstance()
-          .getOutputTopics(properties);
+    for (Map.Entry<String, SubTopologyKStreamApp> entry :
+        jobNameToSubTopologyKStreamApp.entrySet()) {
+      List<String> subTopologyOutputTopics =
+          entry.getValue().getInstance().getOutputTopics(properties);
       outputTopics.addAll(subTopologyOutputTopics);
     }
     return new ArrayList<>(outputTopics);
@@ -78,8 +80,8 @@ public abstract class ConsolidatedKafkaStreamsApp extends KafkaStreamsApp {
       Map<String, KStream<?, ?>> inputStreams) {
     // create an instance and retains is reference to be used later in other methods
     KafkaStreamsApp subTopology = getSubTopologyInstance(subTopologyName);
-    jobNameToSubTopologyKStreamApp
-        .put(subTopologyName, new SubTopologyKStreamApp (subTopology.getJobConfigKey(), subTopology));
+    jobNameToSubTopologyKStreamApp.put(
+        subTopologyName, new SubTopologyKStreamApp(subTopology.getJobConfigKey(), subTopology));
 
     // need to use its own copy as input/output topics are different
     Config subTopologyJobConfig = getSubJobConfig(subTopologyName);
@@ -105,8 +107,8 @@ public abstract class ConsolidatedKafkaStreamsApp extends KafkaStreamsApp {
     streamsBuilder = subTopology.buildTopology(properties, streamsBuilder, inputStreams);
 
     // retain per job key and its topology
-    jobNameToSubTopologyKStreamApp
-        .put(subTopologyName, new SubTopologyKStreamApp (subTopology.getJobConfigKey(), subTopology));
+    jobNameToSubTopologyKStreamApp.put(
+        subTopologyName, new SubTopologyKStreamApp(subTopology.getJobConfigKey(), subTopology));
     return streamsBuilder;
   }
 
@@ -115,11 +117,7 @@ public abstract class ConsolidatedKafkaStreamsApp extends KafkaStreamsApp {
   }
 
   private Config getSubJobConfig(String jobName) {
-    return configClient.getConfig(
-        jobName,
-        CONFIG_OVERRIDES,
-        null,
-        null);
+    return configClient.getConfig(jobName, CONFIG_OVERRIDES, null, null);
   }
 
   private Config getJobConfig(Map<String, Object> properties) {
@@ -139,8 +137,7 @@ public abstract class ConsolidatedKafkaStreamsApp extends KafkaStreamsApp {
     private final String subTopologyName;
     private final KafkaStreamsApp instance;
 
-    public SubTopologyKStreamApp(String subTopologyName,
-        KafkaStreamsApp instance) {
+    public SubTopologyKStreamApp(String subTopologyName, KafkaStreamsApp instance) {
       this.subTopologyName = subTopologyName;
       this.instance = instance;
     }
@@ -153,5 +150,4 @@ public abstract class ConsolidatedKafkaStreamsApp extends KafkaStreamsApp {
       return instance;
     }
   }
-
 }

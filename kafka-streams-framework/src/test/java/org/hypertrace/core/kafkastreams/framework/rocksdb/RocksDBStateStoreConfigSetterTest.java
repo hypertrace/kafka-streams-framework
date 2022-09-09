@@ -100,8 +100,8 @@ class RocksDBStateStoreConfigSetterTest {
     configs.put("rocksdb.cache.index.and.filter.blocks", true);
     RocksDBConfigSetter configSetter = new RocksDBStateStoreConfigSetter();
     configSetter.setConfig(storeName, options, configs);
-    assertEquals(((BlockBasedTableConfig) options.tableFormatConfig()).cacheIndexAndFilterBlocks(),
-        true);
+    assertEquals(
+        ((BlockBasedTableConfig) options.tableFormatConfig()).cacheIndexAndFilterBlocks(), true);
   }
 
   @Test
@@ -114,5 +114,4 @@ class RocksDBStateStoreConfigSetterTest {
     configSetter.setConfig(storeName, options, configs);
     assertEquals(options.useDirectReads(), true);
   }
-
 }

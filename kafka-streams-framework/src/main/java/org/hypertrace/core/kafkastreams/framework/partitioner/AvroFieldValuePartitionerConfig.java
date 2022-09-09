@@ -5,8 +5,6 @@ import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.AtomicDouble;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
-import lombok.Value;
-
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -14,6 +12,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import lombok.Value;
 
 @Value
 class AvroFieldValuePartitionerConfig {
