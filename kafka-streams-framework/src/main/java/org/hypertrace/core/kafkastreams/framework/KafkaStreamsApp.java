@@ -6,6 +6,7 @@ import static org.apache.kafka.clients.producer.ProducerConfig.BATCH_SIZE_CONFIG
 import static org.apache.kafka.clients.producer.ProducerConfig.COMPRESSION_TYPE_CONFIG;
 import static org.apache.kafka.clients.producer.ProducerConfig.LINGER_MS_CONFIG;
 import static org.apache.kafka.common.config.TopicConfig.RETENTION_MS_CONFIG;
+import static org.apache.kafka.streams.StreamsConfig.APPLICATION_ID_CONFIG;
 import static org.apache.kafka.streams.StreamsConfig.DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG;
 import static org.apache.kafka.streams.StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG;
 import static org.apache.kafka.streams.StreamsConfig.DEFAULT_TIMESTAMP_EXTRACTOR_CLASS_CONFIG;
@@ -20,6 +21,8 @@ import static org.apache.kafka.streams.StreamsConfig.topicPrefix;
 import com.google.common.collect.Streams;
 import com.typesafe.config.Config;
 import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde;
+import io.micrometer.core.instrument.Tag;
+import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.binder.kafka.KafkaStreamsMetrics;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -90,7 +93,11 @@ public abstract class KafkaStreamsApp extends PlatformService {
       app = new KafkaStreams(topology, streamsConfigProps);
 
       // export kafka streams metrics
-      metrics = new KafkaStreamsMetrics(app);
+      metrics =
+          new KafkaStreamsMetrics(
+              app,
+              Tags.of(
+                  Tag.of("kstreams.app", streamsConfigProps.getProperty(APPLICATION_ID_CONFIG))));
       metrics.bindTo(PlatformMetricsRegistry.getMeterRegistry());
 
       // useful for resetting local state - during testing or any other scenarios where
