@@ -21,8 +21,8 @@ dependencies {
   implementation("com.google.guava:guava:31.1-jre")
   implementation("org.apache.avro:avro:1.11.1")
   implementation("org.apache.kafka:kafka-clients:7.2.1-ccs")
-  implementation("org.hypertrace.core.serviceframework:platform-metrics:0.1.39")
-  implementation("org.hypertrace.core.serviceframework:platform-service-framework:0.1.39")
+  implementation("org.hypertrace.core.serviceframework:platform-metrics:0.1.47")
+  implementation("org.hypertrace.core.serviceframework:platform-service-framework:0.1.47")
   implementation("org.apache.commons:commons-lang3:3.12.0")
 
   testImplementation("org.apache.kafka:kafka-streams-test-utils:7.2.1-ccs")
