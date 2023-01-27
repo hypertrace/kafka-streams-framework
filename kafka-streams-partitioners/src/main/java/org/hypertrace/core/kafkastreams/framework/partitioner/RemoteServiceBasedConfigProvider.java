@@ -7,9 +7,10 @@ import com.typesafe.config.Config;
 public class RemoteServiceBasedConfigProvider implements ConfigProvider {
   private final Config partitionerConfig;
 
-  public RemoteServiceBasedConfigProvider(Config streamsConfig) {
+  public RemoteServiceBasedConfigProvider(Config streamsConfig, String context) {
     this.partitionerConfig = streamsConfig.withOnlyPath(PARTITIONER_CONFIG_PREFIX);
     // TODO: Fetch config using config service client
+    // client.getConfig(context)
     // TODO: refresh interval
   }
 

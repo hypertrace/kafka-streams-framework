@@ -14,3 +14,4 @@ plugins {
 
 include(":kafka-streams-framework")
 include(":kafka-streams-serdes")
+include(":kafka-streams-partitioners")

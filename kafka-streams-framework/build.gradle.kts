@@ -11,14 +11,10 @@ tasks.test {
 }
 
 dependencies {
-  annotationProcessor("org.projectlombok:lombok:1.18.24")
-  compileOnly("org.projectlombok:lombok:1.18.24")
-
   api(project(":kafka-streams-serdes"))
   api("org.apache.kafka:kafka-streams:7.2.1-ccs")
   api("io.confluent:kafka-streams-avro-serde:7.2.1")
 
-  implementation("com.google.guava:guava:31.1-jre")
   implementation("org.apache.avro:avro:1.11.1")
   implementation("org.apache.kafka:kafka-clients:7.2.1-ccs")
   implementation("org.hypertrace.core.serviceframework:platform-metrics:0.1.47")

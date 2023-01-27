@@ -42,13 +42,23 @@ public class MultiLevelStreamsPartitioner<K, V> implements StreamPartitioner<K, 
     String groupKey = getGroupKey(key, value);
 
     PartitionGroupConfig groupConfig = this.getPartitionGroupConfig(groupKey);
-    int fromIndex = (int) (groupConfig.getNormalizedFractionalStart() * numPartitions);
-    int toIndex = (int) (groupConfig.getNormalizedFractionalEnd() * numPartitions);
-    int numPartitionsForGroup = toIndex - fromIndex + 1;
+    int fromIndex = (int) Math.floor(groupConfig.getNormalizedFractionalStart() * numPartitions);
+    int toIndex = (int) Math.ceil(groupConfig.getNormalizedFractionalEnd() * numPartitions);
+    int numPartitionsForGroup = toIndex - fromIndex;
 
-    return fromIndex
-        + (this.delegatePartitioner.partition(topic, key, value, numPartitionsForGroup)
-            % (numPartitionsForGroup));
+    int partition =
+        fromIndex
+            + (Math.abs(
+                    this.delegatePartitioner.partition(topic, key, value, numPartitionsForGroup))
+                % numPartitionsForGroup);
+    log.debug(
+        "fromIndex: {}, toIndex: {}, numGroupPartitions: {}, delegate partition: {}",
+        fromIndex,
+        toIndex,
+        numPartitionsForGroup,
+        this.delegatePartitioner.partition(topic, key, value, numPartitionsForGroup));
+    log.debug("key: {}, value: {}, groupKey: {}, partition:{}", key, value, groupKey, partition);
+    return partition;
   }
 
   private String getGroupKey(K key, V value) {

@@ -11,7 +11,9 @@ import java.util.Map.Entry;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.Value;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Value
 class MultiLevelPartitionerConfig {
   private static final Splitter SPLITTER = Splitter.on(",").omitEmptyStrings().trimResults();
@@ -30,6 +32,13 @@ class MultiLevelPartitionerConfig {
     // This represents some range between 0-1 (e.g. 0.6-0.8) that specifies this group's share
     double normalizedFractionalStart;
     double normalizedFractionalEnd;
+  }
+
+  public MultiLevelPartitionerConfig(
+      PartitionGroupConfig defaultGroupConfig,
+      Map<String, PartitionGroupConfig> groupConfigByMember) {
+    this.defaultGroupConfig = defaultGroupConfig;
+    this.groupConfigByMember = groupConfigByMember;
   }
 
   public MultiLevelPartitionerConfig(Map<String, String> config) {
@@ -74,6 +83,8 @@ class MultiLevelPartitionerConfig {
             .map(Map::entrySet)
             .flatMap(Collection::stream)
             .collect(Collectors.toUnmodifiableMap(Entry::getKey, Entry::getValue));
+    log.info("partitioner config: default partition weight: {}", defaultGroupConfig);
+    log.info("partitioner config: partitioner groups: {}", groupConfigByMember);
   }
 
   private static Map<String, PartitionGroupConfig> buildKeyValueMapForConfig(
