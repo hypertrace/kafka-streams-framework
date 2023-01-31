@@ -1,7 +1,6 @@
 package org.hypertrace.core.kafkastreams.framework.partitioner;
 
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.streams.processor.StreamPartitioner;
@@ -11,11 +10,11 @@ import org.hypertrace.core.kafkastreams.framework.partitioner.MultiLevelPartitio
  * Example config:
  *
  * <pre>
- * mlp.groups.group1.members = tenant-1 # mandatory - for each configured group
- * mlp.groups.group1.weight = 25
- * mlp.groups.group2.members = tenant-2, tenant-3
- * mlp.groups.group2.weight = 25
- * mlp.default.group.weight = 50
+ * groups.group1.members = tenant-1 # mandatory - for each configured group
+ * groups.group1.weight = 25
+ * groups.group2.members = tenant-2, tenant-3
+ * groups.group2.weight = 25
+ * default.group.weight = 50
  * </pre>
  */
 @Slf4j
@@ -25,8 +24,6 @@ public class MultiLevelStreamsPartitioner<K, V> implements StreamPartitioner<K, 
   private final BiFunction<K, V, String> groupKeyExtractor;
   private final StreamPartitioner<K, V> delegatePartitioner;
 
-  private final AtomicReference<MultiLevelPartitionerConfig> partitionerConfigRef;
-
   public MultiLevelStreamsPartitioner(
       ConfigProvider configProvider,
       BiFunction<K, V, String> groupKeyExtractor,
@@ -34,7 +31,6 @@ public class MultiLevelStreamsPartitioner<K, V> implements StreamPartitioner<K, 
     this.configProvider = configProvider;
     this.groupKeyExtractor = groupKeyExtractor;
     this.delegatePartitioner = delegatePartitioner;
-    this.partitionerConfigRef = new AtomicReference<>(configProvider.getConfig());
   }
 
   @Override
@@ -51,13 +47,14 @@ public class MultiLevelStreamsPartitioner<K, V> implements StreamPartitioner<K, 
             + (Math.abs(
                     this.delegatePartitioner.partition(topic, key, value, numPartitionsForGroup))
                 % numPartitionsForGroup);
-    log.debug(
-        "fromIndex: {}, toIndex: {}, numGroupPartitions: {}, delegate partition: {}",
-        fromIndex,
-        toIndex,
-        numPartitionsForGroup,
-        this.delegatePartitioner.partition(topic, key, value, numPartitionsForGroup));
-    log.debug("key: {}, value: {}, groupKey: {}, partition:{}", key, value, groupKey, partition);
+    //    log.debug(
+    //        "fromIndex: {}, toIndex: {}, numGroupPartitions: {}, delegate partition: {}",
+    //        fromIndex,
+    //        toIndex,
+    //        numPartitionsForGroup,
+    //        this.delegatePartitioner.partition(topic, key, value, numPartitionsForGroup));
+    //    log.debug("key: {}, value: {}, groupKey: {}, partition:{}", key, value, groupKey,
+    // partition);
     return partition;
   }
 
@@ -66,9 +63,9 @@ public class MultiLevelStreamsPartitioner<K, V> implements StreamPartitioner<K, 
   }
 
   private PartitionGroupConfig getPartitionGroupConfig(String partitionKey) {
-    return this.partitionerConfigRef
-        .get()
+    MultiLevelPartitionerConfig config = this.configProvider.getConfig();
+    return config
         .getGroupConfigByMember()
-        .getOrDefault(partitionKey, this.partitionerConfigRef.get().getDefaultGroupConfig());
+        .getOrDefault(partitionKey, config.getDefaultGroupConfig());
   }
 }

@@ -1,9 +1,6 @@
 package org.hypertrace.core.kafkastreams.framework.partitioner;
 
-import com.google.common.base.Splitter;
 import com.google.common.util.concurrent.AtomicDouble;
-import com.typesafe.config.Config;
-import com.typesafe.config.ConfigFactory;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -12,18 +9,12 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
+import org.hypertrace.partitioner.config.service.v1.PartitionerGroup;
+import org.hypertrace.partitioner.config.service.v1.PartitionerProfile;
 
 @Slf4j
 @Value
 class MultiLevelPartitionerConfig {
-  private static final Splitter SPLITTER = Splitter.on(",").omitEmptyStrings().trimResults();
-
-  static final String PARTITIONER_CONFIG_PREFIX = "mlp";
-  static final String DEFAULT_GROUP_WEIGHT = "default.group.weight";
-  static final String GROUPS_CONFIG_PREFIX = "groups";
-  static final String GROUP_MEMBERS = "members";
-  static final String GROUP_WEIGHT = "weight";
-
   PartitionGroupConfig defaultGroupConfig;
   Map<String, PartitionGroupConfig> groupConfigByMember;
 
@@ -34,37 +25,15 @@ class MultiLevelPartitionerConfig {
     double normalizedFractionalEnd;
   }
 
-  public MultiLevelPartitionerConfig(
-      PartitionGroupConfig defaultGroupConfig,
-      Map<String, PartitionGroupConfig> groupConfigByMember) {
-    this.defaultGroupConfig = defaultGroupConfig;
-    this.groupConfigByMember = groupConfigByMember;
-  }
-
-  public MultiLevelPartitionerConfig(Map<String, String> config) {
-    this(ConfigFactory.parseMap(config).getConfig(PARTITIONER_CONFIG_PREFIX));
-  }
-
-  public MultiLevelPartitionerConfig(Config partitionerConfig) {
-    double defaultWeight = partitionerConfig.getDouble(DEFAULT_GROUP_WEIGHT);
-
-    Config groupsConfig =
-        partitionerConfig.hasPath(GROUPS_CONFIG_PREFIX)
-            ? partitionerConfig.getConfig(GROUPS_CONFIG_PREFIX)
-            : ConfigFactory.empty();
+  public MultiLevelPartitionerConfig(PartitionerProfile profile) {
+    double defaultWeight = profile.getDefaultGroupWeight();
 
     // Sort groups by name for consistent ordering
-    List<Config> groupConfigs =
-        groupsConfig.root().keySet().stream()
-            .sorted()
-            .map(groupsConfig::getConfig)
-            .collect(Collectors.toUnmodifiableList());
+    List<PartitionerGroup> groupConfigs = profile.getGroupsList();
 
     double totalWeight =
         defaultWeight
-            + groupConfigs.stream()
-                .map(groupConfig -> groupConfig.getDouble(GROUP_WEIGHT))
-                .reduce(0d, Double::sum);
+            + groupConfigs.stream().map(PartitionerGroup::getWeight).reduce(0, Integer::sum);
     AtomicDouble weightConsumedSoFar = new AtomicDouble();
     this.defaultGroupConfig =
         new PartitionGroupConfig(
@@ -78,8 +47,7 @@ class MultiLevelPartitionerConfig {
                         groupConfig,
                         new PartitionGroupConfig(
                             weightConsumedSoFar.get(),
-                            weightConsumedSoFar.addAndGet(
-                                groupConfig.getDouble(GROUP_WEIGHT) / totalWeight))))
+                            weightConsumedSoFar.addAndGet(groupConfig.getWeight() / totalWeight))))
             .map(Map::entrySet)
             .flatMap(Collection::stream)
             .collect(Collectors.toUnmodifiableMap(Entry::getKey, Entry::getValue));
@@ -88,8 +56,8 @@ class MultiLevelPartitionerConfig {
   }
 
   private static Map<String, PartitionGroupConfig> buildKeyValueMapForConfig(
-      Config groupConfig, PartitionGroupConfig partitionGroupConfig) {
-    return SPLITTER.splitToList(groupConfig.getString(GROUP_MEMBERS)).stream()
+      PartitionerGroup groupConfig, PartitionGroupConfig partitionGroupConfig) {
+    return groupConfig.getMemberIdsList().stream()
         .collect(Collectors.toUnmodifiableMap(Function.identity(), unused -> partitionGroupConfig));
   }
 }
