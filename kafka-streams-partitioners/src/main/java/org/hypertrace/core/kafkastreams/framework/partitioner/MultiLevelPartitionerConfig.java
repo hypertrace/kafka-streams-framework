@@ -12,52 +12,67 @@ import org.hypertrace.partitioner.config.service.v1.PartitionerGroup;
 import org.hypertrace.partitioner.config.service.v1.PartitionerProfile;
 
 @Slf4j
-class MultiLevelPartitionerConfig {
-  PartitionGroupConfig defaultGroupConfig;
-  Map<String, PartitionGroupConfig> groupConfigByMember;
+public class MultiLevelPartitionerConfig {
+  final String profileName;
+  final Map<String, PartitionGroupInfo> groupInfoByMember;
+  final PartitionGroupInfo defaultGroupInfo;
 
   @Value
-  static class PartitionGroupConfig {
+  static class PartitionGroupInfo {
+    String groupName;
     // This represents some range between 0-1 (e.g. 0.6-0.8) that specifies this group's share
     double normalizedFractionalStart;
     double normalizedFractionalEnd;
   }
 
   public MultiLevelPartitionerConfig(PartitionerProfile profile) {
-    double defaultWeight = profile.getDefaultGroupWeight();
-
-    // Sort groups by name for consistent ordering
-    List<PartitionerGroup> groupConfigs = profile.getGroupsList();
+    this.profileName = profile.getName();
+    double defaultGroupWeight = profile.getDefaultGroupWeight();
+    List<PartitionerGroup> groups = profile.getGroupsList();
 
     double totalWeight =
-        defaultWeight
-            + groupConfigs.stream().map(PartitionerGroup::getWeight).reduce(0, Integer::sum);
-    AtomicDouble weightConsumedSoFar = new AtomicDouble();
-    this.defaultGroupConfig =
-        new PartitionGroupConfig(
-            weightConsumedSoFar.get(), weightConsumedSoFar.addAndGet(defaultWeight / totalWeight));
+        groups.stream().map(PartitionerGroup::getWeight).reduce(0, Integer::sum)
+            + defaultGroupWeight;
 
-    this.groupConfigByMember =
-        groupConfigs.stream()
+    AtomicDouble weightConsumedSoFar = new AtomicDouble(0);
+
+    this.groupInfoByMember =
+        groups.stream()
             .flatMap(
                 groupConfig ->
-                    buildEntriesForEachMember(
-                        groupConfig,
-                        new PartitionGroupConfig(
-                            weightConsumedSoFar.get(),
-                            weightConsumedSoFar.addAndGet(groupConfig.getWeight() / totalWeight))))
+                    buildEntriesForEachMember(groupConfig, weightConsumedSoFar, totalWeight))
             .collect(Collectors.toUnmodifiableMap(Entry::getKey, Entry::getValue));
-    log.info("partitioner config: default partition weight: {}", defaultGroupConfig);
-    log.info("partitioner config: partitioner groups: {}", groupConfigByMember);
+    this.defaultGroupInfo =
+        new PartitionGroupInfo(
+            null,
+            weightConsumedSoFar.get(),
+            weightConsumedSoFar.addAndGet(defaultGroupWeight / totalWeight));
+
+    log.info(
+        "partitioner default group config - weight range: {}, range end: {}",
+        defaultGroupInfo.getNormalizedFractionalStart(),
+        defaultGroupInfo.getNormalizedFractionalEnd());
   }
 
-  public PartitionGroupConfig getGroupConfigByMember(String memberId) {
-    return groupConfigByMember.getOrDefault(memberId, defaultGroupConfig);
+  public PartitionGroupInfo getGroupInfoByMember(String memberId) {
+    return groupInfoByMember.getOrDefault(memberId, defaultGroupInfo);
   }
 
-  private static Stream<Entry<String, PartitionGroupConfig>> buildEntriesForEachMember(
-      PartitionerGroup groupConfig, PartitionGroupConfig partitionGroupConfig) {
+  private static Stream<Entry<String, PartitionGroupInfo>> buildEntriesForEachMember(
+      PartitionerGroup groupConfig, AtomicDouble weightConsumedSoFar, double totalWeight) {
+    double groupWeightStart = weightConsumedSoFar.get();
+    double groupWeightEnd = weightConsumedSoFar.addAndGet(groupConfig.getWeight() / totalWeight);
+    PartitionGroupInfo partitionGroupInfo =
+        new PartitionGroupInfo(groupConfig.getName(), groupWeightStart, groupWeightEnd);
+
+    log.info(
+        "partitioner group config - group: {}, range start: {}, range end: {}, members: {}",
+        groupConfig.getName(),
+        partitionGroupInfo.getNormalizedFractionalStart(),
+        partitionGroupInfo.getNormalizedFractionalEnd(),
+        groupConfig.getMemberIdsList());
+
     return groupConfig.getMemberIdsList().stream()
-        .map(memberId -> Map.entry(memberId, partitionGroupConfig));
+        .map(memberId -> Map.entry(memberId, partitionGroupInfo));
   }
 }

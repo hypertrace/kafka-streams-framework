@@ -2,9 +2,12 @@ package org.hypertrace.core.kafkastreams.framework.partitioner;
 
 import java.util.Optional;
 import java.util.function.BiFunction;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.common.utils.Utils;
 import org.apache.kafka.streams.processor.StreamPartitioner;
-import org.hypertrace.core.kafkastreams.framework.partitioner.MultiLevelPartitionerConfig.PartitionGroupConfig;
+import org.hypertrace.core.kafkastreams.framework.partitioner.MultiLevelPartitionerConfig.PartitionGroupInfo;
 
 /**
  * Example config:
@@ -18,32 +21,33 @@ import org.hypertrace.core.kafkastreams.framework.partitioner.MultiLevelPartitio
  * </pre>
  */
 @Slf4j
-public class MultiLevelStreamsPartitioner<K, V> implements StreamPartitioner<K, V> {
-
+public class MultiLevelStreamPartitioner<K, V> implements StreamPartitioner<K, V> {
   private final ConfigProvider configProvider;
   private final BiFunction<K, V, String> groupKeyExtractor;
   private final StreamPartitioner<K, V> delegatePartitioner;
 
-  public MultiLevelStreamsPartitioner(
-      ConfigProvider configProvider,
-      BiFunction<K, V, String> groupKeyExtractor,
-      StreamPartitioner<K, V> delegatePartitioner) {
+  public MultiLevelStreamPartitioner(
+      @Nonnull ConfigProvider configProvider,
+      @Nonnull BiFunction<K, V, String> groupKeyExtractor,
+      @Nullable StreamPartitioner<K, V> delegatePartitioner) {
     this.configProvider = configProvider;
     this.groupKeyExtractor = groupKeyExtractor;
-    this.delegatePartitioner = delegatePartitioner;
+    this.delegatePartitioner =
+        Optional.ofNullable(delegatePartitioner).orElse(new ValueHashPartitioner<>());
   }
 
   @Override
   public Integer partition(String topic, K key, V value, int numPartitions) {
     String groupKey = getGroupKey(key, value);
 
-    PartitionGroupConfig groupConfig = this.getPartitionGroupConfig(groupKey);
+    PartitionGroupInfo groupConfig = this.getPartitionGroupConfig(groupKey);
     int fromIndex = (int) Math.floor(groupConfig.getNormalizedFractionalStart() * numPartitions);
     int toIndex = (int) Math.ceil(groupConfig.getNormalizedFractionalEnd() * numPartitions);
     int numPartitionsForGroup = toIndex - fromIndex;
 
     return fromIndex
-        + (Math.abs(this.delegatePartitioner.partition(topic, key, value, numPartitionsForGroup))
+        + (Utils.toPositive(
+                this.delegatePartitioner.partition(topic, key, value, numPartitionsForGroup))
             % numPartitionsForGroup);
   }
 
@@ -51,8 +55,8 @@ public class MultiLevelStreamsPartitioner<K, V> implements StreamPartitioner<K, 
     return Optional.ofNullable(groupKeyExtractor.apply(key, value)).orElse("");
   }
 
-  private PartitionGroupConfig getPartitionGroupConfig(String partitionKey) {
+  private PartitionGroupInfo getPartitionGroupConfig(String partitionKey) {
     MultiLevelPartitionerConfig config = this.configProvider.getConfig();
-    return config.getGroupConfigByMember(partitionKey);
+    return config.getGroupInfoByMember(partitionKey);
   }
 }
