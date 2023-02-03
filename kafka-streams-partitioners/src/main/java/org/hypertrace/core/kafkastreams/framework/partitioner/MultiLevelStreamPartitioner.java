@@ -9,38 +9,27 @@ import org.apache.kafka.common.utils.Utils;
 import org.apache.kafka.streams.processor.StreamPartitioner;
 import org.hypertrace.core.kafkastreams.framework.partitioner.MultiLevelPartitionerConfig.PartitionGroupInfo;
 
-/**
- * Example config:
- *
- * <pre>
- * groups.group1.members = tenant-1 # mandatory - for each configured group
- * groups.group1.weight = 25
- * groups.group2.members = tenant-2, tenant-3
- * groups.group2.weight = 25
- * default.group.weight = 50
- * </pre>
- */
 @Slf4j
 public class MultiLevelStreamPartitioner<K, V> implements StreamPartitioner<K, V> {
   private final ConfigProvider configProvider;
-  private final BiFunction<K, V, String> groupKeyExtractor;
+  private final BiFunction<K, V, String> memberIdExtractor;
   private final StreamPartitioner<K, V> delegatePartitioner;
 
   public MultiLevelStreamPartitioner(
       @Nonnull ConfigProvider configProvider,
-      @Nonnull BiFunction<K, V, String> groupKeyExtractor,
+      @Nonnull BiFunction<K, V, String> memberIdExtractor,
       @Nullable StreamPartitioner<K, V> delegatePartitioner) {
     this.configProvider = configProvider;
-    this.groupKeyExtractor = groupKeyExtractor;
+    this.memberIdExtractor = memberIdExtractor;
     this.delegatePartitioner =
         Optional.ofNullable(delegatePartitioner).orElse(new ValueHashPartitioner<>());
   }
 
   @Override
   public Integer partition(String topic, K key, V value, int numPartitions) {
-    String groupKey = getGroupKey(key, value);
+    String memberId = getMemberId(key, value);
 
-    PartitionGroupInfo groupConfig = this.getPartitionGroupConfig(groupKey);
+    PartitionGroupInfo groupConfig = this.getPartitionGroupInfo(memberId);
     int fromIndex = (int) Math.floor(groupConfig.getNormalizedFractionalStart() * numPartitions);
     int toIndex = (int) Math.ceil(groupConfig.getNormalizedFractionalEnd() * numPartitions);
     int numPartitionsForGroup = toIndex - fromIndex;
@@ -51,12 +40,14 @@ public class MultiLevelStreamPartitioner<K, V> implements StreamPartitioner<K, V
             % numPartitionsForGroup);
   }
 
-  private String getGroupKey(K key, V value) {
-    return Optional.ofNullable(groupKeyExtractor.apply(key, value)).orElse("");
+  private String getMemberId(K key, V value) {
+    // If in case extractor returns null, we assign it an empty string which gets evaluated to
+    // default group.
+    // don't want to fail the whole application in such case. Instead, treat it as default group.
+    return Optional.ofNullable(memberIdExtractor.apply(key, value)).orElse("");
   }
 
-  private PartitionGroupInfo getPartitionGroupConfig(String partitionKey) {
-    MultiLevelPartitionerConfig config = this.configProvider.getConfig();
-    return config.getGroupInfoByMember(partitionKey);
+  private PartitionGroupInfo getPartitionGroupInfo(String memberId) {
+    return this.configProvider.getConfig().getGroupInfoByMember(memberId);
   }
 }

@@ -10,11 +10,11 @@ import org.hypertrace.partitioner.config.service.v1.GetPartitionerProfileRequest
 import org.hypertrace.partitioner.config.service.v1.PartitionerConfigServiceGrpc.PartitionerConfigServiceBlockingStub;
 
 @Slf4j
-public class RemoteServiceBasedConfigProvider implements ConfigProvider {
+public class PartitionerConfigServiceClient implements ConfigProvider {
   private final String profileName;
   private final LoadingCache<String, MultiLevelPartitionerConfig> partitionerConfigCache;
 
-  public RemoteServiceBasedConfigProvider(
+  public PartitionerConfigServiceClient(
       PartitionerConfigServiceBlockingStub service, String profileName, Duration refreshInterval) {
     this.profileName = profileName;
 
