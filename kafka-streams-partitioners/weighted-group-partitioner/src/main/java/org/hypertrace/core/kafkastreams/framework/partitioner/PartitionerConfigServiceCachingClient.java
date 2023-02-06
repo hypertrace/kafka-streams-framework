@@ -4,38 +4,30 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.typesafe.config.Config;
-import java.time.Duration;
+import io.grpc.ManagedChannel;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.hypertrace.core.grpcutils.client.GrpcChannelRegistry;
 import org.hypertrace.core.grpcutils.context.RequestContext;
 import org.hypertrace.core.grpcutils.context.RequestContextConstants;
 import org.hypertrace.partitioner.config.service.v1.GetPartitionerProfileRequest;
+import org.hypertrace.partitioner.config.service.v1.PartitionerConfigServiceGrpc;
 import org.hypertrace.partitioner.config.service.v1.PartitionerConfigServiceGrpc.PartitionerConfigServiceBlockingStub;
 
 @Slf4j
 public class PartitionerConfigServiceCachingClient implements PartitionerConfigServiceClient {
   private final PartitionerConfigServiceBlockingStub service;
-  private final LoadingCache<String, WeightedGroupProfile> partitionerConfigCache;
-
-  public PartitionerConfigServiceCachingClient(Config config) {
-    // TODO - implement
-    service = null;
-    partitionerConfigCache = null;
-  }
+  private final LoadingCache<String, WeightedGroupProfile> partitionerConfigProfileCache;
 
   public PartitionerConfigServiceCachingClient(Config config, GrpcChannelRegistry registry) {
-    // TODO - implement
-    service = null;
-    partitionerConfigCache = null;
-  }
-
-  public PartitionerConfigServiceCachingClient(
-      PartitionerConfigServiceBlockingStub service, Duration refreshInterval) {
-    this.service = service;
-    partitionerConfigCache =
+    PartitionerConfigServiceClientConfig clientConfig =
+        PartitionerConfigServiceClientConfig.from(config);
+    ManagedChannel managedChannel =
+        registry.forPlaintextAddress(clientConfig.getHost(), clientConfig.getPort());
+    this.service = PartitionerConfigServiceGrpc.newBlockingStub(managedChannel);
+    this.partitionerConfigProfileCache =
         CacheBuilder.newBuilder()
-            .refreshAfterWrite(refreshInterval)
+            .refreshAfterWrite(clientConfig.getRefreshDuration())
             .recordStats()
             .build(CacheLoader.from(this::fetchPartitionerConfig));
   }
@@ -56,6 +48,6 @@ public class PartitionerConfigServiceCachingClient implements PartitionerConfigS
 
   @Override
   public WeightedGroupProfile getConfig(String profileName) {
-    return partitionerConfigCache.getUnchecked(profileName);
+    return partitionerConfigProfileCache.getUnchecked(profileName);
   }
 }

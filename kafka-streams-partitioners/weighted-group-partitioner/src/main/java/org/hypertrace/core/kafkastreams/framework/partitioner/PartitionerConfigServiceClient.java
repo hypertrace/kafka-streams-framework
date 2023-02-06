@@ -1,5 +1,5 @@
 package org.hypertrace.core.kafkastreams.framework.partitioner;
 
-interface PartitionerConfigServiceClient {
+public interface PartitionerConfigServiceClient {
   WeightedGroupProfile getConfig(String profileName);
 }

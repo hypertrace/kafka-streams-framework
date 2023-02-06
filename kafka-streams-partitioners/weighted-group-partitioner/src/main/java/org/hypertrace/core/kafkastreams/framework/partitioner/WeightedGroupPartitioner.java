@@ -8,11 +8,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.streams.processor.StreamPartitioner;
 import org.hypertrace.core.kafkastreams.framework.partitioner.WeightedGroupProfile.WeightedGroup;
 
-/**
- *
- * @param <K>
- * @param <V>
- */
 @Slf4j
 public class WeightedGroupPartitioner<K, V> implements StreamPartitioner<K, V> {
   private final String profileName;
