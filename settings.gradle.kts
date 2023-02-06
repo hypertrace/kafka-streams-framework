@@ -14,4 +14,5 @@ plugins {
 
 include(":kafka-streams-framework")
 include(":kafka-streams-serdes")
-include(":kafka-streams-partitioners")
+include(":kafka-streams-partitioners:avro-partitioners")
+include(":kafka-streams-partitioners:weighted-group-partitioner")
