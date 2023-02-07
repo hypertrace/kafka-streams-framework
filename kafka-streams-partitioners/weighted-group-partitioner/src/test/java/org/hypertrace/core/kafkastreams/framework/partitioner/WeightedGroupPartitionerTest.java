@@ -85,6 +85,46 @@ public class WeightedGroupPartitionerTest {
     assertEquals(0, partition);
   }
 
+  @Test
+  public void testPartitionerWhenGroupKeyIsNull() {
+    WeightedGroupPartitioner<String, String> partitioner =
+        new WeightedGroupPartitioner<>(
+            configServiceClient, "spans", (key, value) -> null, delegatePartitioner);
+
+    // Test case 4: should always use default group when group key is null [4,5,6,7]
+    int partition = partitioner.partition("test-topic", "key-1", "value-1", 8);
+    assertTrue(partition >= 4 && partition <= 7);
+
+    partition = partitioner.partition("test-topic", "unknown", "span-4", 8);
+    assertTrue(partition >= 4 && partition <= 7);
+  }
+
+  @Test
+  public void testPartitionerWhenDelegateReturnsNull() {
+    WeightedGroupPartitioner<String, String> partitioner =
+        new WeightedGroupPartitioner<>(
+            configServiceClient,
+            "spans",
+            groupKeyExtractor,
+            (topic, key, value, numPartitions) -> null);
+
+    // Test case 1: tenant-1 belong to group-1
+    int partition = partitioner.partition("test-topic", "tenant-1", "span-1", 8);
+    assertEquals(0, partition);
+
+    // Test case 2: tenant-2 belong to group-2
+    partition = partitioner.partition("test-topic", "tenant-2", "span-2", 8);
+    assertEquals(2, partition);
+
+    // Test case 3: tenant-3 belong to group-2
+    partition = partitioner.partition("test-topic", "tenant-3", "span-3", 8);
+    assertEquals(2, partition);
+
+    // Test case 4: key=4, groupKey=unknown should use default group
+    partition = partitioner.partition("test-topic", "unknown", "span-4", 8);
+    assertEquals(4, partition);
+  }
+
   private PartitionerConfigServiceClient getTestServiceClient() {
     return (profileName) ->
         new WeightedGroupProfile(

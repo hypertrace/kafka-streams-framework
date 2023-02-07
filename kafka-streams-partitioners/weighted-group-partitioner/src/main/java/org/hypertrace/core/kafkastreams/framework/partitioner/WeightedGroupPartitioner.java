@@ -57,7 +57,7 @@ public class WeightedGroupPartitioner<K, V> implements StreamPartitioner<K, V> {
     }
 
     return memberId
-            .map(id -> this.configServiceClient.getConfig(profileName).getGroupByMember(id))
-            .orElseGet(() -> this.configServiceClient.getConfig(profileName).getDefaultGroup());
+        .map(id -> this.configServiceClient.getConfig(profileName).getGroupByMember(id))
+        .orElseGet(() -> this.configServiceClient.getConfig(profileName).getDefaultGroup());
   }
 }

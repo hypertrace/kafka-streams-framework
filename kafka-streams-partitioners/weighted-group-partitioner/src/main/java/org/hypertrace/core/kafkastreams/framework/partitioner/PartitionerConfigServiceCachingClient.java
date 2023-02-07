@@ -4,9 +4,8 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.typesafe.config.Config;
-import java.util.UUID;
-
 import io.grpc.Channel;
+import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.hypertrace.core.grpcutils.client.GrpcChannelRegistry;
 import org.hypertrace.core.grpcutils.context.RequestContext;
@@ -23,8 +22,7 @@ public class PartitionerConfigServiceCachingClient implements PartitionerConfigS
   public PartitionerConfigServiceCachingClient(Config config, GrpcChannelRegistry registry) {
     PartitionerConfigServiceClientConfig clientConfig =
         PartitionerConfigServiceClientConfig.from(config);
-    Channel channel =
-        registry.forPlaintextAddress(clientConfig.getHost(), clientConfig.getPort());
+    Channel channel = registry.forPlaintextAddress(clientConfig.getHost(), clientConfig.getPort());
     this.service = PartitionerConfigServiceGrpc.newBlockingStub(channel);
     this.partitionerConfigProfileCache =
         CacheBuilder.newBuilder()
