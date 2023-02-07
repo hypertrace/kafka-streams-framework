@@ -27,12 +27,11 @@ public class WeightedGroupProfile {
 
   public WeightedGroupProfile(PartitionerProfile profile) {
     this.name = profile.getName();
-    double defaultGroupWeight = profile.getDefaultGroupWeight();
+    int defaultGroupWeight = profile.getDefaultGroupWeight();
     List<PartitionerGroup> groups = profile.getGroupsList();
 
     double totalWeight =
-        groups.stream().map(PartitionerGroup::getWeight).reduce(0, Integer::sum)
-            + defaultGroupWeight;
+        groups.stream().map(PartitionerGroup::getWeight).reduce(defaultGroupWeight, Integer::sum);
 
     AtomicDouble weightConsumedSoFar = new AtomicDouble(0);
 
@@ -56,6 +55,10 @@ public class WeightedGroupProfile {
 
   public WeightedGroup getGroupByMember(String memberId) {
     return groupByMember.getOrDefault(memberId, defaultGroup);
+  }
+
+  public WeightedGroup getDefaultGroup() {
+    return defaultGroup;
   }
 
   private static Stream<Entry<String, WeightedGroup>> buildEntriesForEachMember(

@@ -34,9 +34,7 @@ public class WeightedGroupPartitioner<K, V> implements StreamPartitioner<K, V> {
 
   @Override
   public Integer partition(String topic, K key, V value, int numPartitions) {
-    String memberId = getMemberId(topic, key, value);
-
-    WeightedGroup groupConfig = this.getPartitionGroupInfo(memberId);
+    WeightedGroup groupConfig = this.getGroupConfig(topic, key, value);
     int fromIndex = (int) Math.floor(groupConfig.getNormalizedFractionalStart() * numPartitions);
     int toIndex = (int) Math.ceil(groupConfig.getNormalizedFractionalEnd() * numPartitions);
     int numPartitionsForGroup = toIndex - fromIndex;
@@ -50,20 +48,16 @@ public class WeightedGroupPartitioner<K, V> implements StreamPartitioner<K, V> {
             .orElse(0);
   }
 
-  private String getMemberId(String topic, K key, V value) {
-    // If in case extractor returns null, we assign it an empty string which gets resolved to
-    // default group.
-    // don't want to fail the whole application in such case. Instead, treat it as default group.
-    String memberId = memberIdExtractor.apply(key, value);
-    if (memberId == null) {
-      log.warn(
-          "member id is null. using default group. profile: {}, topic: {}", profileName, topic);
-      return "";
+  private WeightedGroup getGroupConfig(String topic, K key, V value) {
+    // If in case extractor returns null, don't want to fail the whole application in such case.
+    // Instead, treat it as default group.
+    Optional<String> memberId = Optional.ofNullable(memberIdExtractor.apply(key, value));
+    if (memberId.isEmpty()) {
+      log.warn("member id is null. profile: {}, topic: {}", profileName, topic);
     }
-    return memberId;
-  }
 
-  private WeightedGroup getPartitionGroupInfo(String memberId) {
-    return this.configServiceClient.getConfig(profileName).getGroupByMember(memberId);
+    return memberId
+            .map(id -> this.configServiceClient.getConfig(profileName).getGroupByMember(id))
+            .orElseGet(() -> this.configServiceClient.getConfig(profileName).getDefaultGroup());
   }
 }
