@@ -14,6 +14,8 @@ public class WeightedGroupPartitioner<K, V> implements StreamPartitioner<K, V> {
   private final PartitionerConfigServiceClient configServiceClient;
   private final BiFunction<K, V, String> memberIdExtractor;
   private final StreamPartitioner<K, V> delegatePartitioner;
+  // Will be used when delegate partitioner returns null
+  private final RoundRobinPartitioner<K, V> fallbackDelegatePartitioner;
 
   public WeightedGroupPartitioner(
       @Nonnull PartitionerConfigServiceClient configServiceClient,
@@ -30,6 +32,7 @@ public class WeightedGroupPartitioner<K, V> implements StreamPartitioner<K, V> {
     this.profileName = profileName;
     this.memberIdExtractor = memberIdExtractor;
     this.delegatePartitioner = delegatePartitioner;
+    this.fallbackDelegatePartitioner = new RoundRobinPartitioner<>();
   }
 
   @Override
@@ -41,15 +44,17 @@ public class WeightedGroupPartitioner<K, V> implements StreamPartitioner<K, V> {
 
     // partitioner by contract can return null.
     // Refer api doc:  org.apache.kafka.streams.processor.StreamPartitioner.partition
-    // when delegate partitioner returns null, we treat it as 0
+    // when delegate partitioner returns null, we use fallback partitioner (round-robin within
+    // group)
     return fromIndex
         + Optional.ofNullable(
-                this.delegatePartitioner.partition(topic, key, value, numPartitionsForGroup))
-            .orElse(0);
+                delegatePartitioner.partition(topic, key, value, numPartitionsForGroup))
+            .orElse(
+                fallbackDelegatePartitioner.partition(topic, key, value, numPartitionsForGroup));
   }
 
   private WeightedGroup getGroupConfig(String topic, K key, V value) {
-    // If in case extractor returns null, don't want to fail the whole application in such case.
+    // extractor can return null group key, don't want to fail the whole application in such case.
     // Instead, treat it as default group.
     Optional<String> memberId = Optional.ofNullable(memberIdExtractor.apply(key, value));
     if (memberId.isEmpty()) {
