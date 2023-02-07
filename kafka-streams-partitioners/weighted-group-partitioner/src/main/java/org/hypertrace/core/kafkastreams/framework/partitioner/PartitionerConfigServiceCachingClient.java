@@ -22,9 +22,9 @@ public class PartitionerConfigServiceCachingClient implements PartitionerConfigS
   public PartitionerConfigServiceCachingClient(Config config, GrpcChannelRegistry registry) {
     PartitionerConfigServiceClientConfig clientConfig =
         PartitionerConfigServiceClientConfig.from(config);
-    ManagedChannel managedChannel =
+    Channel channel =
         registry.forPlaintextAddress(clientConfig.getHost(), clientConfig.getPort());
-    this.service = PartitionerConfigServiceGrpc.newBlockingStub(managedChannel);
+    this.service = PartitionerConfigServiceGrpc.newBlockingStub(channel);
     this.partitionerConfigProfileCache =
         CacheBuilder.newBuilder()
             .refreshAfterWrite(clientConfig.getRefreshDuration())
