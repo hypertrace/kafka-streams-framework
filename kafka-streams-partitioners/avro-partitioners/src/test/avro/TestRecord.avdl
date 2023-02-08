@@ -1,0 +1,14 @@
+@namespace("org.hypertrace.core.kafkastreams.framework.partitioner")
+protocol TestRecordProtocol {
+  record TestCustomerRecord {
+    string customer_id;
+    string span_id;
+    string trace_id;
+  }
+
+  record TestTenantRecord {
+    string tenant_id;
+    string span_id;
+    string trace_id;
+  }
+}
