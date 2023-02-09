@@ -20,7 +20,7 @@ public class WeightedGroupPartitionerTest {
   public void testPartitionerWithNonOverlappingGroupPartitions() {
     WeightedGroupPartitioner<String, String> partitioner =
         new WeightedGroupPartitioner<>(
-            configServiceClient, "spans", groupKeyExtractor, delegatePartitioner);
+            "spans", configServiceClient, groupKeyExtractor, delegatePartitioner);
 
     // Test case 1: tenant-1 belong to group-1 (partitions: [0,])
     int partition = partitioner.partition("test-topic", "tenant-1", "span-1", 8);
@@ -43,7 +43,7 @@ public class WeightedGroupPartitionerTest {
   public void testPartitionerWithOverlappingGroupPartitions() {
     WeightedGroupPartitioner<String, String> partitioner =
         new WeightedGroupPartitioner<>(
-            configServiceClient, "spans", groupKeyExtractor, delegatePartitioner);
+            "spans", configServiceClient, groupKeyExtractor, delegatePartitioner);
 
     // Test case 1: tenant-1 belong to group-1 (partitions: [0])
     int partition = partitioner.partition("test-topic", "tenant-1", "span-1", 3);
@@ -66,7 +66,7 @@ public class WeightedGroupPartitionerTest {
   public void testPartitionerWithSinglePartition() {
     WeightedGroupPartitioner<String, String> partitioner =
         new WeightedGroupPartitioner<>(
-            configServiceClient, "spans", groupKeyExtractor, delegatePartitioner);
+            "spans", configServiceClient, groupKeyExtractor, delegatePartitioner);
 
     // Test case 1: tenant-1 belong to group-1 (partitions: [0])
     int partition = partitioner.partition("test-topic", "tenant-1", "span-1", 1);
@@ -89,7 +89,7 @@ public class WeightedGroupPartitionerTest {
   public void testPartitionerWhenGroupKeyIsNull() {
     WeightedGroupPartitioner<String, String> partitioner =
         new WeightedGroupPartitioner<>(
-            configServiceClient, "spans", (key, value) -> null, delegatePartitioner);
+            "spans", configServiceClient, (key, value) -> null, delegatePartitioner);
 
     // should always use default group when group key is null [4,5,6,7]
     int partition = partitioner.partition("test-topic", null, "value-1", 8);
@@ -113,8 +113,8 @@ public class WeightedGroupPartitionerTest {
   public void testPartitionerWhenDelegateReturnsNull() {
     WeightedGroupPartitioner<String, String> partitioner =
         new WeightedGroupPartitioner<>(
-            configServiceClient,
             "spans",
+            configServiceClient,
             groupKeyExtractor,
             (topic, key, value, numPartitions) -> null);
 

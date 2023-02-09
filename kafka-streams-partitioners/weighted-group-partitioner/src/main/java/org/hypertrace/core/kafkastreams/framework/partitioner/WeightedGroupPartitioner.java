@@ -18,18 +18,18 @@ public class WeightedGroupPartitioner<K, V> implements StreamPartitioner<K, V> {
   private final RoundRobinPartitioner<K, V> fallbackDelegatePartitioner;
 
   public WeightedGroupPartitioner(
-      @Nonnull PartitionerConfigServiceClient configServiceClient,
       @Nonnull String profileName,
+      @Nonnull PartitionerConfigServiceClient configServiceClient,
       @Nonnull BiFunction<K, V, String> memberIdExtractor,
       @Nonnull StreamPartitioner<K, V> delegatePartitioner) {
 
-    Preconditions.checkNotNull(configServiceClient);
     Preconditions.checkNotNull(profileName);
+    Preconditions.checkNotNull(configServiceClient);
     Preconditions.checkNotNull(memberIdExtractor);
     Preconditions.checkNotNull(delegatePartitioner);
 
-    this.configServiceClient = configServiceClient;
     this.profileName = profileName;
+    this.configServiceClient = configServiceClient;
     this.memberIdExtractor = memberIdExtractor;
     this.delegatePartitioner = delegatePartitioner;
     this.fallbackDelegatePartitioner = new RoundRobinPartitioner<>();
