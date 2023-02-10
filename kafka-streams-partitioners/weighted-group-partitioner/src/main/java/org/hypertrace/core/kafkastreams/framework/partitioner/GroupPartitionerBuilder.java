@@ -6,6 +6,10 @@ import java.util.function.BiFunction;
 import org.apache.kafka.streams.processor.StreamPartitioner;
 import org.hypertrace.core.grpcutils.client.GrpcChannelRegistry;
 
+/**
+ * Helper class to build the group partitioner when enabled. Returns delegate partitioner when group
+ * partitioner is disabled.
+ */
 public class GroupPartitionerBuilder<K, V> {
   static final String GROUP_PARTITIONER_CONFIG_PREFIX = "group.partitioner";
   static final String GROUP_PARTITIONER_CONFIG_SERVICE_PREFIX = "service";
