@@ -8,10 +8,10 @@ import lombok.Value;
 @Builder
 @Value
 public class PartitionerConfigServiceClientConfig {
-  private static final String HOST_KEY = "host";
-  private static final String PORT_KEY = "port";
-  private static final String REFRESH_DURATION_KEY = "refresh.duration";
-  private static final Duration DEFAULT_REFRESH_DURATION = Duration.ofHours(1);
+  static final String HOST_KEY = "host";
+  static final String PORT_KEY = "port";
+  static final String CACHE_DURATION_KEY = "cache.duration";
+  static final Duration DEFAULT_REFRESH_DURATION = Duration.ofHours(1);
 
   String host;
   int port;
@@ -25,8 +25,8 @@ public class PartitionerConfigServiceClientConfig {
     // https://github.com/lightbend/config/blob/master/HOCON.md#duration-format
     // Examples: 3600000, 3600000ms, 3600s, 60m, 1h
     // Above examples indicates duration of 1 hours in different formats.
-    if (config.hasPath(REFRESH_DURATION_KEY)) {
-      refreshDuration = config.getDuration(REFRESH_DURATION_KEY);
+    if (config.hasPath(CACHE_DURATION_KEY)) {
+      refreshDuration = config.getDuration(CACHE_DURATION_KEY);
     } else {
       refreshDuration = DEFAULT_REFRESH_DURATION;
     }

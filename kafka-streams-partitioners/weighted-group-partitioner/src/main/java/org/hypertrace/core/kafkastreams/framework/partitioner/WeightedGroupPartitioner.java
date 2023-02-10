@@ -1,13 +1,25 @@
 package org.hypertrace.core.kafkastreams.framework.partitioner;
 
 import com.google.common.base.Preconditions;
+import com.typesafe.config.Config;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import javax.annotation.Nonnull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.streams.processor.StreamPartitioner;
+import org.hypertrace.core.grpcutils.client.GrpcChannelRegistry;
 import org.hypertrace.core.kafkastreams.framework.partitioner.WeightedGroupProfile.WeightedGroup;
 
+/**
+ * Stream partitioner which does partitioning in 2 phases. In phase #1, a group of partitions is
+ * identified based on the member-id extracted. In phase #2, target partition (within group
+ * identified in phase #1) is derived based on a given delegate partitioner.
+ *
+ * <p>For ease of use, a helper builder is provided.
+ *
+ * @see GroupPartitionerBuilder#buildPartitioner(String, Config, BiFunction, StreamPartitioner,
+ *     GrpcChannelRegistry)
+ */
 @Slf4j
 public class WeightedGroupPartitioner<K, V> implements StreamPartitioner<K, V> {
   private final String profileName;
@@ -18,18 +30,18 @@ public class WeightedGroupPartitioner<K, V> implements StreamPartitioner<K, V> {
   private final RoundRobinPartitioner<K, V> fallbackDelegatePartitioner;
 
   public WeightedGroupPartitioner(
-      @Nonnull PartitionerConfigServiceClient configServiceClient,
       @Nonnull String profileName,
+      @Nonnull PartitionerConfigServiceClient configServiceClient,
       @Nonnull BiFunction<K, V, String> memberIdExtractor,
       @Nonnull StreamPartitioner<K, V> delegatePartitioner) {
 
-    Preconditions.checkNotNull(configServiceClient);
     Preconditions.checkNotNull(profileName);
+    Preconditions.checkNotNull(configServiceClient);
     Preconditions.checkNotNull(memberIdExtractor);
     Preconditions.checkNotNull(delegatePartitioner);
 
-    this.configServiceClient = configServiceClient;
     this.profileName = profileName;
+    this.configServiceClient = configServiceClient;
     this.memberIdExtractor = memberIdExtractor;
     this.delegatePartitioner = delegatePartitioner;
     this.fallbackDelegatePartitioner = new RoundRobinPartitioner<>();
