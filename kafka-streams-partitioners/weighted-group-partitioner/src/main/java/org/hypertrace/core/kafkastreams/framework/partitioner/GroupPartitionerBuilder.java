@@ -7,11 +7,11 @@ import org.apache.kafka.streams.processor.StreamPartitioner;
 import org.hypertrace.core.grpcutils.client.GrpcChannelRegistry;
 
 public class GroupPartitionerBuilder<K, V> {
-  private static final String GROUP_PARTITIONER_CONFIG_PREFIX = "group.partitioner";
-  private static final String GROUP_PARTITIONER_CONFIG_SERVICE_PREFIX = "service";
-  private static final String ENABLED_CONFIG_KEY = "enabled";
+  static final String GROUP_PARTITIONER_CONFIG_PREFIX = "group.partitioner";
+  static final String GROUP_PARTITIONER_CONFIG_SERVICE_PREFIX = "service";
+  static final String ENABLED_CONFIG_KEY = "enabled";
 
-  StreamPartitioner<K, V> buildPartitioner(
+  public StreamPartitioner<K, V> buildPartitioner(
       String profile,
       Config appConfig,
       BiFunction<K, V, String> memberIdExtractor,
