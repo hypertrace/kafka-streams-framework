@@ -13,16 +13,17 @@ import org.junit.jupiter.api.Test;
 public class WeightedGroupPartitionerTest {
   private final PartitionerConfigServiceClient configServiceClient = getTestServiceClient();
   private final BiFunction<String, String, String> groupKeyExtractor = (key, value) -> key;
-  private final StreamPartitioner<String, String> delegatePartitioner =
+  private final StreamPartitioner<String, String> roundRobinPartitioner =
       new RoundRobinPartitioner<>();
+  private final StreamPartitioner<String, String> keyHashPartitioner = new KeyHashPartitioner<>();
 
   @Test
   public void testPartitionerWithNonOverlappingGroupPartitions() {
     WeightedGroupPartitioner<String, String> partitioner =
         new WeightedGroupPartitioner<>(
-            "spans", configServiceClient, groupKeyExtractor, delegatePartitioner);
+            "spans", configServiceClient, groupKeyExtractor, roundRobinPartitioner);
 
-    // Test case 1: tenant-1 belong to group-1 (partitions: [0,])
+    // Test case 1: tenant-1 belong to group-1 (partitions: [0,1])
     int partition = partitioner.partition("test-topic", "tenant-1", "span-1", 8);
     assertTrue(partition >= 0 && partition <= 1);
 
@@ -43,7 +44,7 @@ public class WeightedGroupPartitionerTest {
   public void testPartitionerWithOverlappingGroupPartitions() {
     WeightedGroupPartitioner<String, String> partitioner =
         new WeightedGroupPartitioner<>(
-            "spans", configServiceClient, groupKeyExtractor, delegatePartitioner);
+            "spans", configServiceClient, groupKeyExtractor, roundRobinPartitioner);
 
     // Test case 1: tenant-1 belong to group-1 (partitions: [0])
     int partition = partitioner.partition("test-topic", "tenant-1", "span-1", 3);
@@ -66,7 +67,7 @@ public class WeightedGroupPartitionerTest {
   public void testPartitionerWithSinglePartition() {
     WeightedGroupPartitioner<String, String> partitioner =
         new WeightedGroupPartitioner<>(
-            "spans", configServiceClient, groupKeyExtractor, delegatePartitioner);
+            "spans", configServiceClient, groupKeyExtractor, roundRobinPartitioner);
 
     // Test case 1: tenant-1 belong to group-1 (partitions: [0])
     int partition = partitioner.partition("test-topic", "tenant-1", "span-1", 1);
@@ -89,7 +90,7 @@ public class WeightedGroupPartitionerTest {
   public void testPartitionerWhenGroupKeyIsNull() {
     WeightedGroupPartitioner<String, String> partitioner =
         new WeightedGroupPartitioner<>(
-            "spans", configServiceClient, (key, value) -> null, delegatePartitioner);
+            "spans", configServiceClient, (key, value) -> null, roundRobinPartitioner);
 
     // should always use default group when group key is null [4,5,6,7]
     int partition = partitioner.partition("test-topic", null, "value-1", 8);
@@ -138,6 +139,40 @@ public class WeightedGroupPartitionerTest {
     // Test case 5: groupKey=unknown should use default group (partitions: [4,5,6,7])
     partition = partitioner.partition("test-topic", "unknown", "span-4", 8);
     assertTrue(partition >= 4 && partition <= 7);
+  }
+
+  @Test
+  public void testPartitionerWithKeyHashDelegatePartitioner() {
+    WeightedGroupPartitioner<String, String> partitioner =
+        new WeightedGroupPartitioner<>(
+            "spans", configServiceClient, groupKeyExtractor, keyHashPartitioner);
+
+    // Test case 1: tenant-1 belong to group-1 (partitions: [0,1])
+    int partition = partitioner.partition("test-topic", "tenant-1", "span-1", 8);
+    assertTrue(partition >= 0 && partition <= 1);
+
+    // Test case 2: tenant-2 belong to group-2 (partitions: [2,3])
+    partition = partitioner.partition("test-topic", "tenant-2", "span-2", 8);
+    assertTrue(partition >= 2 && partition <= 3);
+
+    // Test case 3: tenant-3 belong to group-2 (partitions: [2,3])
+    partition = partitioner.partition("test-topic", "tenant-3", "span-3", 8);
+    assertTrue(partition >= 2 && partition <= 3);
+
+    // Test case 4: groupKey=unknown should use default group [4,5,6,7]
+    partition = partitioner.partition("test-topic", "unknown", "span-4", 8);
+    assertTrue(partition >= 4 && partition <= 7);
+
+    // Test case 5: groupKey=unknown should use default group [4,5,6,7], key is null - should always
+    // go to first partition in the group
+    partition = partitioner.partition("test-topic", null, "span-5", 8);
+    assertEquals(4, partition);
+    partition = partitioner.partition("test-topic", null, "span-6", 8);
+    assertEquals(4, partition);
+    partition = partitioner.partition("test-topic", null, "span-7", 8);
+    assertEquals(4, partition);
+    partition = partitioner.partition("test-topic", null, "span-8", 8);
+    assertEquals(4, partition);
   }
 
   private PartitionerConfigServiceClient getTestServiceClient() {
