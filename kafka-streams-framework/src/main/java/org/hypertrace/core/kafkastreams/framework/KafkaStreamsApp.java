@@ -1,5 +1,7 @@
 package org.hypertrace.core.kafkastreams.framework;
 
+import static io.grpc.Deadline.after;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.kafka.clients.consumer.ConsumerConfig.AUTO_OFFSET_RESET_CONFIG;
 import static org.apache.kafka.clients.producer.ProducerConfig.ACKS_CONFIG;
 import static org.apache.kafka.clients.producer.ProducerConfig.BATCH_SIZE_CONFIG;
@@ -23,6 +25,7 @@ import com.typesafe.config.Config;
 import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
+import io.micrometer.core.instrument.binder.grpc.MetricCollectingClientInterceptor;
 import io.micrometer.core.instrument.binder.kafka.KafkaStreamsMetrics;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -39,6 +42,8 @@ import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.errors.LogAndContinueExceptionHandler;
 import org.apache.kafka.streams.kstream.KStream;
+import org.hypertrace.core.grpcutils.client.GrpcChannelRegistry;
+import org.hypertrace.core.grpcutils.client.GrpcRegistryConfig;
 import org.hypertrace.core.kafkastreams.framework.listeners.LoggingStateListener;
 import org.hypertrace.core.kafkastreams.framework.listeners.LoggingStateRestoreListener;
 import org.hypertrace.core.kafkastreams.framework.rocksdb.BoundedMemoryConfigSetter;
@@ -58,6 +63,9 @@ public abstract class KafkaStreamsApp extends PlatformService {
   public static final String PRE_CREATE_TOPICS = "precreate.topics";
   public static final String KAFKA_STREAMS_CONFIG_KEY = "kafka.streams.config";
   private static final Logger logger = LoggerFactory.getLogger(KafkaStreamsApp.class);
+
+  protected final GrpcChannelRegistry grpcChannelRegistry;
+
   protected KafkaStreams app;
   private KafkaStreamsMetrics metrics;
 
@@ -67,6 +75,13 @@ public abstract class KafkaStreamsApp extends PlatformService {
 
   public KafkaStreamsApp(ConfigClient configClient) {
     super(configClient);
+    this.grpcChannelRegistry =
+        new GrpcChannelRegistry(
+            GrpcRegistryConfig.builder()
+                .defaultInterceptor(
+                    new MetricCollectingClientInterceptor(
+                        PlatformMetricsRegistry.getMeterRegistry()))
+                .build());
   }
 
   @Override
@@ -147,6 +162,7 @@ public abstract class KafkaStreamsApp extends PlatformService {
       metrics.close();
     }
     app.close(Duration.ofSeconds(30));
+    grpcChannelRegistry.shutdown(after(10, SECONDS));
   }
 
   /**
