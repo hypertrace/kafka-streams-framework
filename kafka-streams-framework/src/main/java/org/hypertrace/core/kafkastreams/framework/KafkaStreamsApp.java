@@ -64,7 +64,7 @@ public abstract class KafkaStreamsApp extends PlatformService {
   public static final String KAFKA_STREAMS_CONFIG_KEY = "kafka.streams.config";
   private static final Logger logger = LoggerFactory.getLogger(KafkaStreamsApp.class);
 
-  protected final GrpcChannelRegistry grpcChannelRegistry;
+  private final GrpcChannelRegistry grpcChannelRegistry;
 
   protected KafkaStreams app;
   private KafkaStreamsMetrics metrics;
@@ -82,6 +82,10 @@ public abstract class KafkaStreamsApp extends PlatformService {
                     new MetricCollectingClientInterceptor(
                         PlatformMetricsRegistry.getMeterRegistry()))
                 .build());
+  }
+
+  protected GrpcChannelRegistry getGrpcChannelRegistry() {
+    return grpcChannelRegistry;
   }
 
   @Override
