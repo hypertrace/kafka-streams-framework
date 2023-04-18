@@ -8,10 +8,10 @@ import static org.hypertrace.core.kafkastreams.framework.partitioner.Partitioner
 import static org.hypertrace.core.kafkastreams.framework.partitioner.PartitionerConfigServiceClientConfig.PORT_KEY;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.Maps;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
-import com.typesafe.config.ConfigUtil;
 import java.util.Map;
 import java.util.function.BiFunction;
 import org.apache.kafka.streams.processor.StreamPartitioner;
@@ -90,6 +90,6 @@ public class GroupPartitionerBuilderTest {
   }
 
   private void putIfNotNull(Map<String, String> configMap, String value, String... keyElements) {
-    configMap.put(ConfigUtil.joinPath(keyElements), value);
+    configMap.put(Joiner.on(".").join(keyElements), value);
   }
 }
