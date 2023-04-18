@@ -1,7 +1,7 @@
 package org.hypertrace.core.kafkastreams.framework.partitioner;
 
+import com.google.common.base.Joiner;
 import com.typesafe.config.Config;
-import com.typesafe.config.ConfigUtil;
 import java.util.function.BiFunction;
 import org.apache.kafka.streams.processor.StreamPartitioner;
 import org.hypertrace.core.grpcutils.client.GrpcChannelRegistry;
@@ -22,12 +22,12 @@ public class GroupPartitionerBuilder<K, V> {
       StreamPartitioner<K, V> delegatePartitioner,
       GrpcChannelRegistry channelRegistry) {
     String enabledConfigPath =
-        ConfigUtil.joinPath(GROUP_PARTITIONER_CONFIG_PREFIX, ENABLED_CONFIG_KEY);
+        Joiner.on(".").join(GROUP_PARTITIONER_CONFIG_PREFIX, ENABLED_CONFIG_KEY);
     // Use group partitioner only when explicitly enabled.
     if (appConfig.hasPath(enabledConfigPath) && appConfig.getBoolean(enabledConfigPath)) {
       String serviceConfigPath =
-          ConfigUtil.joinPath(
-              GROUP_PARTITIONER_CONFIG_PREFIX, GROUP_PARTITIONER_CONFIG_SERVICE_PREFIX);
+          Joiner.on(".")
+              .join(GROUP_PARTITIONER_CONFIG_PREFIX, GROUP_PARTITIONER_CONFIG_SERVICE_PREFIX);
       PartitionerConfigServiceCachingClient configServiceClient =
           new PartitionerConfigServiceCachingClient(
               appConfig.getConfig(serviceConfigPath), channelRegistry);
