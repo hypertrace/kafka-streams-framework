@@ -4,6 +4,7 @@ import com.google.common.util.concurrent.RateLimiter;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
@@ -41,18 +42,21 @@ public abstract class AsyncTransformer<K, V, KOUT, VOUT>
   @Override
   public void init(ProcessorContext context) {
     this.context = context;
+    doInit(context.appConfigs());
   }
+
+  protected abstract void doInit(Map<String, Object> appConfigs);
 
   public abstract List<KeyValue<KOUT, VOUT>> asyncTransform(K key, V value);
 
   @SneakyThrows
   @Override
-  public KeyValue<KOUT, VOUT> transform(K key, V value) {
+  public final KeyValue<KOUT, VOUT> transform(K key, V value) {
     // Flush based on time duration
     if (rateLimiter.tryAcquire()) {
-      log.info("flush start - type: time, queue size: {}", pendingFutures.size());
+      log.debug("flush start - type: time, queue size: {}", pendingFutures.size());
       processResults();
-      log.info("flush end - type: time, queue size: {}", pendingFutures.size());
+      log.debug("flush end - type: time, queue size: {}", pendingFutures.size());
     }
 
     CompletableFuture<List<KeyValue<KOUT, VOUT>>> future =
@@ -60,9 +64,9 @@ public abstract class AsyncTransformer<K, V, KOUT, VOUT>
     // thread blocked when queue is full. queue consumer runs in this same thread.
     // once the queue is full, flush the queue
     if (!pendingFutures.offer(future)) {
-      log.info("flush start - type: size. queue size: {}", pendingFutures.size());
+      log.debug("flush start - type: size. queue size: {}", pendingFutures.size());
       processResults();
-      log.info("flush end - type: size. queue size: {}", pendingFutures.size());
+      log.debug("flush end - type: size. queue size: {}", pendingFutures.size());
       pendingFutures.put(future);
     }
     return null;
@@ -80,13 +84,13 @@ public abstract class AsyncTransformer<K, V, KOUT, VOUT>
       future.join();
       future
           .thenAccept((result) -> result.forEach((kv) -> context.forward(kv.key, kv.value)))
-          .exceptionally(this::logAndRethrow);
-      context.commit();
+          .exceptionally(this::propagateError);
     }
+    context.commit();
   }
 
   @SneakyThrows
-  private Void logAndRethrow(Throwable e) {
-    throw e;
+  private Void propagateError(Throwable error) {
+    throw error;
   }
 }

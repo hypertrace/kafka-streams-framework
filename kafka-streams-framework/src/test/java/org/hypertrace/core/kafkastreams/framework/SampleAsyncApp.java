@@ -59,11 +59,15 @@ class SlowTransformer extends AsyncTransformer<String, String, String, String> {
     super(concurrency, maxBatchSize, flushInterval);
   }
 
+  @Override
+  protected void doInit(Map<String, Object> appConfigs) {
+    // no-op
+  }
+
   @SneakyThrows
   @Override
   public List<KeyValue<String, String>> asyncTransform(String key, String value) {
     Thread.sleep(25);
-    // if(true) throw new RuntimeException("processing error");
     return List.of(KeyValue.pair("out:" + key, "out:" + value));
   }
 }
