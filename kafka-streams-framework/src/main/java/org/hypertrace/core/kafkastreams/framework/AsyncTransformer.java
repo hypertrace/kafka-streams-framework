@@ -52,23 +52,25 @@ public abstract class AsyncTransformer<K, V, KOUT, VOUT>
   @SneakyThrows
   @Override
   public final KeyValue<KOUT, VOUT> transform(K key, V value) {
-    // Flush based on time duration
-    if (rateLimiter.tryAcquire()) {
+
+    CompletableFuture<List<KeyValue<KOUT, VOUT>>> future =
+            CompletableFuture.supplyAsync(() -> asyncTransform(key, value), executor);
+    // with put, thread gets blocked when queue is full. queue consumer runs in this same thread.
+    pendingFutures.put(future);
+
+    // Flush based on size
+    // once the queue is full, flush the queue.
+    if (pendingFutures.remainingCapacity() == 0) {
+      log.debug("flush start - type: size. queue size: {}", pendingFutures.size());
+      processResults();
+      log.debug("flush end - type: size. queue size: {}", pendingFutures.size());
+    } else if (rateLimiter.tryAcquire()) {
+      // Flush based on time duration
       log.debug("flush start - type: time, queue size: {}", pendingFutures.size());
       processResults();
       log.debug("flush end - type: time, queue size: {}", pendingFutures.size());
     }
 
-    CompletableFuture<List<KeyValue<KOUT, VOUT>>> future =
-        CompletableFuture.supplyAsync(() -> asyncTransform(key, value), executor);
-    // thread blocked when queue is full. queue consumer runs in this same thread.
-    // once the queue is full, flush the queue
-    if (!pendingFutures.offer(future)) {
-      log.debug("flush start - type: size. queue size: {}", pendingFutures.size());
-      processResults();
-      log.debug("flush end - type: size. queue size: {}", pendingFutures.size());
-      pendingFutures.put(future);
-    }
     return null;
   }
 

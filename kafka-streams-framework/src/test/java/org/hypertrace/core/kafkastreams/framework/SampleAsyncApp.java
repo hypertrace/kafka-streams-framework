@@ -68,6 +68,7 @@ class SlowTransformer extends AsyncTransformer<String, String, String, String> {
   @Override
   public List<KeyValue<String, String>> asyncTransform(String key, String value) {
     Thread.sleep(25);
+    if(value.endsWith("0")) throw new RuntimeException("error error...");
     return List.of(KeyValue.pair("out:" + key, "out:" + value));
   }
 }

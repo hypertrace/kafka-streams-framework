@@ -75,6 +75,9 @@ public class SampleAsyncAppTest {
       assertThat(outputTopic.readValue(), endsWith("value-" + i));
     }
 
+    // read the final record
+    outputTopic.readKeyValue();
+
     assertThat(outputTopic.isEmpty(), is(true));
   }
 
