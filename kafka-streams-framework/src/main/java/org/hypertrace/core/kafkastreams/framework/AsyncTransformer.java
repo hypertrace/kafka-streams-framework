@@ -54,7 +54,7 @@ public abstract class AsyncTransformer<K, V, KOUT, VOUT>
   public final KeyValue<KOUT, VOUT> transform(K key, V value) {
 
     CompletableFuture<List<KeyValue<KOUT, VOUT>>> future =
-            CompletableFuture.supplyAsync(() -> asyncTransform(key, value), executor);
+        CompletableFuture.supplyAsync(() -> asyncTransform(key, value), executor);
     // with put, thread gets blocked when queue is full. queue consumer runs in this same thread.
     pendingFutures.put(future);
 
