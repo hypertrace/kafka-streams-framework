@@ -65,13 +65,14 @@ public class SampleAsyncAppTest {
     assertThat(outputTopic.isEmpty(), is(true));
 
     int batchSize = 1000;
-    for (int i = 0; i <= batchSize; i++) {
+    for (int i = 1; i <= batchSize; i++) {
       inputTopic.pipeInput("key-" + i, "value-" + i);
     }
 
     Thread.sleep(1000);
     inputTopic.pipeInput("final", "final");
-    for (int i = 0; i <= batchSize; i++) {
+    // test ordered processing. mandatory requirement.
+    for (int i = 1; i <= batchSize; i++) {
       assertThat(outputTopic.readValue(), endsWith("value-" + i));
     }
 

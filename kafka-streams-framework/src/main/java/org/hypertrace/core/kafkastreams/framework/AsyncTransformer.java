@@ -58,19 +58,13 @@ public abstract class AsyncTransformer<K, V, KOUT, VOUT>
     // with put, thread gets blocked when queue is full. queue consumer runs in this same thread.
     pendingFutures.put(future);
 
-    // Flush based on size
+    // Flush based on size or time - whichever occurs first
     // once the queue is full, flush the queue.
-    if (pendingFutures.remainingCapacity() == 0) {
-      log.debug("flush start - type: size. queue size: {}", pendingFutures.size());
+    if (pendingFutures.remainingCapacity() == 0 || rateLimiter.tryAcquire()) {
+      log.debug("flush start - queue size before flush: {}", pendingFutures.size());
       processResults();
-      log.debug("flush end - type: size. queue size: {}", pendingFutures.size());
-    } else if (rateLimiter.tryAcquire()) {
-      // Flush based on time duration
-      log.debug("flush start - type: time, queue size: {}", pendingFutures.size());
-      processResults();
-      log.debug("flush end - type: time, queue size: {}", pendingFutures.size());
+      log.debug("flush end - queue size after flush: {}", pendingFutures.size());
     }
-
     return null;
   }
 
@@ -83,16 +77,12 @@ public abstract class AsyncTransformer<K, V, KOUT, VOUT>
   private void processResults() {
     while (!pendingFutures.isEmpty()) {
       CompletableFuture<List<KeyValue<KOUT, VOUT>>> future = pendingFutures.poll();
+      // makes sure transformation is complete
       future.join();
-      future
-          .thenAccept((result) -> result.forEach((kv) -> context.forward(kv.key, kv.value)))
-          .exceptionally(this::propagateError);
+      // another join is needed to make sure downstream forward is also complete
+      future.thenAccept(result -> result.forEach(kv -> context.forward(kv.key, kv.value))).join();
     }
+    // commit once per batch
     context.commit();
-  }
-
-  @SneakyThrows
-  private Void propagateError(Throwable error) {
-    throw error;
   }
 }
