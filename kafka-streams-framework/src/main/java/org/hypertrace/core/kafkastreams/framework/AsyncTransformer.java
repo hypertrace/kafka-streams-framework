@@ -11,6 +11,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.function.Supplier;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.streams.KeyValue;
@@ -35,6 +36,13 @@ public abstract class AsyncTransformer<K, V, KOUT, VOUT>
             .setDaemon(true)
             .build();
     this.executor = Executors.newFixedThreadPool(concurrency, threadFactory);
+    this.pendingFutures = new ArrayBlockingQueue<>(maxBatchSize);
+    this.rateLimiter = RateLimiter.create(1.0 / flushInterval.toSeconds());
+  }
+
+  public AsyncTransformer(
+      Supplier<Executor> executorSupplier, int maxBatchSize, Duration flushInterval) {
+    this.executor = executorSupplier.get();
     this.pendingFutures = new ArrayBlockingQueue<>(maxBatchSize);
     this.rateLimiter = RateLimiter.create(1.0 / flushInterval.toSeconds());
   }
