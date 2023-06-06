@@ -1,7 +1,10 @@
 package org.hypertrace.core.kafkastreams.framework;
 
+import static org.hypertrace.core.kafkastreams.framework.KafkaStreamsApp.KAFKA_STREAMS_CONFIG_KEY;
+
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.typesafe.config.Config;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -23,9 +26,13 @@ import org.apache.kafka.streams.processor.ProcessorContext;
 public abstract class AsyncTransformer<K, V, KOUT, VOUT>
     implements Transformer<K, V, KeyValue<KOUT, VOUT>> {
   private final Executor executor;
-  private final BlockingQueue<CompletableFuture<List<KeyValue<KOUT, VOUT>>>> pendingFutures;
-  private final RateLimiter rateLimiter;
+  private BlockingQueue<CompletableFuture<List<KeyValue<KOUT, VOUT>>>> pendingFutures;
+  private RateLimiter rateLimiter;
   private ProcessorContext context;
+  private String transformerName;
+  private static final String COMMIT_INTERVAL_CONFIG_KEY = "commitIntervalMs";
+  private static final String MAX_BATCH_SIZE_CONFIG_KEY = "maxBatchSize";
+  private static final String TRANSFORMERS_CONFIG_KEY = "async.transformers";
 
   // TODO: configurable executor - supplier pattern. This enables to use a common thread-pool for
   // all stream tasks
@@ -47,10 +54,24 @@ public abstract class AsyncTransformer<K, V, KOUT, VOUT>
     this.rateLimiter = RateLimiter.create(1.0 / flushInterval.toSeconds());
   }
 
+  public AsyncTransformer(Supplier<Executor> executorSupplier, String name) {
+    this.executor = executorSupplier.get();
+    this.transformerName = name;
+  }
+
   @Override
-  public void init(ProcessorContext context) {
+  public final void init(ProcessorContext context) {
     this.context = context;
-    doInit(context.appConfigs());
+    Map<String, Object> appConfigs = context.appConfigs();
+    Config kafkaStreamsConfig = (Config) appConfigs.get(KAFKA_STREAMS_CONFIG_KEY);
+    Config transformerConfig =
+        kafkaStreamsConfig.getConfig(TRANSFORMERS_CONFIG_KEY).getConfig(this.transformerName);
+    Duration flushInterval =
+        Duration.ofMillis(transformerConfig.getInt(COMMIT_INTERVAL_CONFIG_KEY));
+    this.pendingFutures =
+        new ArrayBlockingQueue<>(transformerConfig.getInt(MAX_BATCH_SIZE_CONFIG_KEY));
+    this.rateLimiter = RateLimiter.create(1.0 / flushInterval.toSeconds());
+    doInit(appConfigs);
   }
 
   protected abstract void doInit(Map<String, Object> appConfigs);
