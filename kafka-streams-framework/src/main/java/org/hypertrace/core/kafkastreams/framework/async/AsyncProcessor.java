@@ -1,4 +1,4 @@
-package org.hypertrace.core.kafkastreams.framework;
+package org.hypertrace.core.kafkastreams.framework.async;
 
 import org.apache.kafka.streams.processor.api.Processor;
 import org.apache.kafka.streams.processor.api.Record;
