@@ -14,7 +14,7 @@ import org.apache.kafka.streams.processor.api.Processor;
 import org.apache.kafka.streams.processor.api.Record;
 import org.hypertrace.core.kafkastreams.framework.async.AsyncExecutorBuilder;
 import org.hypertrace.core.kafkastreams.framework.async.AsyncTransformer;
-import org.hypertrace.core.kafkastreams.framework.async.AsyncTransformerConfigBuilder;
+import org.hypertrace.core.kafkastreams.framework.async.AsyncTransformerConfig;
 import org.hypertrace.core.kafkastreams.framework.constants.KafkaStreamsAppConstants;
 import org.hypertrace.core.serviceframework.config.ConfigClient;
 
@@ -39,17 +39,14 @@ public class SampleAsyncApp extends KafkaStreamsApp {
       StreamsBuilder streamsBuilder,
       Map<String, KStream<?, ?>> sourceStreams) {
     KStream<String, String> stream = streamsBuilder.stream(INPUT_TOPIC);
-    AsyncExecutorBuilder kakfaAsyncExecutorBuilder =
-        new AsyncExecutorBuilder(configClient.getConfig());
-    AsyncTransformerConfigBuilder asyncTransformerConfigBuilder =
-        new AsyncTransformerConfigBuilder(configClient.getConfig());
+
+    Config kafkaStreamsConfig = configClient.getConfig().getConfig(KAFKA_STREAMS_CONFIG_KEY);
     KStream<String, String> transform =
         stream.transform(
             () ->
                 new SlowTransformer(
-                    kakfaAsyncExecutorBuilder::buildExecutor,
-                    asyncTransformerConfigBuilder,
-                    "slow.transformer"));
+                    AsyncExecutorBuilder.withConfig(kafkaStreamsConfig)::build,
+                    AsyncTransformerConfig.buildWith(kafkaStreamsConfig, "slow.transformer")));
     transform.process(LoggingProcessor::new);
     transform.to(OUTPUT_TOPIC);
     return streamsBuilder;
@@ -70,10 +67,8 @@ public class SampleAsyncApp extends KafkaStreamsApp {
 class SlowTransformer extends AsyncTransformer<String, String, String, String> {
 
   public SlowTransformer(
-      Supplier<Executor> executorSupplier,
-      AsyncTransformerConfigBuilder asyncTransformerConfigBuilder,
-      String transformerName) {
-    super(executorSupplier, asyncTransformerConfigBuilder, transformerName);
+      Supplier<Executor> executorSupplier, AsyncTransformerConfig asyncTransformerConfigBuilder) {
+    super(executorSupplier, asyncTransformerConfigBuilder);
   }
 
   @Override

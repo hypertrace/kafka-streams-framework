@@ -1,6 +1,7 @@
 package org.hypertrace.core.kafkastreams.framework.async;
 
-import static org.hypertrace.core.kafkastreams.framework.KafkaStreamsApp.KAFKA_STREAMS_CONFIG_KEY;
+import static org.hypertrace.core.kafkastreams.framework.async.Constants.ASYNC_EXECUTOR_POOL_SIZE_KEY;
+import static org.hypertrace.core.kafkastreams.framework.async.Constants.DEFAULT_ASYNC_EXECUTOR_POOL_SIZE;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.typesafe.config.Config;
@@ -9,20 +10,32 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
 public class AsyncExecutorBuilder {
-  private final Config jobConfig;
+  private final int poolSize;
 
-  public AsyncExecutorBuilder(Config jobConfig) {
-    this.jobConfig = jobConfig;
+  private Executor executor;
+
+  AsyncExecutorBuilder(int poolSize) {
+    this.poolSize = poolSize;
   }
 
-  public Executor buildExecutor() {
-    int concurrency =
-        jobConfig.getConfig(KAFKA_STREAMS_CONFIG_KEY).getInt("async.executors.maxPoolSize");
+  public static AsyncExecutorBuilder withConfig(Config config) {
+    int poolSize =
+        config.hasPath(ASYNC_EXECUTOR_POOL_SIZE_KEY)
+            ? config.getInt(ASYNC_EXECUTOR_POOL_SIZE_KEY)
+            : DEFAULT_ASYNC_EXECUTOR_POOL_SIZE;
+    return new AsyncExecutorBuilder(poolSize);
+  }
+
+  public synchronized Executor build() {
+    if (this.executor != null) {
+      return this.executor;
+    }
     ThreadFactory threadFactory =
         new ThreadFactoryBuilder()
             .setNameFormat("kafka-streams-async-worker-%d")
             .setDaemon(true)
             .build();
-    return Executors.newFixedThreadPool(concurrency, threadFactory);
+    executor = Executors.newFixedThreadPool(this.poolSize, threadFactory);
+    return executor;
   }
 }
