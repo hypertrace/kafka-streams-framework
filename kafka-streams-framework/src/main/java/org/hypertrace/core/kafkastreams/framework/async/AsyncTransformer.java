@@ -26,9 +26,9 @@ public abstract class AsyncTransformer<K, V, KOUT, VOUT>
   public AsyncTransformer(
       Supplier<Executor> executorSupplier, AsyncTransformerConfig asyncTransformerConfig) {
     this.executor = executorSupplier.get();
-    this.pendingFutures = new ArrayBlockingQueue<>(asyncTransformerConfig.maxBatchSize());
+    this.pendingFutures = new ArrayBlockingQueue<>(asyncTransformerConfig.getMaxBatchSize());
     this.rateLimiter =
-        RateLimiter.create(1.0 / asyncTransformerConfig.commitInterval().toSeconds());
+        RateLimiter.create(1.0 / asyncTransformerConfig.getCommitIntervalMs().toSeconds());
   }
 
   @Override

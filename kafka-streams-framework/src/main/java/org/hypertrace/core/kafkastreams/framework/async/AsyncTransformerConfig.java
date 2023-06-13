@@ -5,17 +5,19 @@ import static org.hypertrace.core.kafkastreams.framework.async.Constants.DEFAULT
 
 import com.typesafe.config.Config;
 import java.time.Duration;
+import lombok.Getter;
 
+@Getter
 public class AsyncTransformerConfig {
   private static final String COMMIT_INTERVAL_CONFIG_KEY = "commitIntervalMs";
   private static final String MAX_BATCH_SIZE_CONFIG_KEY = "maxBatchSize";
   private static final String TRANSFORMERS_CONFIG_KEY = "async.transformers";
   private final int maxBatchSize;
-  private final int commitInterval;
+  private final Duration commitIntervalMs;
 
-  AsyncTransformerConfig(int maxBatchSize, int commitInterval) {
+  AsyncTransformerConfig(int maxBatchSize, int commitIntervalMs) {
     this.maxBatchSize = maxBatchSize;
-    this.commitInterval = commitInterval;
+    this.commitIntervalMs = Duration.ofMillis(commitIntervalMs);
   }
 
   public static AsyncTransformerConfig buildWith(Config config, String transformerName) {
@@ -35,13 +37,5 @@ public class AsyncTransformerConfig {
     }
     return new AsyncTransformerConfig(
         DEFAULT_ASYNC_TRANSFORMER_BATCH_SIZE, DEFAULT_ASYNC_TRANSFORMER_COMMIT_INTERVAL);
-  }
-
-  public int maxBatchSize() {
-    return maxBatchSize;
-  }
-
-  public Duration commitInterval() {
-    return Duration.ofMillis(commitInterval);
   }
 }

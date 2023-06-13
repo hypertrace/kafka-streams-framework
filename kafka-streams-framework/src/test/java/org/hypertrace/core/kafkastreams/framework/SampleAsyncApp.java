@@ -12,9 +12,9 @@ import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.processor.api.Processor;
 import org.apache.kafka.streams.processor.api.Record;
-import org.hypertrace.core.kafkastreams.framework.async.AsyncExecutorBuilder;
 import org.hypertrace.core.kafkastreams.framework.async.AsyncTransformer;
 import org.hypertrace.core.kafkastreams.framework.async.AsyncTransformerConfig;
+import org.hypertrace.core.kafkastreams.framework.async.ExecutorFactory;
 import org.hypertrace.core.kafkastreams.framework.constants.KafkaStreamsAppConstants;
 import org.hypertrace.core.serviceframework.config.ConfigClient;
 
@@ -45,7 +45,7 @@ public class SampleAsyncApp extends KafkaStreamsApp {
         stream.transform(
             () ->
                 new SlowTransformer(
-                    AsyncExecutorBuilder.withConfig(kafkaStreamsConfig)::build,
+                    ExecutorFactory.getExecutorSupplier(kafkaStreamsConfig),
                     AsyncTransformerConfig.buildWith(kafkaStreamsConfig, "slow.transformer")));
     transform.process(LoggingProcessor::new);
     transform.to(OUTPUT_TOPIC);
