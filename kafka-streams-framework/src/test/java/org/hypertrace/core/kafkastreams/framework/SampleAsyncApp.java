@@ -1,9 +1,10 @@
 package org.hypertrace.core.kafkastreams.framework;
 
 import com.typesafe.config.Config;
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executor;
+import java.util.function.Supplier;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.streams.KeyValue;
@@ -11,6 +12,9 @@ import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.processor.api.Processor;
 import org.apache.kafka.streams.processor.api.Record;
+import org.hypertrace.core.kafkastreams.framework.async.AsyncTransformer;
+import org.hypertrace.core.kafkastreams.framework.async.AsyncTransformerConfig;
+import org.hypertrace.core.kafkastreams.framework.async.ExecutorFactory;
 import org.hypertrace.core.kafkastreams.framework.constants.KafkaStreamsAppConstants;
 import org.hypertrace.core.serviceframework.config.ConfigClient;
 
@@ -35,8 +39,14 @@ public class SampleAsyncApp extends KafkaStreamsApp {
       StreamsBuilder streamsBuilder,
       Map<String, KStream<?, ?>> sourceStreams) {
     KStream<String, String> stream = streamsBuilder.stream(INPUT_TOPIC);
+
+    Config kafkaStreamsConfig = configClient.getConfig().getConfig(KAFKA_STREAMS_CONFIG_KEY);
     KStream<String, String> transform =
-        stream.transform(() -> new SlowTransformer(16, 128, Duration.ofSeconds(1)));
+        stream.transform(
+            () ->
+                new SlowTransformer(
+                    ExecutorFactory.getExecutorSupplier(kafkaStreamsConfig),
+                    AsyncTransformerConfig.buildWith(kafkaStreamsConfig, "slow.transformer")));
     transform.process(LoggingProcessor::new);
     transform.to(OUTPUT_TOPIC);
     return streamsBuilder;
@@ -56,8 +66,9 @@ public class SampleAsyncApp extends KafkaStreamsApp {
 @Slf4j
 class SlowTransformer extends AsyncTransformer<String, String, String, String> {
 
-  public SlowTransformer(int concurrency, int maxBatchSize, Duration flushInterval) {
-    super(concurrency, maxBatchSize, flushInterval);
+  public SlowTransformer(
+      Supplier<Executor> executorSupplier, AsyncTransformerConfig asyncTransformerConfigBuilder) {
+    super(executorSupplier, asyncTransformerConfigBuilder);
   }
 
   @Override

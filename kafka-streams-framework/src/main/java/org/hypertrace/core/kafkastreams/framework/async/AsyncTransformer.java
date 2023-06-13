@@ -1,16 +1,12 @@
-package org.hypertrace.core.kafkastreams.framework;
+package org.hypertrace.core.kafkastreams.framework.async;
 
 import com.google.common.util.concurrent.RateLimiter;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
 import java.util.function.Supplier;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -27,28 +23,16 @@ public abstract class AsyncTransformer<K, V, KOUT, VOUT>
   private final RateLimiter rateLimiter;
   private ProcessorContext context;
 
-  // TODO: configurable executor - supplier pattern. This enables to use a common thread-pool for
-  // all stream tasks
-  public AsyncTransformer(int concurrency, int maxBatchSize, Duration flushInterval) {
-    ThreadFactory threadFactory =
-        new ThreadFactoryBuilder()
-            .setNameFormat("async-transformer-pool-%d")
-            .setDaemon(true)
-            .build();
-    this.executor = Executors.newFixedThreadPool(concurrency, threadFactory);
-    this.pendingFutures = new ArrayBlockingQueue<>(maxBatchSize);
-    this.rateLimiter = RateLimiter.create(1.0 / flushInterval.toSeconds());
-  }
-
   public AsyncTransformer(
-      Supplier<Executor> executorSupplier, int maxBatchSize, Duration flushInterval) {
+      Supplier<Executor> executorSupplier, AsyncTransformerConfig asyncTransformerConfig) {
     this.executor = executorSupplier.get();
-    this.pendingFutures = new ArrayBlockingQueue<>(maxBatchSize);
-    this.rateLimiter = RateLimiter.create(1.0 / flushInterval.toSeconds());
+    this.pendingFutures = new ArrayBlockingQueue<>(asyncTransformerConfig.getMaxBatchSize());
+    this.rateLimiter =
+        RateLimiter.create(1.0 / asyncTransformerConfig.getCommitIntervalMs().toSeconds());
   }
 
   @Override
-  public void init(ProcessorContext context) {
+  public final void init(ProcessorContext context) {
     this.context = context;
     doInit(context.appConfigs());
   }
