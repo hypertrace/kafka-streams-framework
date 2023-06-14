@@ -20,6 +20,7 @@ import static org.apache.kafka.streams.StreamsConfig.consumerPrefix;
 import static org.apache.kafka.streams.StreamsConfig.producerPrefix;
 import static org.apache.kafka.streams.StreamsConfig.topicPrefix;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Streams;
 import com.typesafe.config.Config;
 import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde;
@@ -100,7 +101,8 @@ public abstract class KafkaStreamsApp extends PlatformService {
       streamsBuilder = buildTopology(streamsConfig, streamsBuilder, sourceStreams);
       this.topology = streamsBuilder.build();
 
-      getLogger().info("Finalized kafka streams configuration: {}", streamsConfig);
+      String streamConfigJson = new ObjectMapper().writeValueAsString(streamsConfig);
+      getLogger().info("Finalized kafka streams configuration: {}", streamConfigJson);
 
       // pre-create input/output topics required for kstream application
       preCreateTopics(streamsConfig);
