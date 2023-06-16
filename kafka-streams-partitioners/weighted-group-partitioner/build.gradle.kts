@@ -15,9 +15,9 @@ dependencies {
 
   api("com.typesafe:config:1.4.2")
   api("org.apache.kafka:kafka-streams:7.2.1-ccs")
-  api("org.hypertrace.core.grpcutils:grpc-client-utils:0.11.2")
-  implementation("com.google.guava:guava:31.1-jre")
-  implementation("org.hypertrace.core.grpcutils:grpc-context-utils:0.11.2")
+  api("org.hypertrace.core.grpcutils:grpc-client-utils:0.12.0")
+  implementation("com.google.guava:guava:32.0.1-jre")
+  implementation("org.hypertrace.core.grpcutils:grpc-context-utils:0.12.0")
   implementation("org.hypertrace.config.service:partitioner-config-service-api:0.1.46")
   implementation("org.slf4j:slf4j-api:1.7.36")
 
@@ -25,5 +25,5 @@ dependencies {
   testImplementation("org.junit-pioneer:junit-pioneer:1.7.1")
   testImplementation("org.mockito:mockito-core:4.5.1")
   testRuntimeOnly("org.apache.logging.log4j:log4j-slf4j-impl:2.17.2")
-  testRuntimeOnly("io.grpc:grpc-netty:1.45.1")
+  testRuntimeOnly("io.grpc:grpc-netty:1.56.0")
 }

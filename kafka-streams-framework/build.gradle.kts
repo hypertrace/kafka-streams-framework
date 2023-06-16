@@ -17,12 +17,12 @@ dependencies {
   api(project(":kafka-streams-serdes"))
   api("org.apache.kafka:kafka-streams:7.2.1-ccs")
   api("io.confluent:kafka-streams-avro-serde:7.2.1")
-  api("org.hypertrace.core.grpcutils:grpc-client-utils:0.11.2")
+  api("org.hypertrace.core.grpcutils:grpc-client-utils:0.12.0")
 
   implementation("org.apache.avro:avro:1.11.1")
   implementation("org.apache.kafka:kafka-clients:7.2.1-ccs")
-  implementation("org.hypertrace.core.serviceframework:platform-metrics:0.1.48")
-  implementation("org.hypertrace.core.serviceframework:platform-service-framework:0.1.48")
+  implementation("org.hypertrace.core.serviceframework:platform-metrics:0.1.52")
+  implementation("org.hypertrace.core.serviceframework:platform-service-framework:0.1.52")
   implementation("org.apache.commons:commons-lang3:3.12.0")
 
   testCompileOnly("org.projectlombok:lombok:1.18.26")

@@ -14,12 +14,16 @@ dependencies {
   annotationProcessor("org.projectlombok:lombok:1.18.24")
   compileOnly("org.projectlombok:lombok:1.18.24")
 
-  implementation("com.google.guava:guava:31.1-jre")
+  implementation("com.google.guava:guava:32.0.1-jre")
   implementation("org.apache.avro:avro:1.11.1")
   implementation("com.typesafe:config:1.4.2")
   implementation("org.apache.kafka:kafka-clients:7.2.1-ccs")
   implementation("org.apache.kafka:kafka-streams:7.2.1-ccs")
   implementation("org.slf4j:slf4j-api:1.7.36")
+
+  constraints {
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.15.2")
+  }
 
   testImplementation("org.junit.jupiter:junit-jupiter:5.8.2")
   testImplementation("org.junit-pioneer:junit-pioneer:1.7.1")
