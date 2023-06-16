@@ -15,6 +15,10 @@ dependencies {
   api("org.apache.avro:avro:1.11.1")
 
   testImplementation("org.junit.jupiter:junit-jupiter:5.8.2")
+
+  constraints {
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.15.2")
+  }
 }
 
 // Disabling compatibility check for the test avro definitions.
