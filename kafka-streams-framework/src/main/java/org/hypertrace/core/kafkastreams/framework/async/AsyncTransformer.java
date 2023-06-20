@@ -29,7 +29,10 @@ public abstract class AsyncTransformer<K, V, KOUT, VOUT>
     this.pendingFutures = new ArrayBlockingQueue<>(asyncTransformerConfig.getMaxBatchSize());
     this.rateLimiter =
         RateLimiter.create(1000.0 / asyncTransformerConfig.getCommitIntervalMs().toMillis());
-    log.info("async transformer config. maxBatchSize: {}, commit rate: {}", this.pendingFutures.remainingCapacity(), this.rateLimiter.getRate());
+    log.info(
+        "async transformer config. maxBatchSize: {}, commit rate: {}",
+        this.pendingFutures.remainingCapacity(),
+        this.rateLimiter.getRate());
     // warmup to prevent commit on first message
     rateLimiter.tryAcquire();
   }

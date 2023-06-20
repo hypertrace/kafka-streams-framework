@@ -47,11 +47,11 @@ public class SampleAsyncAppTest {
     td = new TopologyTestDriver(sampleApp.topology, streamsConfig);
 
     inputTopic =
-            td.createInputTopic(
-                    SampleApp.INPUT_TOPIC, Serdes.String().serializer(), Serdes.String().serializer());
+        td.createInputTopic(
+            SampleApp.INPUT_TOPIC, Serdes.String().serializer(), Serdes.String().serializer());
     outputTopic =
-            td.createOutputTopic(
-                    SampleApp.OUTPUT_TOPIC, Serdes.String().deserializer(), Serdes.String().deserializer());
+        td.createOutputTopic(
+            SampleApp.OUTPUT_TOPIC, Serdes.String().deserializer(), Serdes.String().deserializer());
   }
 
   @AfterEach

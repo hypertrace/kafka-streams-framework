@@ -79,7 +79,7 @@ class SlowTransformer extends AsyncTransformer<String, String, String, String> {
   @SneakyThrows
   @Override
   public List<KeyValue<String, String>> asyncTransform(String key, String value) {
-    if(!key.startsWith("key")) {
+    if (!key.startsWith("key")) {
       return null;
     }
     log.info("transforming - key: {}, value: {}", key, value);
