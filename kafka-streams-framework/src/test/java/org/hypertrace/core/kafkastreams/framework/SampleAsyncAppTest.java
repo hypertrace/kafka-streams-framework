@@ -45,6 +45,13 @@ public class SampleAsyncAppTest {
     streamsConfig.putAll(sampleApp.streamsConfig);
 
     td = new TopologyTestDriver(sampleApp.topology, streamsConfig);
+
+    inputTopic =
+            td.createInputTopic(
+                    SampleApp.INPUT_TOPIC, Serdes.String().serializer(), Serdes.String().serializer());
+    outputTopic =
+            td.createOutputTopic(
+                    SampleApp.OUTPUT_TOPIC, Serdes.String().deserializer(), Serdes.String().deserializer());
   }
 
   @AfterEach
@@ -55,13 +62,6 @@ public class SampleAsyncAppTest {
   @SneakyThrows
   @Test
   public void asyncTransformationTest() {
-    inputTopic =
-        td.createInputTopic(
-            SampleApp.INPUT_TOPIC, Serdes.String().serializer(), Serdes.String().serializer());
-    outputTopic =
-        td.createOutputTopic(
-            SampleApp.OUTPUT_TOPIC, Serdes.String().deserializer(), Serdes.String().deserializer());
-
     assertThat(outputTopic.isEmpty(), is(true));
 
     int batchSize = 1000;
@@ -69,8 +69,10 @@ public class SampleAsyncAppTest {
       inputTopic.pipeInput("key-" + i, "value-" + i);
     }
 
+    // sleep time has to be bigger than the commit interval configured for the test
+    // otw, test will be flaky
     Thread.sleep(1000);
-    inputTopic.pipeInput("final", "final");
+    inputTopic.pipeInput("key-final", "value-final");
     // test ordered processing. mandatory requirement.
     for (int i = 1; i <= batchSize; i++) {
       assertThat(outputTopic.readValue(), endsWith("value-" + i));
@@ -79,6 +81,21 @@ public class SampleAsyncAppTest {
     // read the final record
     outputTopic.readKeyValue();
 
+    assertThat(outputTopic.isEmpty(), is(true));
+  }
+
+  @SneakyThrows
+  @Test
+  public void testUnderlyingReturnsNull() {
+    assertThat(outputTopic.isEmpty(), is(true));
+    // null should be handled without erring out.
+    inputTopic.pipeInput("discarded-key", "discarded-value");
+
+    Thread.sleep(1000);
+    inputTopic.pipeInput("key-final", "value-final");
+
+    // read the final record
+    outputTopic.readKeyValue();
     assertThat(outputTopic.isEmpty(), is(true));
   }
 

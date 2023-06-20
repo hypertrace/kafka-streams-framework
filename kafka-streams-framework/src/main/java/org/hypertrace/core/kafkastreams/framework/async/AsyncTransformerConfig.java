@@ -35,6 +35,7 @@ public class AsyncTransformerConfig {
               : DEFAULT_ASYNC_TRANSFORMER_COMMIT_INTERVAL;
       return new AsyncTransformerConfig(batchSize, commitInterval);
     }
+
     return new AsyncTransformerConfig(
         DEFAULT_ASYNC_TRANSFORMER_BATCH_SIZE, DEFAULT_ASYNC_TRANSFORMER_COMMIT_INTERVAL);
   }
