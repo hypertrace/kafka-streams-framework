@@ -15,6 +15,7 @@ dependencies {
     }
 
     api("io.confluent:kafka-streams-avro-serde:$kafkaVersion")
+    api("io.confluent:kafka-protobuf-serializer:$kafkaVersion")
     api("org.apache.kafka:kafka-clients:$kafkaCcsVersion")
     api("org.apache.kafka:kafka-streams:$kafkaCcsVersion")
     api("org.apache.kafka:kafka-streams-test-utils:$kafkaCcsVersion")
