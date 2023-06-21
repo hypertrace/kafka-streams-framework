@@ -11,22 +11,16 @@ tasks.test {
 }
 
 dependencies {
-  constraints {
-    implementation("com.fasterxml.jackson.core:jackson-databind:2.15.2")
-
-    implementation("org.xerial.snappy:snappy-java:1.1.10.1") {
-      because("[https://nvd.nist.gov/vuln/detail/CVE-2023-34455] in 'org.apache.kafka:kafka-clients:*' > 'org.xerial.snappy:snappy-java:1.1.8.2'")
-    }
-  }
+  api(platform(project(":kafka-bom")))
 
   annotationProcessor("org.projectlombok:lombok:1.18.24")
   compileOnly("org.projectlombok:lombok:1.18.24")
 
   implementation("com.google.guava:guava:32.0.1-jre")
-  implementation("org.apache.avro:avro:1.11.1")
+  implementation("org.apache.avro:avro")
   implementation("com.typesafe:config:1.4.2")
-  implementation("org.apache.kafka:kafka-clients:7.2.1-ccs")
-  implementation("org.apache.kafka:kafka-streams:7.2.1-ccs")
+  implementation("org.apache.kafka:kafka-clients")
+  implementation("org.apache.kafka:kafka-streams")
   implementation("org.slf4j:slf4j-api:1.7.36")
 
   testImplementation("org.junit.jupiter:junit-jupiter:5.8.2")
