@@ -2,9 +2,26 @@
 <suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
     <suppress>
         <notes><![CDATA[
-   Any hypertrace core dep
+   This is a false alert.
+   Hypertrace grpc packages are falsely identified as old versions of open source grpc packages.
    ]]></notes>
-        <packageUrl regex="true">^pkg:maven/org\.hypertrace\.core\..*@.*$</packageUrl>
+        <packageUrl regex="true">^pkg:maven/org\.hypertrace\.core\.grpcutils/grpc-client-utils@.*$</packageUrl>
         <cpe>cpe:/a:grpc:grpc</cpe>
+    </suppress>
+    <suppress>
+        <notes><![CDATA[
+   This is a false alert.
+   Hypertrace grpc packages are falsely identified as old versions of open source grpc packages.
+   ]]></notes>
+        <packageUrl regex="true">^pkg:maven/org\.hypertrace\.core\.grpcutils/grpc-context-utils@.*$</packageUrl>
+        <cpe>cpe:/a:grpc:grpc</cpe>
+    </suppress>
+    <suppress>
+        <notes><![CDATA[
+   file name: jackson-databind-2.15.2.jar
+   Excluding the disputed vulnerability (CVE-2023-35116)
+   ]]></notes>
+        <packageUrl regex="true">^pkg:maven/com\.fasterxml\.jackson\.core/jackson\-databind@.*$</packageUrl>
+        <vulnerabilityName>CVE-2023-35116</vulnerabilityName>
     </suppress>
 </suppressions>

@@ -67,8 +67,8 @@ public class SampleAsyncApp extends KafkaStreamsApp {
 class SlowTransformer extends AsyncTransformer<String, String, String, String> {
 
   public SlowTransformer(
-      Supplier<Executor> executorSupplier, AsyncTransformerConfig asyncTransformerConfigBuilder) {
-    super(executorSupplier, asyncTransformerConfigBuilder);
+      Supplier<Executor> executorSupplier, AsyncTransformerConfig asyncTransformerConfig) {
+    super(executorSupplier, asyncTransformerConfig);
   }
 
   @Override
@@ -79,6 +79,9 @@ class SlowTransformer extends AsyncTransformer<String, String, String, String> {
   @SneakyThrows
   @Override
   public List<KeyValue<String, String>> asyncTransform(String key, String value) {
+    if (!key.startsWith("key")) {
+      return null;
+    }
     log.info("transforming - key: {}, value: {}", key, value);
     Thread.sleep(25);
     return List.of(KeyValue.pair("out:" + key, "out:" + value));

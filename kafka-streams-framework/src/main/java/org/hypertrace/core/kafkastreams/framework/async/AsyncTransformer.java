@@ -28,7 +28,13 @@ public abstract class AsyncTransformer<K, V, KOUT, VOUT>
     this.executor = executorSupplier.get();
     this.pendingFutures = new ArrayBlockingQueue<>(asyncTransformerConfig.getMaxBatchSize());
     this.rateLimiter =
-        RateLimiter.create(1.0 / asyncTransformerConfig.getCommitIntervalMs().toSeconds());
+        RateLimiter.create(1000.0 / asyncTransformerConfig.getCommitIntervalMs().toMillis());
+    log.info(
+        "async transformer config. maxBatchSize: {}, commit rate: {}",
+        this.pendingFutures.remainingCapacity(),
+        this.rateLimiter.getRate());
+    // warmup to prevent commit on first message
+    rateLimiter.tryAcquire();
   }
 
   @Override
@@ -72,7 +78,14 @@ public abstract class AsyncTransformer<K, V, KOUT, VOUT>
       // makes sure transformation is complete
       future.join();
       // another join is needed to make sure downstream forward is also complete
-      future.thenAccept(result -> result.forEach(kv -> context.forward(kv.key, kv.value))).join();
+      future
+          .thenAccept(
+              result -> {
+                if (result != null) {
+                  result.forEach(kv -> context.forward(kv.key, kv.value));
+                }
+              })
+          .join();
     }
     // commit once per batch
     context.commit();
