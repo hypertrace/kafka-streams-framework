@@ -4,7 +4,7 @@ plugins {
 }
 
 
-var kafkaVersion = "7.2.1"
+var kafkaVersion = "7.4.0"
 var kafkaCcsVersion = "$kafkaVersion-ccs"
 var protobufVersion = "3.21.7"
 
