@@ -99,7 +99,7 @@ public abstract class KafkaStreamsApp extends PlatformService {
       StreamsBuilder streamsBuilder = new StreamsBuilder();
       streamsBuilder = buildTopology(streamsConfig, streamsBuilder, sourceStreams);
       this.topology = streamsBuilder.build();
-
+      getLogger().info("Topology: {}", this.topology.describe());
       getLogger().info("Finalized kafka streams configuration: {}", streamsConfig);
 
       // pre-create input/output topics required for kstream application
