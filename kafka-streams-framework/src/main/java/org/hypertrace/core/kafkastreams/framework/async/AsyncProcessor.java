@@ -40,7 +40,7 @@ public abstract class AsyncProcessor<K, V, KOUT, VOUT> implements Processor<K, V
     this.rateLimiter =
         RateLimiter.create(1000.0 / asyncProcessorConfig.getCommitIntervalMs().toMillis());
     log.info(
-        "async transformer config. maxBatchSize: {}, commit rate: {}",
+        "async processor config. maxBatchSize: {}, commit rate: {}",
         this.pendingFutures.remainingCapacity(),
         this.rateLimiter.getRate());
     // warmup to prevent commit on first message
@@ -78,7 +78,7 @@ public abstract class AsyncProcessor<K, V, KOUT, VOUT> implements Processor<K, V
   private void processResults() {
     while (!pendingFutures.isEmpty()) {
       CompletableFuture<List<RecordToForward<KOUT, VOUT>>> future = pendingFutures.poll();
-      // makes sure transformation is complete
+      // makes sure processing is complete
       future.join();
       // another join is needed to make sure downstream forward is also complete
       future
