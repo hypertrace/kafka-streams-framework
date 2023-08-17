@@ -17,4 +17,9 @@ import org.apache.kafka.streams.processor.api.Record;
 public class RecordToForward<K, V> {
   @Nullable private String childName;
   private Record<K, V> record;
+
+  public static <K, V> RecordToForward<K, V> from(
+      String childName, K key, V value, long timestamp) {
+    return new RecordToForward<>(childName, new Record<>(key, value, timestamp));
+  }
 }
