@@ -14,7 +14,7 @@ import org.apache.kafka.streams.processor.api.Record;
  */
 @AllArgsConstructor
 @Getter
-public class ChildRecord<K, V> {
+public class RecordToForward<K, V> {
   @Nullable private String childName;
   private Record<K, V> record;
 }

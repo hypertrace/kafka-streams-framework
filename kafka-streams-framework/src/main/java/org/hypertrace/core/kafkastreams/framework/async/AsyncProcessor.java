@@ -29,7 +29,7 @@ import org.apache.kafka.streams.processor.api.Record;
 public abstract class AsyncProcessor<K, V, KOUT, VOUT> implements Processor<K, V, KOUT, VOUT> {
 
   private final Executor executor;
-  private final BlockingQueue<CompletableFuture<List<ChildRecord<KOUT, VOUT>>>> pendingFutures;
+  private final BlockingQueue<CompletableFuture<List<RecordToForward<KOUT, VOUT>>>> pendingFutures;
   private final RateLimiter rateLimiter;
   private ProcessorContext<KOUT, VOUT> context;
 
@@ -55,12 +55,12 @@ public abstract class AsyncProcessor<K, V, KOUT, VOUT> implements Processor<K, V
 
   protected abstract void doInit(Map<String, Object> appConfigs);
 
-  public abstract List<ChildRecord<KOUT, VOUT>> asyncProcess(K key, V value);
+  public abstract List<RecordToForward<KOUT, VOUT>> asyncProcess(K key, V value);
 
   @SneakyThrows
   @Override
   public void process(Record<K, V> record) {
-    CompletableFuture<List<ChildRecord<KOUT, VOUT>>> future =
+    CompletableFuture<List<RecordToForward<KOUT, VOUT>>> future =
         CompletableFuture.supplyAsync(() -> asyncProcess(record.key(), record.value()), executor);
     // with put, thread gets blocked when queue is full. queue consumer runs in this same thread.
     pendingFutures.put(future);
@@ -77,7 +77,7 @@ public abstract class AsyncProcessor<K, V, KOUT, VOUT> implements Processor<K, V
   @SneakyThrows
   private void processResults() {
     while (!pendingFutures.isEmpty()) {
-      CompletableFuture<List<ChildRecord<KOUT, VOUT>>> future = pendingFutures.poll();
+      CompletableFuture<List<RecordToForward<KOUT, VOUT>>> future = pendingFutures.poll();
       // makes sure transformation is complete
       future.join();
       // another join is needed to make sure downstream forward is also complete
@@ -86,11 +86,12 @@ public abstract class AsyncProcessor<K, V, KOUT, VOUT> implements Processor<K, V
               result -> {
                 if (result != null) {
                   result.forEach(
-                      childRecord -> {
-                        if (childRecord.getChildName() == null) {
-                          context.forward(childRecord.getRecord());
+                      recordToForward -> {
+                        if (recordToForward.getChildName() == null) {
+                          context.forward(recordToForward.getRecord());
                         } else {
-                          context.forward(childRecord.getRecord(), childRecord.getChildName());
+                          context.forward(
+                              recordToForward.getRecord(), recordToForward.getChildName());
                         }
                       });
                 }

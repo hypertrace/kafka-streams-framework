@@ -13,8 +13,8 @@ import org.apache.kafka.streams.processor.api.Processor;
 import org.apache.kafka.streams.processor.api.Record;
 import org.hypertrace.core.kafkastreams.framework.async.AsyncProcessor;
 import org.hypertrace.core.kafkastreams.framework.async.AsyncProcessorConfig;
-import org.hypertrace.core.kafkastreams.framework.async.ChildRecord;
 import org.hypertrace.core.kafkastreams.framework.async.ExecutorFactory;
+import org.hypertrace.core.kafkastreams.framework.async.RecordToForward;
 import org.hypertrace.core.kafkastreams.framework.constants.KafkaStreamsAppConstants;
 import org.hypertrace.core.serviceframework.config.ConfigClient;
 
@@ -77,14 +77,14 @@ class SlowProcessor extends AsyncProcessor<String, String, String, String> {
 
   @SneakyThrows
   @Override
-  public List<ChildRecord<String, String>> asyncProcess(String key, String value) {
+  public List<RecordToForward<String, String>> asyncProcess(String key, String value) {
     if (!key.startsWith("key")) {
       return null;
     }
     log.info("processing - key: {}, value: {}", key, value);
     Thread.sleep(25);
     return List.of(
-        new ChildRecord<>(
+        new RecordToForward<>(
             null, new Record<>("out:" + key, "out:" + value, System.currentTimeMillis())));
   }
 }
