@@ -14,11 +14,22 @@ import org.apache.kafka.streams.processor.api.Processor;
 import org.apache.kafka.streams.processor.api.ProcessorContext;
 import org.apache.kafka.streams.processor.api.Record;
 
+/**
+ * Async version of the {@link Processor} interface. Offloads the entire processing to a different
+ * executor(thread pool), collects the records to forward to the next stage of the topology and
+ * flushes them after the processing is complete
+ *
+ * @param <K> the type of input keys
+ * @param <V> the type of input values
+ * @param <KOUT> the type of output keys
+ * @param <VOUT> the type of output values
+ */
 @Slf4j
+@SuppressWarnings("UnstableApiUsage")
 public abstract class AsyncProcessor<K, V, KOUT, VOUT> implements Processor<K, V, KOUT, VOUT> {
 
   private final Executor executor;
-  private final BlockingQueue<CompletableFuture<List<Record<KOUT, VOUT>>>> pendingFutures;
+  private final BlockingQueue<CompletableFuture<List<ChildRecord<KOUT, VOUT>>>> pendingFutures;
   private final RateLimiter rateLimiter;
   private ProcessorContext<KOUT, VOUT> context;
 
@@ -44,12 +55,12 @@ public abstract class AsyncProcessor<K, V, KOUT, VOUT> implements Processor<K, V
 
   protected abstract void doInit(Map<String, Object> appConfigs);
 
-  public abstract List<Record<KOUT, VOUT>> asyncProcess(K key, V value);
+  public abstract List<ChildRecord<KOUT, VOUT>> asyncProcess(K key, V value);
 
   @SneakyThrows
   @Override
   public void process(Record<K, V> record) {
-    CompletableFuture<List<Record<KOUT, VOUT>>> future =
+    CompletableFuture<List<ChildRecord<KOUT, VOUT>>> future =
         CompletableFuture.supplyAsync(() -> asyncProcess(record.key(), record.value()), executor);
     // with put, thread gets blocked when queue is full. queue consumer runs in this same thread.
     pendingFutures.put(future);
@@ -66,7 +77,7 @@ public abstract class AsyncProcessor<K, V, KOUT, VOUT> implements Processor<K, V
   @SneakyThrows
   private void processResults() {
     while (!pendingFutures.isEmpty()) {
-      CompletableFuture<List<Record<KOUT, VOUT>>> future = pendingFutures.poll();
+      CompletableFuture<List<ChildRecord<KOUT, VOUT>>> future = pendingFutures.poll();
       // makes sure transformation is complete
       future.join();
       // another join is needed to make sure downstream forward is also complete
@@ -74,7 +85,14 @@ public abstract class AsyncProcessor<K, V, KOUT, VOUT> implements Processor<K, V
           .thenAccept(
               result -> {
                 if (result != null) {
-                  result.forEach(record -> context.forward(record));
+                  result.forEach(
+                      childRecord -> {
+                        if (childRecord.getChildName() == null) {
+                          context.forward(childRecord.getRecord());
+                        } else {
+                          context.forward(childRecord.getRecord(), childRecord.getChildName());
+                        }
+                      });
                 }
               })
           .join();

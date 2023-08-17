@@ -14,7 +14,19 @@ import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.kstream.Transformer;
 import org.apache.kafka.streams.processor.ProcessorContext;
 
+/**
+ * Async version of the {@link Transformer} interface. Offloads the entire processing to a different
+ * executor(thread pool), collects the records to forward to the next stage of the topology and
+ * flushes them after the processing is complete
+ *
+ * @param <K> the type of input keys
+ * @param <V> the type of input values
+ * @param <KOUT> the type of output keys
+ * @param <VOUT> the type of output values
+ * @deprecated Use {@link AsyncProcessor} instead
+ */
 @Slf4j
+@Deprecated
 @SuppressWarnings("UnstableApiUsage")
 public abstract class AsyncTransformer<K, V, KOUT, VOUT>
     implements Transformer<K, V, KeyValue<KOUT, VOUT>> {

@@ -12,8 +12,10 @@ import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.processor.api.Processor;
 import org.apache.kafka.streams.processor.api.Record;
+import org.hypertrace.core.kafkastreams.framework.async.AsyncProcessor;
 import org.hypertrace.core.kafkastreams.framework.async.AsyncTransformer;
 import org.hypertrace.core.kafkastreams.framework.async.AsyncTransformerConfig;
+import org.hypertrace.core.kafkastreams.framework.async.ChildRecord;
 import org.hypertrace.core.kafkastreams.framework.async.ExecutorFactory;
 import org.hypertrace.core.kafkastreams.framework.constants.KafkaStreamsAppConstants;
 import org.hypertrace.core.serviceframework.config.ConfigClient;
@@ -42,9 +44,9 @@ public class SampleAsyncApp extends KafkaStreamsApp {
 
     Config kafkaStreamsConfig = configClient.getConfig().getConfig(KAFKA_STREAMS_CONFIG_KEY);
     KStream<String, String> transform =
-        stream.transform(
+        stream.process(
             () ->
-                new SlowTransformer(
+                new SlowProcessor(
                     ExecutorFactory.getExecutorSupplier(kafkaStreamsConfig),
                     AsyncTransformerConfig.buildWith(kafkaStreamsConfig, "slow.transformer")));
     transform.process(LoggingProcessor::new);
@@ -60,6 +62,32 @@ public class SampleAsyncApp extends KafkaStreamsApp {
   @Override
   public String getServiceName() {
     return "SampleApp";
+  }
+}
+
+@Slf4j
+class SlowProcessor extends AsyncProcessor<String, String, String, String> {
+  public SlowProcessor(
+      Supplier<Executor> executorSupplier, AsyncTransformerConfig asyncTransformerConfig) {
+    super(executorSupplier, asyncTransformerConfig);
+  }
+
+  @Override
+  protected void doInit(Map<String, Object> appConfigs) {
+    // no-op
+  }
+
+  @SneakyThrows
+  @Override
+  public List<ChildRecord<String, String>> asyncProcess(String key, String value) {
+    if (!key.startsWith("key")) {
+      return null;
+    }
+    log.info("processing - key: {}, value: {}", key, value);
+    Thread.sleep(25);
+    return List.of(
+        new ChildRecord<>(
+            null, new Record<>("out:" + key, "out:" + value, System.currentTimeMillis())));
   }
 }
 
