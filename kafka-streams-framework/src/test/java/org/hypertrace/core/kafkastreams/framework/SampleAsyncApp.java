@@ -13,6 +13,7 @@ import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.processor.api.Processor;
 import org.apache.kafka.streams.processor.api.Record;
 import org.hypertrace.core.kafkastreams.framework.async.AsyncProcessor;
+import org.hypertrace.core.kafkastreams.framework.async.AsyncProcessorConfig;
 import org.hypertrace.core.kafkastreams.framework.async.AsyncTransformer;
 import org.hypertrace.core.kafkastreams.framework.async.AsyncTransformerConfig;
 import org.hypertrace.core.kafkastreams.framework.async.ChildRecord;
@@ -48,7 +49,7 @@ public class SampleAsyncApp extends KafkaStreamsApp {
             () ->
                 new SlowProcessor(
                     ExecutorFactory.getExecutorSupplier(kafkaStreamsConfig),
-                    AsyncTransformerConfig.buildWith(kafkaStreamsConfig, "slow.transformer")));
+                    AsyncProcessorConfig.buildWith(kafkaStreamsConfig, "slow.processor")));
     transform.process(LoggingProcessor::new);
     transform.to(OUTPUT_TOPIC);
     return streamsBuilder;
@@ -68,8 +69,8 @@ public class SampleAsyncApp extends KafkaStreamsApp {
 @Slf4j
 class SlowProcessor extends AsyncProcessor<String, String, String, String> {
   public SlowProcessor(
-      Supplier<Executor> executorSupplier, AsyncTransformerConfig asyncTransformerConfig) {
-    super(executorSupplier, asyncTransformerConfig);
+      Supplier<Executor> executorSupplier, AsyncProcessorConfig asyncProcessorConfig) {
+    super(executorSupplier, asyncProcessorConfig);
   }
 
   @Override

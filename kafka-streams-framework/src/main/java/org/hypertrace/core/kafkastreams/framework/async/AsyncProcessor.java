@@ -34,11 +34,11 @@ public abstract class AsyncProcessor<K, V, KOUT, VOUT> implements Processor<K, V
   private ProcessorContext<KOUT, VOUT> context;
 
   public AsyncProcessor(
-      Supplier<Executor> executorSupplier, AsyncTransformerConfig asyncTransformerConfig) {
+      Supplier<Executor> executorSupplier, AsyncProcessorConfig asyncProcessorConfig) {
     this.executor = executorSupplier.get();
-    this.pendingFutures = new ArrayBlockingQueue<>(asyncTransformerConfig.getMaxBatchSize());
+    this.pendingFutures = new ArrayBlockingQueue<>(asyncProcessorConfig.getMaxBatchSize());
     this.rateLimiter =
-        RateLimiter.create(1000.0 / asyncTransformerConfig.getCommitIntervalMs().toMillis());
+        RateLimiter.create(1000.0 / asyncProcessorConfig.getCommitIntervalMs().toMillis());
     log.info(
         "async transformer config. maxBatchSize: {}, commit rate: {}",
         this.pendingFutures.remainingCapacity(),
