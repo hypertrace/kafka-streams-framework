@@ -86,7 +86,9 @@ public abstract class AsyncProcessor<K, V, KOUT, VOUT> implements Processor<K, V
               result -> {
                 if (result != null) {
                   result.forEach(
-                      recordToForward -> context.forward(recordToForward.getRecord(), recordToForward.getChildName()));
+                      recordToForward ->
+                          context.forward(
+                              recordToForward.getRecord(), recordToForward.getChildName()));
                 }
               })
           .join();
