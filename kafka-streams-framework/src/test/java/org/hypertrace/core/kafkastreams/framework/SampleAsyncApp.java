@@ -83,8 +83,7 @@ class SlowProcessor extends AsyncProcessor<String, String, String, String> {
     }
     log.info("processing - key: {}, value: {}", key, value);
     Thread.sleep(25);
-    return List.of(
-        RecordToForward.from(null, "out:" + key, "out:" + value, System.currentTimeMillis()));
+    return List.of(RecordToForward.from(null, "out:" + key, "out:" + value));
   }
 }
 
