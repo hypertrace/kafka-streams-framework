@@ -15,10 +15,10 @@ dependencies {
 
   api(platform(project(":kafka-bom")))
   api("org.apache.kafka:kafka-streams")
-  api("org.hypertrace.core.grpcutils:grpc-client-utils:0.12.1")
+  api("org.hypertrace.core.grpcutils:grpc-client-utils:0.12.2")
   api("com.typesafe:config:1.4.2")
   implementation("com.google.guava:guava:32.0.1-jre")
-  implementation("org.hypertrace.core.grpcutils:grpc-context-utils:0.12.1")
+  implementation("org.hypertrace.core.grpcutils:grpc-context-utils:0.12.2")
   implementation("org.hypertrace.config.service:partitioner-config-service-api:0.1.46")
   implementation("org.slf4j:slf4j-api:1.7.36")
 
