@@ -17,4 +17,17 @@ import org.apache.kafka.streams.processor.api.Record;
 public class RecordToForward<K, V> {
   @Nullable private String childName;
   private Record<K, V> record;
+
+  public static <K, V> RecordToForward<K, V> from(String childName, K key, V value) {
+    return from(childName, key, value, System.currentTimeMillis());
+  }
+
+  public static <K, V> RecordToForward<K, V> from(
+      String childName, K key, V value, long timestamp) {
+    return from(childName, new Record<>(key, value, timestamp));
+  }
+
+  public static <K, V> RecordToForward<K, V> from(String childName, Record<K, V> record) {
+    return new RecordToForward<>(childName, record);
+  }
 }
