@@ -49,7 +49,7 @@ public class SampleAsyncApp extends KafkaStreamsApp {
                 new SlowProcessor(
                     ExecutorFactory.getExecutorListSupplier(kafkaStreamsConfig, false),
                     AsyncProcessorConfig.buildWith(kafkaStreamsConfig, "slow.processor"),
-                    Optional.of(new StringHashCodePartitioner())));
+                    Optional.of(String::hashCode)));
     transform.process(LoggingProcessor::new);
     transform.to(OUTPUT_TOPIC);
     return streamsBuilder;
@@ -98,13 +98,5 @@ class LoggingProcessor implements Processor<String, String, Void, Void> {
   @Override
   public void process(Record<String, String> record) {
     log.info("received - key: {}, value: {}", record.key(), record.value());
-  }
-}
-
-class StringHashCodePartitioner implements KeyToAsyncThreadPartitioner<String> {
-
-  @Override
-  public int getNumericalHashForKey(String key) {
-    return key.hashCode();
   }
 }
