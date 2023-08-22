@@ -3,6 +3,7 @@ package org.hypertrace.core.kafkastreams.framework;
 import com.typesafe.config.Config;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 import lombok.SneakyThrows;
@@ -14,6 +15,7 @@ import org.apache.kafka.streams.processor.api.Record;
 import org.hypertrace.core.kafkastreams.framework.async.AsyncProcessor;
 import org.hypertrace.core.kafkastreams.framework.async.AsyncProcessorConfig;
 import org.hypertrace.core.kafkastreams.framework.async.ExecutorFactory;
+import org.hypertrace.core.kafkastreams.framework.async.KeyToAsyncThreadPartitioner;
 import org.hypertrace.core.kafkastreams.framework.async.RecordToForward;
 import org.hypertrace.core.kafkastreams.framework.constants.KafkaStreamsAppConstants;
 import org.hypertrace.core.serviceframework.config.ConfigClient;
@@ -45,8 +47,9 @@ public class SampleAsyncApp extends KafkaStreamsApp {
         stream.process(
             () ->
                 new SlowProcessor(
-                    ExecutorFactory.getExecutorSupplier(kafkaStreamsConfig),
-                    AsyncProcessorConfig.buildWith(kafkaStreamsConfig, "slow.processor")));
+                    ExecutorFactory.getExecutorListSupplier(kafkaStreamsConfig, false),
+                    AsyncProcessorConfig.buildWith(kafkaStreamsConfig, "slow.processor"),
+                    Optional.of(new StringHashCodePartitioner())));
     transform.process(LoggingProcessor::new);
     transform.to(OUTPUT_TOPIC);
     return streamsBuilder;
@@ -66,8 +69,10 @@ public class SampleAsyncApp extends KafkaStreamsApp {
 @Slf4j
 class SlowProcessor extends AsyncProcessor<String, String, String, String> {
   public SlowProcessor(
-      Supplier<Executor> executorSupplier, AsyncProcessorConfig asyncProcessorConfig) {
-    super(executorSupplier, asyncProcessorConfig);
+      Supplier<List<Executor>> executorListSupplier,
+      AsyncProcessorConfig asyncProcessorConfig,
+      Optional<KeyToAsyncThreadPartitioner<String>> mayBeKeyToAsyncThreadPartitioner) {
+    super(executorListSupplier, asyncProcessorConfig, mayBeKeyToAsyncThreadPartitioner);
   }
 
   @Override
@@ -93,5 +98,13 @@ class LoggingProcessor implements Processor<String, String, Void, Void> {
   @Override
   public void process(Record<String, String> record) {
     log.info("received - key: {}, value: {}", record.key(), record.value());
+  }
+}
+
+class StringHashCodePartitioner implements KeyToAsyncThreadPartitioner<String> {
+
+  @Override
+  public int getNumericalHashForKey(String key) {
+    return key.hashCode();
   }
 }
