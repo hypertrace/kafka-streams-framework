@@ -165,7 +165,7 @@ public abstract class KafkaStreamsApp extends PlatformService {
     if (metrics != null) {
       metrics.close();
     }
-    app.close(Duration.ofSeconds(30));
+    app.close(Duration.ofSeconds(150));
     grpcChannelRegistry.shutdown(after(10, SECONDS));
   }
 
