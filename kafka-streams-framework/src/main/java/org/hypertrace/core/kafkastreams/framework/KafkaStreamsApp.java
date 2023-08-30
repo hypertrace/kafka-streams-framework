@@ -141,7 +141,7 @@ public abstract class KafkaStreamsApp extends PlatformService {
                     ExceptionUtils.getStackTrace(exception));
             System.exit(1);
           });
-      evaluateShutdownDuration();
+      this.shutdownDuration = getShutdownDuration();
       getLogger().info("kafka streams topologies: {}", topology.describe());
     } catch (Exception e) {
       getLogger().error("Error initializing - ", e);
@@ -296,11 +296,10 @@ public abstract class KafkaStreamsApp extends PlatformService {
     }
   }
 
-  private void evaluateShutdownDuration() {
+  private Duration getShutdownDuration() {
     Config config = (Config) streamsConfig.get(getJobConfigKey());
-    this.shutdownDuration =
-        config.hasPath(SHUTDOWN_DURATION)
-            ? config.getDuration(SHUTDOWN_DURATION)
-            : Duration.ofSeconds(30);
+    return config.hasPath(SHUTDOWN_DURATION)
+        ? config.getDuration(SHUTDOWN_DURATION)
+        : Duration.ofSeconds(30);
   }
 }
