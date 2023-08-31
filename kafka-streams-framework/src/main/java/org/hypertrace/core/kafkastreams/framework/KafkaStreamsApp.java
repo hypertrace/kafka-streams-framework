@@ -62,12 +62,14 @@ public abstract class KafkaStreamsApp extends PlatformService {
   public static final String CLEANUP_LOCAL_STATE = "cleanup.local.state";
   public static final String PRE_CREATE_TOPICS = "precreate.topics";
   public static final String KAFKA_STREAMS_CONFIG_KEY = "kafka.streams.config";
+  private static final String SHUTDOWN_DURATION = "shutdown.duration";
   private static final Logger logger = LoggerFactory.getLogger(KafkaStreamsApp.class);
 
   private final GrpcChannelRegistry grpcChannelRegistry;
 
   protected KafkaStreams app;
   private KafkaStreamsMetrics metrics;
+  private Duration shutdownDuration;
 
   // Visible for testing only
   protected Topology topology;
@@ -93,7 +95,6 @@ public abstract class KafkaStreamsApp extends PlatformService {
     try {
       // configure properties
       streamsConfig = mergeProperties(getBaseStreamsConfig(), getJobStreamsConfig(getAppConfig()));
-
       // build topologies
       Map<String, KStream<?, ?>> sourceStreams = new HashMap<>();
       StreamsBuilder streamsBuilder = new StreamsBuilder();
@@ -140,7 +141,7 @@ public abstract class KafkaStreamsApp extends PlatformService {
                     ExceptionUtils.getStackTrace(exception));
             System.exit(1);
           });
-
+      this.shutdownDuration = getShutdownDuration();
       getLogger().info("kafka streams topologies: {}", topology.describe());
     } catch (Exception e) {
       getLogger().error("Error initializing - ", e);
@@ -165,7 +166,7 @@ public abstract class KafkaStreamsApp extends PlatformService {
     if (metrics != null) {
       metrics.close();
     }
-    app.close(Duration.ofSeconds(30));
+    app.close(shutdownDuration);
     grpcChannelRegistry.shutdown(after(10, SECONDS));
   }
 
@@ -293,5 +294,12 @@ public abstract class KafkaStreamsApp extends PlatformService {
       KafkaTopicCreator.createTopics(
           (String) properties.get(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG), topics);
     }
+  }
+
+  private Duration getShutdownDuration() {
+    Config config = (Config) streamsConfig.get(getJobConfigKey());
+    return config.hasPath(SHUTDOWN_DURATION)
+        ? config.getDuration(SHUTDOWN_DURATION)
+        : Duration.ofSeconds(30);
   }
 }
