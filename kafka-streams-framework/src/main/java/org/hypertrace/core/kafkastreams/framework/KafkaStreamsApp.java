@@ -63,6 +63,7 @@ public abstract class KafkaStreamsApp extends PlatformService {
   public static final String PRE_CREATE_TOPICS = "precreate.topics";
   public static final String KAFKA_STREAMS_CONFIG_KEY = "kafka.streams.config";
   private static final String SHUTDOWN_DURATION = "shutdown.duration";
+  private static final String STARTUP_DELAY = "startup.delay";
   private static final Logger logger = LoggerFactory.getLogger(KafkaStreamsApp.class);
 
   private final GrpcChannelRegistry grpcChannelRegistry;
@@ -70,6 +71,8 @@ public abstract class KafkaStreamsApp extends PlatformService {
   protected KafkaStreams app;
   private KafkaStreamsMetrics metrics;
   private Duration shutdownDuration;
+  private Duration startupDelay;
+  private boolean isSleeping;
 
   // Visible for testing only
   protected Topology topology;
@@ -142,10 +145,10 @@ public abstract class KafkaStreamsApp extends PlatformService {
             System.exit(1);
           });
       this.shutdownDuration = getShutdownDuration();
+      this.startupDelay = getStartupDelay();
       getLogger().info("kafka streams topologies: {}", topology.describe());
     } catch (Exception e) {
       getLogger().error("Error initializing - ", e);
-      e.printStackTrace();
       System.exit(1);
     }
   }
@@ -153,10 +156,20 @@ public abstract class KafkaStreamsApp extends PlatformService {
   @Override
   protected void doStart() {
     try {
+      isSleeping = true;
+      try {
+        getLogger()
+            .info(
+                "Sleeping for {} millisecond before kafka streams app is started.",
+                startupDelay.toMillis());
+        TimeUnit.MILLISECONDS.sleep(startupDelay.toMillis());
+      } catch (Exception ex) {
+        getLogger().error("Error while sleeping before kafka streams app is started. Ignored.", ex);
+      }
+      isSleeping = false;
       app.start();
     } catch (Exception e) {
       getLogger().error("Error starting - ", e);
-      e.printStackTrace();
       System.exit(1);
     }
   }
@@ -183,7 +196,7 @@ public abstract class KafkaStreamsApp extends PlatformService {
 
   @Override
   public boolean healthCheck() {
-    return app.state().isRunningOrRebalancing();
+    return isSleeping || app.state().isRunningOrRebalancing();
   }
 
   /**
@@ -301,5 +314,12 @@ public abstract class KafkaStreamsApp extends PlatformService {
     return config.hasPath(SHUTDOWN_DURATION)
         ? config.getDuration(SHUTDOWN_DURATION)
         : Duration.ofSeconds(30);
+  }
+
+  private Duration getStartupDelay() {
+    Config config = (Config) streamsConfig.get(getJobConfigKey());
+    return config.hasPath(STARTUP_DELAY)
+        ? config.getDuration(STARTUP_DELAY)
+        : Duration.ofMillis(0L);
   }
 }
