@@ -23,16 +23,18 @@ public class InitialDelayConfigProvider {
   }
 
   public Duration getInitialDelay(Map<String, Object> streamsConfig) {
-    Optional<String> serviceVersion = Optional.ofNullable(System.getenv(SERVICE_VERSION));
-    boolean majorVersionChange = isMajorVersionChange(serviceVersion);
-    Duration defaultInitialDelay =
-        majorVersionChange ? INITIAL_DELAY_VERSION_CHANGE : INITIAL_DELAY_NO_VERSION_CHANGE;
-    return getConfiguredInitialDelay(streamsConfig).orElse(defaultInitialDelay);
+    return getConfiguredInitialDelay(streamsConfig).orElse(getDefaultInitialDelay());
   }
 
   private Optional<Duration> getConfiguredInitialDelay(Map<String, Object> streamsConfig) {
     Optional<Object> initialDelayOpt = Optional.ofNullable(streamsConfig.get(INITIAL_DELAY));
     return initialDelayOpt.map(this::parseDuration);
+  }
+
+  private Duration getDefaultInitialDelay() {
+    Optional<String> serviceVersion = Optional.ofNullable(System.getenv(SERVICE_VERSION));
+    boolean majorVersionChange = isMajorVersionChange(serviceVersion);
+    return majorVersionChange ? INITIAL_DELAY_VERSION_CHANGE : INITIAL_DELAY_NO_VERSION_CHANGE;
   }
 
   private Duration parseDuration(Object initialDelayObj) {

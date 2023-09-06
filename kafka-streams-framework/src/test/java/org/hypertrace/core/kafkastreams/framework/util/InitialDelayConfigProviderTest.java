@@ -16,7 +16,8 @@ class InitialDelayConfigProviderTest {
         InitialDelayConfigProvider.getInstance().getInitialDelay(Collections.emptyMap());
     assertEquals(Duration.ofMillis(0L), initialDelay);
 
-    initialDelay = InitialDelayConfigProvider.getInstance().getInitialDelay(Map.of("initial.delay", "10m"));
+    initialDelay =
+        InitialDelayConfigProvider.getInstance().getInitialDelay(Map.of("initial.delay", "10m"));
     assertEquals(Duration.ofMinutes(10L), initialDelay);
   }
 
@@ -27,7 +28,8 @@ class InitialDelayConfigProviderTest {
         InitialDelayConfigProvider.getInstance().getInitialDelay(Collections.emptyMap());
     assertEquals(Duration.ofMinutes(6L), initialDelay);
 
-    initialDelay = InitialDelayConfigProvider.getInstance().getInitialDelay(Map.of("initial.delay", "10m"));
+    initialDelay =
+        InitialDelayConfigProvider.getInstance().getInitialDelay(Map.of("initial.delay", "10m"));
     assertEquals(Duration.ofMinutes(10L), initialDelay);
   }
 
@@ -38,7 +40,8 @@ class InitialDelayConfigProviderTest {
         InitialDelayConfigProvider.getInstance().getInitialDelay(Collections.emptyMap());
     assertEquals(Duration.ofMillis(0L), initialDelay);
 
-    initialDelay = InitialDelayConfigProvider.getInstance().getInitialDelay(Map.of("initial.delay", "10m"));
+    initialDelay =
+        InitialDelayConfigProvider.getInstance().getInitialDelay(Map.of("initial.delay", "10m"));
     assertEquals(Duration.ofMinutes(10L), initialDelay);
   }
 
@@ -49,7 +52,8 @@ class InitialDelayConfigProviderTest {
         InitialDelayConfigProvider.getInstance().getInitialDelay(Collections.emptyMap());
     assertEquals(Duration.ofMillis(0L), initialDelay);
 
-    initialDelay = InitialDelayConfigProvider.getInstance().getInitialDelay(Map.of("initial.delay", "10m"));
+    initialDelay =
+        InitialDelayConfigProvider.getInstance().getInitialDelay(Map.of("initial.delay", "10m"));
     assertEquals(Duration.ofMinutes(10L), initialDelay);
   }
 }

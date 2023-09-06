@@ -147,7 +147,7 @@ public abstract class KafkaStreamsApp extends PlatformService {
           });
       this.shutdownDuration = getShutdownDuration();
       this.initialDelay = InitialDelayConfigProvider.getInstance().getInitialDelay(streamsConfig);
-      this.isSleeping = true;
+      this.isSleeping = false;
       getLogger().info("kafka streams topologies: {}", topology.describe());
     } catch (Exception e) {
       getLogger().error("Error initializing - ", e);
@@ -309,15 +309,19 @@ public abstract class KafkaStreamsApp extends PlatformService {
   }
 
   private void handleInitialDelay() {
-    try {
-      getLogger()
-          .info(
-              "Sleeping for {} millisecond before kafka streams app is started.",
-              initialDelay.toMillis());
-      TimeUnit.MILLISECONDS.sleep(initialDelay.toMillis());
-    } catch (Exception ex) {
-      getLogger().error("Error while sleeping before kafka streams app is started. Ignored.", ex);
+    long initialDelayMillis = initialDelay.toMillis();
+    if (initialDelayMillis > 0) {
+      isSleeping = true;
+      try {
+        getLogger()
+            .info(
+                "Sleeping for {} millisecond before kafka streams app is started.",
+                initialDelay.toMillis());
+        TimeUnit.MILLISECONDS.sleep(initialDelayMillis);
+      } catch (Exception ex) {
+        getLogger().error("Error while sleeping before kafka streams app is started. Ignored.", ex);
+      }
+      isSleeping = false;
     }
-    isSleeping = false;
   }
 }
