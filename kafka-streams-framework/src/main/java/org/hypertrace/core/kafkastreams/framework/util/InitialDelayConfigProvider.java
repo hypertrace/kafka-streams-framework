@@ -10,8 +10,9 @@ import java.util.Properties;
 public class InitialDelayConfigProvider {
 
   private static final String INITIAL_DELAY = "initial.delay";
-  private static final Duration INITIAL_DELAY_VERSION_CHANGE = Duration.ofMinutes(6L);
-  private static final Duration INITIAL_DELAY_NO_VERSION_CHANGE = Duration.ofMillis(0L);
+  private static final Duration DEFAULT_INITIAL_DELAY_MAJOR_VERSION_CHANGE = Duration.ofMinutes(6L);
+  private static final Duration DEFAULT_INITIAL_DELAY_NO_MAJOR_VERSION_CHANGE =
+      Duration.ofMillis(0L);
   private static final String SERVICE_VERSION = "SERVICE_VERSION";
 
   private static final InitialDelayConfigProvider instance = new InitialDelayConfigProvider();
@@ -34,7 +35,9 @@ public class InitialDelayConfigProvider {
   private Duration getDefaultInitialDelay() {
     Optional<String> serviceVersion = Optional.ofNullable(System.getenv(SERVICE_VERSION));
     boolean majorVersionChange = isMajorVersionChange(serviceVersion);
-    return majorVersionChange ? INITIAL_DELAY_VERSION_CHANGE : INITIAL_DELAY_NO_VERSION_CHANGE;
+    return majorVersionChange
+        ? DEFAULT_INITIAL_DELAY_MAJOR_VERSION_CHANGE
+        : DEFAULT_INITIAL_DELAY_NO_MAJOR_VERSION_CHANGE;
   }
 
   private Duration parseDuration(Object initialDelayObj) {

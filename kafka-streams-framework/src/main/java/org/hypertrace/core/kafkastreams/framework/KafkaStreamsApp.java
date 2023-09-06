@@ -158,7 +158,7 @@ public abstract class KafkaStreamsApp extends PlatformService {
   @Override
   protected void doStart() {
     try {
-      handleInitialDelay();
+      delayStartup(initialDelay.toMillis());
       app.start();
     } catch (Exception e) {
       getLogger().error("Error starting - ", e);
@@ -308,8 +308,7 @@ public abstract class KafkaStreamsApp extends PlatformService {
         : Duration.ofSeconds(30);
   }
 
-  private void handleInitialDelay() {
-    long initialDelayMillis = initialDelay.toMillis();
+  private void delayStartup(long initialDelayMillis) {
     if (initialDelayMillis > 0) {
       isSleeping = true;
       try {
