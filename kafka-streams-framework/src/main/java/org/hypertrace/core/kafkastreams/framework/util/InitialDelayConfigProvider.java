@@ -7,18 +7,18 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 
-public class InitialDelayParser {
+public class InitialDelayConfigProvider {
 
   private static final String INITIAL_DELAY = "initial.delay";
   private static final Duration INITIAL_DELAY_VERSION_CHANGE = Duration.ofMinutes(6L);
   private static final Duration INITIAL_DELAY_NO_VERSION_CHANGE = Duration.ofMillis(0L);
   private static final String SERVICE_VERSION = "SERVICE_VERSION";
 
-  private static final InitialDelayParser instance = new InitialDelayParser();
+  private static final InitialDelayConfigProvider instance = new InitialDelayConfigProvider();
 
-  private InitialDelayParser() {}
+  private InitialDelayConfigProvider() {}
 
-  public static final InitialDelayParser getInstance() {
+  public static final InitialDelayConfigProvider getInstance() {
     return instance;
   }
 

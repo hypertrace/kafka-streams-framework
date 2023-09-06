@@ -50,7 +50,7 @@ import org.hypertrace.core.kafkastreams.framework.rocksdb.BoundedMemoryConfigSet
 import org.hypertrace.core.kafkastreams.framework.timestampextractors.UseWallclockTimeOnInvalidTimestamp;
 import org.hypertrace.core.kafkastreams.framework.topics.creator.KafkaTopicCreator;
 import org.hypertrace.core.kafkastreams.framework.util.ExceptionUtils;
-import org.hypertrace.core.kafkastreams.framework.util.InitialDelayParser;
+import org.hypertrace.core.kafkastreams.framework.util.InitialDelayConfigProvider;
 import org.hypertrace.core.serviceframework.PlatformService;
 import org.hypertrace.core.serviceframework.config.ConfigClient;
 import org.hypertrace.core.serviceframework.config.ConfigUtils;
@@ -146,7 +146,7 @@ public abstract class KafkaStreamsApp extends PlatformService {
             System.exit(1);
           });
       this.shutdownDuration = getShutdownDuration();
-      this.initialDelay = InitialDelayParser.getInstance().getInitialDelay(streamsConfig);
+      this.initialDelay = InitialDelayConfigProvider.getInstance().getInitialDelay(streamsConfig);
       this.isSleeping = true;
       getLogger().info("kafka streams topologies: {}", topology.describe());
     } catch (Exception e) {
