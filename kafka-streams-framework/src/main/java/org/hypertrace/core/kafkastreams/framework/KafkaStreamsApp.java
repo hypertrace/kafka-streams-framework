@@ -50,6 +50,7 @@ import org.hypertrace.core.kafkastreams.framework.rocksdb.BoundedMemoryConfigSet
 import org.hypertrace.core.kafkastreams.framework.timestampextractors.UseWallclockTimeOnInvalidTimestamp;
 import org.hypertrace.core.kafkastreams.framework.topics.creator.KafkaTopicCreator;
 import org.hypertrace.core.kafkastreams.framework.util.ExceptionUtils;
+import org.hypertrace.core.kafkastreams.framework.util.InitialDelayParser;
 import org.hypertrace.core.serviceframework.PlatformService;
 import org.hypertrace.core.serviceframework.config.ConfigClient;
 import org.hypertrace.core.serviceframework.config.ConfigUtils;
@@ -71,7 +72,7 @@ public abstract class KafkaStreamsApp extends PlatformService {
   protected KafkaStreams app;
   private KafkaStreamsMetrics metrics;
   private Duration shutdownDuration;
-  private Duration startupDelay;
+  private Duration initialDelay;
   private boolean isSleeping;
 
   // Visible for testing only
@@ -145,8 +146,8 @@ public abstract class KafkaStreamsApp extends PlatformService {
             System.exit(1);
           });
       this.shutdownDuration = getShutdownDuration();
-      this.startupDelay = getStartupDelay();
-      this.isSleeping = false;
+      this.initialDelay = InitialDelayParser.getInstance().getInitialDelay(streamsConfig);
+      this.isSleeping = true;
       getLogger().info("kafka streams topologies: {}", topology.describe());
     } catch (Exception e) {
       getLogger().error("Error initializing - ", e);
@@ -157,7 +158,7 @@ public abstract class KafkaStreamsApp extends PlatformService {
   @Override
   protected void doStart() {
     try {
-      handleSleep();
+      handleInitialDelay();
       app.start();
     } catch (Exception e) {
       getLogger().error("Error starting - ", e);
@@ -307,21 +308,13 @@ public abstract class KafkaStreamsApp extends PlatformService {
         : Duration.ofSeconds(30);
   }
 
-  private Duration getStartupDelay() {
-    Config config = (Config) streamsConfig.get(getJobConfigKey());
-    return config.hasPath(STARTUP_DELAY)
-        ? config.getDuration(STARTUP_DELAY)
-        : Duration.ofMillis(0L);
-  }
-
-  private void handleSleep() {
-    isSleeping = true;
+  private void handleInitialDelay() {
     try {
       getLogger()
           .info(
               "Sleeping for {} millisecond before kafka streams app is started.",
-              startupDelay.toMillis());
-      TimeUnit.MILLISECONDS.sleep(startupDelay.toMillis());
+              initialDelay.toMillis());
+      TimeUnit.MILLISECONDS.sleep(initialDelay.toMillis());
     } catch (Exception ex) {
       getLogger().error("Error while sleeping before kafka streams app is started. Ignored.", ex);
     }
