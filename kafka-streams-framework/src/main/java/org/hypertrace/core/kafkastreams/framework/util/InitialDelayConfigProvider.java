@@ -34,7 +34,7 @@ public class InitialDelayConfigProvider {
 
   private Duration getDefaultInitialDelay() {
     Optional<String> serviceVersion = Optional.ofNullable(System.getenv(SERVICE_VERSION));
-    boolean majorVersionChange = isMajorVersionChange(serviceVersion);
+    boolean majorVersionChange = serviceVersion.map(this::isMajorVersionChange).orElse(false);
     return majorVersionChange
         ? DEFAULT_INITIAL_DELAY_MAJOR_VERSION_CHANGE
         : DEFAULT_INITIAL_DELAY_NO_MAJOR_VERSION_CHANGE;
@@ -47,12 +47,10 @@ public class InitialDelayConfigProvider {
     return parsedConfig.getDuration(INITIAL_DELAY);
   }
 
-  private boolean isMajorVersionChange(Optional<String> serviceVersion) {
-    if (serviceVersion.isPresent()) {
-      String[] version = serviceVersion.get().split("\\.");
-      if (version.length == 3) {
-        return version[1].equals("0") && version[2].equals("0");
-      }
+  private boolean isMajorVersionChange(String serviceVersion) {
+    String[] version = serviceVersion.split("\\.");
+    if (version.length == 3) {
+      return version[1].equals("0") && version[2].equals("0");
     }
     return false;
   }

@@ -64,7 +64,6 @@ public abstract class KafkaStreamsApp extends PlatformService {
   public static final String PRE_CREATE_TOPICS = "precreate.topics";
   public static final String KAFKA_STREAMS_CONFIG_KEY = "kafka.streams.config";
   private static final String SHUTDOWN_DURATION = "shutdown.duration";
-  private static final String STARTUP_DELAY = "startup.delay";
   private static final Logger logger = LoggerFactory.getLogger(KafkaStreamsApp.class);
 
   private final GrpcChannelRegistry grpcChannelRegistry;
@@ -285,7 +284,7 @@ public abstract class KafkaStreamsApp extends PlatformService {
   /** Merge the props into baseProps */
   private Map<String, Object> mergeProperties(
       Map<String, Object> baseProps, Map<String, Object> props) {
-    props.forEach(baseProps::put);
+    baseProps.putAll(props);
     return baseProps;
   }
 
