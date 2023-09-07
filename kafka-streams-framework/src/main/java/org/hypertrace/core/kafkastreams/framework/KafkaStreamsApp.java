@@ -50,6 +50,7 @@ import org.hypertrace.core.kafkastreams.framework.rocksdb.BoundedMemoryConfigSet
 import org.hypertrace.core.kafkastreams.framework.timestampextractors.UseWallclockTimeOnInvalidTimestamp;
 import org.hypertrace.core.kafkastreams.framework.topics.creator.KafkaTopicCreator;
 import org.hypertrace.core.kafkastreams.framework.util.ExceptionUtils;
+import org.hypertrace.core.kafkastreams.framework.util.InitialDelayConfigProvider;
 import org.hypertrace.core.serviceframework.PlatformService;
 import org.hypertrace.core.serviceframework.config.ConfigClient;
 import org.hypertrace.core.serviceframework.config.ConfigUtils;
@@ -70,6 +71,8 @@ public abstract class KafkaStreamsApp extends PlatformService {
   protected KafkaStreams app;
   private KafkaStreamsMetrics metrics;
   private Duration shutdownDuration;
+  private Duration initialDelay;
+  private boolean isSleeping;
 
   // Visible for testing only
   protected Topology topology;
@@ -142,10 +145,11 @@ public abstract class KafkaStreamsApp extends PlatformService {
             System.exit(1);
           });
       this.shutdownDuration = getShutdownDuration();
+      this.initialDelay = InitialDelayConfigProvider.getInstance().getInitialDelay(streamsConfig);
+      this.isSleeping = false;
       getLogger().info("kafka streams topologies: {}", topology.describe());
     } catch (Exception e) {
       getLogger().error("Error initializing - ", e);
-      e.printStackTrace();
       System.exit(1);
     }
   }
@@ -153,10 +157,10 @@ public abstract class KafkaStreamsApp extends PlatformService {
   @Override
   protected void doStart() {
     try {
+      delayStartup(initialDelay.toMillis());
       app.start();
     } catch (Exception e) {
       getLogger().error("Error starting - ", e);
-      e.printStackTrace();
       System.exit(1);
     }
   }
@@ -183,7 +187,7 @@ public abstract class KafkaStreamsApp extends PlatformService {
 
   @Override
   public boolean healthCheck() {
-    return app.state().isRunningOrRebalancing();
+    return isSleeping || app.state().isRunningOrRebalancing();
   }
 
   /**
@@ -280,7 +284,7 @@ public abstract class KafkaStreamsApp extends PlatformService {
   /** Merge the props into baseProps */
   private Map<String, Object> mergeProperties(
       Map<String, Object> baseProps, Map<String, Object> props) {
-    props.forEach(baseProps::put);
+    baseProps.putAll(props);
     return baseProps;
   }
 
@@ -301,5 +305,21 @@ public abstract class KafkaStreamsApp extends PlatformService {
     return config.hasPath(SHUTDOWN_DURATION)
         ? config.getDuration(SHUTDOWN_DURATION)
         : Duration.ofSeconds(30);
+  }
+
+  private void delayStartup(long initialDelayMillis) {
+    if (initialDelayMillis > 0) {
+      isSleeping = true;
+      try {
+        getLogger()
+            .info(
+                "Sleeping for {} millisecond before kafka streams app is started.",
+                initialDelayMillis);
+        TimeUnit.MILLISECONDS.sleep(initialDelayMillis);
+      } catch (Exception ex) {
+        getLogger().error("Error while sleeping before kafka streams app is started. Ignored.", ex);
+      }
+      isSleeping = false;
+    }
   }
 }
