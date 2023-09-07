@@ -315,7 +315,7 @@ public abstract class KafkaStreamsApp extends PlatformService {
         getLogger()
             .info(
                 "Sleeping for {} millisecond before kafka streams app is started.",
-                initialDelay.toMillis());
+                initialDelayMillis);
         TimeUnit.MILLISECONDS.sleep(initialDelayMillis);
       } catch (Exception ex) {
         getLogger().error("Error while sleeping before kafka streams app is started. Ignored.", ex);
