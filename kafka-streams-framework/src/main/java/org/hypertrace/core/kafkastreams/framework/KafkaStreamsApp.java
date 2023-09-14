@@ -228,7 +228,7 @@ public abstract class KafkaStreamsApp extends PlatformService {
     baseStreamsConfig.put(producerPrefix(BATCH_SIZE_CONFIG), "524288");
     // Enable compression on producer for better throughput
     // default - none
-    baseStreamsConfig.put(producerPrefix(COMPRESSION_TYPE_CONFIG), CompressionType.GZIP.name);
+    baseStreamsConfig.put(producerPrefix(COMPRESSION_TYPE_CONFIG), CompressionType.ZSTD.name);
 
     // ##########################
     // Consumer configurations
