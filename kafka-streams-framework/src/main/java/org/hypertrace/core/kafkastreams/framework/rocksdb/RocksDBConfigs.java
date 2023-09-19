@@ -24,8 +24,10 @@ public class RocksDBConfigs {
 
   // ####### Universal compaction options #######
   public static final String UNIVERSAL_COMPACTION_PREFIX = "compaction.universal.";
-  public static final String MAX_SIZE_AMPLIFICATION_PERCENT = universalCompactionPrefix("max.size.amplification.percent");
-
+  public static final String MAX_SIZE_AMPLIFICATION_PERCENT =
+      universalCompactionPrefix("max.size.amplification.percent");
+  public static final String PERIODIC_COMPACTION_SECONDS =
+      rocksdbPrefix("periodic.compaction.seconds");
   // Others
   public static final String COMPRESSION_TYPE = rocksdbPrefix("compression.type");
   public static final String COMPACTION_STYLE = rocksdbPrefix("compaction.style");
@@ -40,5 +42,4 @@ public class RocksDBConfigs {
   public static String universalCompactionPrefix(String configKey) {
     return rocksdbPrefix(UNIVERSAL_COMPACTION_PREFIX + configKey);
   }
-
 }

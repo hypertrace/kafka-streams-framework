@@ -6,6 +6,7 @@ import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.LOG_LEVEL_CONFIG;
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.MAX_SIZE_AMPLIFICATION_PERCENT;
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.OPTIMIZE_FOR_POINT_LOOKUPS;
+import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.PERIODIC_COMPACTION_SECONDS;
 
 import java.util.Map;
 import org.apache.kafka.streams.state.RocksDBConfigSetter;
@@ -24,10 +25,18 @@ public class BoundedMemoryConfigSetter implements RocksDBConfigSetter {
     RocksDBCacheProvider.get().initCache(options, configs);
 
     if (configs.containsKey(COMPACTION_STYLE)) {
-      options.setCompactionStyle(CompactionStyle.valueOf((String) configs.get(COMPACTION_STYLE)));
+      CompactionStyle compactionStyle =
+          CompactionStyle.valueOf((String) configs.get(COMPACTION_STYLE));
+      options.setCompactionStyle(compactionStyle);
+      if (compactionStyle.equals(CompactionStyle.UNIVERSAL)) {
+        setUniversalConfigOptions(options, configs);
+      }
     }
 
-    setUniversalConfigOptions(options, configs);
+    if (configs.containsKey(PERIODIC_COMPACTION_SECONDS)) {
+      options.setPeriodicCompactionSeconds(
+          Long.parseLong(String.valueOf(configs.get(PERIODIC_COMPACTION_SECONDS))));
+    }
 
     if (configs.containsKey(COMPRESSION_TYPE)) {
       options.setCompressionType(
@@ -60,9 +69,9 @@ public class BoundedMemoryConfigSetter implements RocksDBConfigSetter {
 
     if (configs.containsKey(MAX_SIZE_AMPLIFICATION_PERCENT)) {
       configured = true;
-      compactionOptions.setMaxSizeAmplificationPercent(Integer.parseInt((String) configs.get(MAX_SIZE_AMPLIFICATION_PERCENT)));
+      compactionOptions.setMaxSizeAmplificationPercent(
+          Integer.parseInt((String) configs.get(MAX_SIZE_AMPLIFICATION_PERCENT)));
     }
-
     if (configured) {
       options.setCompactionOptionsUniversal(compactionOptions);
     }
