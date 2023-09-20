@@ -8,7 +8,9 @@ import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.COMPRESSION_TYPE;
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.DIRECT_READS_ENABLED;
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.LOG_LEVEL_CONFIG;
+import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.MAX_SIZE_AMPLIFICATION_PERCENT;
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.MAX_WRITE_BUFFERS;
+import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.PERIODIC_COMPACTION_SECONDS;
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.WRITE_BUFFER_SIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -124,6 +126,19 @@ class BoundedMemoryConfigSetterTest {
         });
   }
 
+  @ParameterizedTest
+  @MethodSource("universalCompactionConfigProvider")
+  public void testSetUniversalConfigOptions(Map<String, Object> config) {
+    configs.putAll(config);
+    configSetter.setConfig(storeName, options, configs);
+    assertEquals(
+        options.periodicCompactionSeconds(),
+        Long.valueOf(String.valueOf(configs.get(PERIODIC_COMPACTION_SECONDS))));
+    assertEquals(
+        options.compactionOptionsUniversal().maxSizeAmplificationPercent(),
+        configs.get(MAX_SIZE_AMPLIFICATION_PERCENT));
+  }
+
   // Data provider for negative tests
   static Stream<Map<String, Object>> invalidCacheRatioProvider() {
     return Stream.of(
@@ -158,7 +173,11 @@ class BoundedMemoryConfigSetterTest {
             MAX_WRITE_BUFFERS,
             2,
             DIRECT_READS_ENABLED,
-            true),
+            true,
+            PERIODIC_COMPACTION_SECONDS,
+            60,
+            MAX_SIZE_AMPLIFICATION_PERCENT,
+            50),
         Map.of(
             APPLICATION_ID,
             "app-2",
@@ -175,7 +194,11 @@ class BoundedMemoryConfigSetterTest {
             MAX_WRITE_BUFFERS,
             3,
             DIRECT_READS_ENABLED,
-            true),
+            true,
+            PERIODIC_COMPACTION_SECONDS,
+            60,
+            MAX_SIZE_AMPLIFICATION_PERCENT,
+            50),
         Map.of(
             APPLICATION_ID,
             "app-3",
@@ -192,6 +215,23 @@ class BoundedMemoryConfigSetterTest {
             MAX_WRITE_BUFFERS,
             4,
             DIRECT_READS_ENABLED,
-            false));
+            false,
+            PERIODIC_COMPACTION_SECONDS,
+            60,
+            MAX_SIZE_AMPLIFICATION_PERCENT,
+            50));
+  }
+
+  static Stream<Map<String, Object>> universalCompactionConfigProvider() {
+    return Stream.of(
+        Map.of(
+            APPLICATION_ID,
+            "app-2",
+            COMPACTION_STYLE,
+            CompactionStyle.UNIVERSAL.toString(),
+            PERIODIC_COMPACTION_SECONDS,
+            60,
+            MAX_SIZE_AMPLIFICATION_PERCENT,
+            50));
   }
 }

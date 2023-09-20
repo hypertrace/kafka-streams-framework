@@ -70,7 +70,7 @@ public class BoundedMemoryConfigSetter implements RocksDBConfigSetter {
     if (configs.containsKey(MAX_SIZE_AMPLIFICATION_PERCENT)) {
       configured = true;
       compactionOptions.setMaxSizeAmplificationPercent(
-          Integer.parseInt((String) configs.get(MAX_SIZE_AMPLIFICATION_PERCENT)));
+          Integer.parseInt(String.valueOf(configs.get(MAX_SIZE_AMPLIFICATION_PERCENT))));
     }
     if (configured) {
       options.setCompactionOptionsUniversal(compactionOptions);
