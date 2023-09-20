@@ -173,11 +173,7 @@ class BoundedMemoryConfigSetterTest {
             MAX_WRITE_BUFFERS,
             2,
             DIRECT_READS_ENABLED,
-            true,
-            PERIODIC_COMPACTION_SECONDS,
-            60,
-            MAX_SIZE_AMPLIFICATION_PERCENT,
-            50),
+            true),
         Map.of(
             APPLICATION_ID,
             "app-2",
@@ -194,11 +190,7 @@ class BoundedMemoryConfigSetterTest {
             MAX_WRITE_BUFFERS,
             3,
             DIRECT_READS_ENABLED,
-            true,
-            PERIODIC_COMPACTION_SECONDS,
-            60,
-            MAX_SIZE_AMPLIFICATION_PERCENT,
-            50),
+            true),
         Map.of(
             APPLICATION_ID,
             "app-3",
@@ -215,11 +207,7 @@ class BoundedMemoryConfigSetterTest {
             MAX_WRITE_BUFFERS,
             4,
             DIRECT_READS_ENABLED,
-            false,
-            PERIODIC_COMPACTION_SECONDS,
-            60,
-            MAX_SIZE_AMPLIFICATION_PERCENT,
-            50));
+            false));
   }
 
   static Stream<Map<String, Object>> universalCompactionConfigProvider() {
