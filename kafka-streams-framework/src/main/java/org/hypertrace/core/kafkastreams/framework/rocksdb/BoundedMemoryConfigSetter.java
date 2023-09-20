@@ -1,6 +1,7 @@
 package org.hypertrace.core.kafkastreams.framework.rocksdb;
 
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.COMPACTION_STYLE;
+import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.COMPRESSION_SIZE_PERCENT;
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.COMPRESSION_TYPE;
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.DIRECT_READS_ENABLED;
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.LOG_LEVEL_CONFIG;
@@ -71,6 +72,11 @@ public class BoundedMemoryConfigSetter implements RocksDBConfigSetter {
       configured = true;
       compactionOptions.setMaxSizeAmplificationPercent(
           Integer.parseInt(String.valueOf(configs.get(MAX_SIZE_AMPLIFICATION_PERCENT))));
+    }
+    if (configs.containsKey(COMPRESSION_SIZE_PERCENT)) {
+      configured = true;
+      compactionOptions.setCompressionSizePercent(
+          Integer.parseInt(String.valueOf(configs.get(COMPRESSION_SIZE_PERCENT))));
     }
     if (configured) {
       options.setCompactionOptionsUniversal(compactionOptions);

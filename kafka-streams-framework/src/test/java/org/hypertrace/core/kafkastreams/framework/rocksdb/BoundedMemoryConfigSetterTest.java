@@ -5,6 +5,7 @@ import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.CACHE_HIGH_PRIORITY_POOL_RATIO;
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.CACHE_WRITE_BUFFERS_RATIO;
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.COMPACTION_STYLE;
+import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.COMPRESSION_SIZE_PERCENT;
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.COMPRESSION_TYPE;
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.DIRECT_READS_ENABLED;
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.LOG_LEVEL_CONFIG;
@@ -137,6 +138,9 @@ class BoundedMemoryConfigSetterTest {
     assertEquals(
         options.compactionOptionsUniversal().maxSizeAmplificationPercent(),
         configs.get(MAX_SIZE_AMPLIFICATION_PERCENT));
+    assertEquals(
+        options.compactionOptionsUniversal().compressionSizePercent(),
+        configs.get(COMPRESSION_SIZE_PERCENT));
   }
 
   // Data provider for negative tests
@@ -220,6 +224,8 @@ class BoundedMemoryConfigSetterTest {
             PERIODIC_COMPACTION_SECONDS,
             60,
             MAX_SIZE_AMPLIFICATION_PERCENT,
-            50));
+            50,
+            COMPRESSION_SIZE_PERCENT,
+            40));
   }
 }

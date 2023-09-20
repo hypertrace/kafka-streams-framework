@@ -26,6 +26,8 @@ public class RocksDBConfigs {
   public static final String UNIVERSAL_COMPACTION_PREFIX = "compaction.universal.";
   public static final String MAX_SIZE_AMPLIFICATION_PERCENT =
       universalCompactionPrefix("max.size.amplification.percent");
+  public static final String COMPRESSION_SIZE_PERCENT =
+      universalCompactionPrefix("compression.size.percent");
   public static final String PERIODIC_COMPACTION_SECONDS =
       rocksdbPrefix("periodic.compaction.seconds");
   // Others
