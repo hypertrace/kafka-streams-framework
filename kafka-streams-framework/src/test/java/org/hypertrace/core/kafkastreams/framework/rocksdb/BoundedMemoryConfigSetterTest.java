@@ -5,10 +5,13 @@ import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.CACHE_HIGH_PRIORITY_POOL_RATIO;
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.CACHE_WRITE_BUFFERS_RATIO;
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.COMPACTION_STYLE;
+import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.COMPRESSION_SIZE_PERCENT;
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.COMPRESSION_TYPE;
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.DIRECT_READS_ENABLED;
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.LOG_LEVEL_CONFIG;
+import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.MAX_SIZE_AMPLIFICATION_PERCENT;
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.MAX_WRITE_BUFFERS;
+import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.PERIODIC_COMPACTION_SECONDS;
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.WRITE_BUFFER_SIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -124,6 +127,22 @@ class BoundedMemoryConfigSetterTest {
         });
   }
 
+  @ParameterizedTest
+  @MethodSource("universalCompactionConfigProvider")
+  public void testSetUniversalConfigOptions(Map<String, Object> config) {
+    configs.putAll(config);
+    configSetter.setConfig(storeName, options, configs);
+    assertEquals(
+        options.periodicCompactionSeconds(),
+        Long.valueOf(String.valueOf(configs.get(PERIODIC_COMPACTION_SECONDS))));
+    assertEquals(
+        options.compactionOptionsUniversal().maxSizeAmplificationPercent(),
+        configs.get(MAX_SIZE_AMPLIFICATION_PERCENT));
+    assertEquals(
+        options.compactionOptionsUniversal().compressionSizePercent(),
+        configs.get(COMPRESSION_SIZE_PERCENT));
+  }
+
   // Data provider for negative tests
   static Stream<Map<String, Object>> invalidCacheRatioProvider() {
     return Stream.of(
@@ -193,5 +212,20 @@ class BoundedMemoryConfigSetterTest {
             4,
             DIRECT_READS_ENABLED,
             false));
+  }
+
+  static Stream<Map<String, Object>> universalCompactionConfigProvider() {
+    return Stream.of(
+        Map.of(
+            APPLICATION_ID,
+            "app-2",
+            COMPACTION_STYLE,
+            CompactionStyle.UNIVERSAL.toString(),
+            PERIODIC_COMPACTION_SECONDS,
+            60,
+            MAX_SIZE_AMPLIFICATION_PERCENT,
+            50,
+            COMPRESSION_SIZE_PERCENT,
+            40));
   }
 }

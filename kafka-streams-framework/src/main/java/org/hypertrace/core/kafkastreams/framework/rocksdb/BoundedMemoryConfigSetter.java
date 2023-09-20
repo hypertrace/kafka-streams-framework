@@ -1,14 +1,18 @@
 package org.hypertrace.core.kafkastreams.framework.rocksdb;
 
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.COMPACTION_STYLE;
+import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.COMPRESSION_SIZE_PERCENT;
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.COMPRESSION_TYPE;
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.DIRECT_READS_ENABLED;
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.LOG_LEVEL_CONFIG;
+import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.MAX_SIZE_AMPLIFICATION_PERCENT;
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.OPTIMIZE_FOR_POINT_LOOKUPS;
+import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.PERIODIC_COMPACTION_SECONDS;
 
 import java.util.Map;
 import org.apache.kafka.streams.state.RocksDBConfigSetter;
 import org.rocksdb.BlockBasedTableConfig;
+import org.rocksdb.CompactionOptionsUniversal;
 import org.rocksdb.CompactionStyle;
 import org.rocksdb.CompressionType;
 import org.rocksdb.InfoLogLevel;
@@ -22,7 +26,17 @@ public class BoundedMemoryConfigSetter implements RocksDBConfigSetter {
     RocksDBCacheProvider.get().initCache(options, configs);
 
     if (configs.containsKey(COMPACTION_STYLE)) {
-      options.setCompactionStyle(CompactionStyle.valueOf((String) configs.get(COMPACTION_STYLE)));
+      CompactionStyle compactionStyle =
+          CompactionStyle.valueOf((String) configs.get(COMPACTION_STYLE));
+      options.setCompactionStyle(compactionStyle);
+      if (compactionStyle.equals(CompactionStyle.UNIVERSAL)) {
+        setUniversalConfigOptions(options, configs);
+      }
+    }
+
+    if (configs.containsKey(PERIODIC_COMPACTION_SECONDS)) {
+      options.setPeriodicCompactionSeconds(
+          Long.parseLong(String.valueOf(configs.get(PERIODIC_COMPACTION_SECONDS))));
     }
 
     if (configs.containsKey(COMPRESSION_TYPE)) {
@@ -47,6 +61,25 @@ public class BoundedMemoryConfigSetter implements RocksDBConfigSetter {
                 / (1024L * 1024L);
         options.optimizeForPointLookup(blockCacheSizeMb);
       }
+    }
+  }
+
+  private void setUniversalConfigOptions(Options options, Map<String, Object> configs) {
+    boolean configured = false;
+    CompactionOptionsUniversal compactionOptions = new CompactionOptionsUniversal();
+
+    if (configs.containsKey(MAX_SIZE_AMPLIFICATION_PERCENT)) {
+      configured = true;
+      compactionOptions.setMaxSizeAmplificationPercent(
+          Integer.parseInt(String.valueOf(configs.get(MAX_SIZE_AMPLIFICATION_PERCENT))));
+    }
+    if (configs.containsKey(COMPRESSION_SIZE_PERCENT)) {
+      configured = true;
+      compactionOptions.setCompressionSizePercent(
+          Integer.parseInt(String.valueOf(configs.get(COMPRESSION_SIZE_PERCENT))));
+    }
+    if (configured) {
+      options.setCompactionOptionsUniversal(compactionOptions);
     }
   }
 
