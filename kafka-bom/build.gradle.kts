@@ -21,6 +21,9 @@ dependencies {
     api("com.squareup.okio:okio:3.4.0") {
       because("https://nvd.nist.gov/vuln/detail/CVE-2023-3635 in io.confluent:kafka-protobuf-serializer:7.4.0")
     }
+    api("org.apache.commons:commons-compress:1.24.0") {
+      because("CVE-2023-42503")
+    }
 
     api("io.confluent:kafka-streams-avro-serde:$kafkaVersion")
     api("io.confluent:kafka-protobuf-serializer:$kafkaVersion")
