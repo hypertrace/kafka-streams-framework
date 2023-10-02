@@ -29,6 +29,6 @@ dependencies {
     api("org.apache.kafka:kafka-clients:$kafkaCcsVersion")
     api("org.apache.kafka:kafka-streams:$kafkaCcsVersion")
     api("org.apache.kafka:kafka-streams-test-utils:$kafkaCcsVersion")
-    api("org.apache.avro:avro:1.11.1")
+    api("org.apache.avro:avro:1.11.3")
   }
 }
