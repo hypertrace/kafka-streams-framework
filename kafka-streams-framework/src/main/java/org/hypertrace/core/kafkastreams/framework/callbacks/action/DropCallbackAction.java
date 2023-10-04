@@ -1,4 +1,4 @@
-package org.hypertrace.core.kafkastreams.framework.callbacks;
+package org.hypertrace.core.kafkastreams.framework.callbacks.action;
 
 import java.util.Optional;
 

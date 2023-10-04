@@ -8,6 +8,7 @@ import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.processor.Punctuator;
 import org.apache.kafka.streams.state.KeyValueIterator;
 import org.apache.kafka.streams.state.KeyValueStore;
+import org.hypertrace.core.kafkastreams.framework.callbacks.action.CallbackAction;
 
 public class CallbackRegistryPunctuator<T> implements Punctuator {
   private final KeyValueStore<Long, List<T>> objectStore;
