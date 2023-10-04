@@ -44,11 +44,11 @@ public class CallbackRegistryPunctuator<T> implements Punctuator {
   public void punctuate(long punctuateTimestamp) {
     long startTimestamp = System.currentTimeMillis();
     try (KeyValueIterator<Long, List<T>> it = objectStore.range(0L, punctuateTimestamp)) {
-      while (it.hasNext() && needsYield(startTimestamp)) {
+      while (it.hasNext() && canContinueProcessing(startTimestamp)) {
         KeyValue<Long, List<T>> kv = it.next();
         List<T> objects = kv.value;
         long windowAlignedTimestamp = kv.key;
-        for (int i = 0; i < objects.size() && needsYield(startTimestamp); i++) {
+        for (int i = 0; i < objects.size() && canContinueProcessing(startTimestamp); i++) {
           T object = objects.get(i);
           CallbackAction action = callbackFunction.apply(object);
           drop(windowAlignedTimestamp, object);
@@ -60,7 +60,7 @@ public class CallbackRegistryPunctuator<T> implements Punctuator {
     }
   }
 
-  private boolean needsYield(long startTimestamp) {
+  private boolean canContinueProcessing(long startTimestamp) {
     return System.currentTimeMillis() - startTimestamp < config.getYieldMs();
   }
 
