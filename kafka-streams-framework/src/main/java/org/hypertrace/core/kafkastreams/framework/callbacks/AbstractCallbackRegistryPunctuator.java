@@ -32,7 +32,9 @@ public abstract class AbstractCallbackRegistryPunctuator<T> implements Punctuato
     List<T> objectsAtWindow =
         Optional.ofNullable(objectStore.get(windowAlignedTimestamp)).orElse(new ArrayList<>());
     objectsAtWindow.remove(object);
-    if (!objectsAtWindow.isEmpty()) {
+    if (objectsAtWindow.isEmpty()) {
+      objectStore.delete(windowAlignedTimestamp);
+    } else {
       objectStore.put(windowAlignedTimestamp, objectsAtWindow);
     }
   }
@@ -49,9 +51,9 @@ public abstract class AbstractCallbackRegistryPunctuator<T> implements Punctuato
           T object = objects.get(i);
           CallbackAction action = callback(punctuateTimestamp, object);
           cancelInvocation(windowAlignedTimestamp, object);
-          if (action.getRescheduleTimestamp().isPresent()) {
-            invoke(action.getRescheduleTimestamp().get(), object);
-          }
+          action
+              .getRescheduleTimestamp()
+              .ifPresent((rescheduleTimestamp) -> invoke(rescheduleTimestamp, object));
         }
       }
     }
