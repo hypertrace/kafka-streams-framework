@@ -55,7 +55,7 @@ public abstract class AbstractCallbackRegistryPunctuator<T> implements Punctuato
     }
   }
 
-  abstract CallbackAction callback(long punctuateTimestamp, T object);
+  protected abstract CallbackAction callback(long punctuateTimestamp, T object);
 
   private boolean canContinueProcessing(long startTimestamp) {
     return System.currentTimeMillis() - startTimestamp < config.getYieldMs();
