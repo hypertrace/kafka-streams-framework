@@ -32,7 +32,9 @@ public abstract class AbstractCallbackRegistryPunctuator<T> implements Punctuato
     List<T> objectsAtWindow =
         Optional.ofNullable(objectStore.get(windowAlignedTimestamp)).orElse(new ArrayList<>());
     objectsAtWindow.remove(object);
-    objectStore.put(windowAlignedTimestamp, objectsAtWindow);
+    if (!objectsAtWindow.isEmpty()) {
+      objectStore.put(windowAlignedTimestamp, objectsAtWindow);
+    }
   }
 
   @Override
