@@ -3,36 +3,31 @@ package org.hypertrace.core.kafkastreams.framework.callbacks;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.BiFunction;
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.processor.Punctuator;
 import org.apache.kafka.streams.state.KeyValueIterator;
 import org.apache.kafka.streams.state.KeyValueStore;
 import org.hypertrace.core.kafkastreams.framework.callbacks.action.CallbackAction;
 
-public class CallbackRegistryPunctuator<T> implements Punctuator {
+public abstract class AbstractCallbackRegistryPunctuator<T> implements Punctuator {
   private final KeyValueStore<Long, List<T>> objectStore;
   private final CallbackRegistryPunctuatorConfig config;
-  private final BiFunction<Long, T, CallbackAction> callbackFunction;
 
-  public CallbackRegistryPunctuator(
-      CallbackRegistryPunctuatorConfig config,
-      KeyValueStore<Long, List<T>> objectStore,
-      BiFunction<Long, T, CallbackAction> callbackFunction) {
+  public AbstractCallbackRegistryPunctuator(
+      CallbackRegistryPunctuatorConfig config, KeyValueStore<Long, List<T>> objectStore) {
     this.config = config;
     this.objectStore = objectStore;
-    this.callbackFunction = callbackFunction;
   }
 
-  public void add(long timestampInMs, T object) {
-    long windowAlignedTimestamp = getWindowAlignedTimestamp(timestampInMs);
+  public void invokeAt(long atTimestampInMs, T object) {
+    long windowAlignedTimestamp = getWindowAlignedTimestamp(atTimestampInMs);
     List<T> objectsAtWindow =
         Optional.ofNullable(objectStore.get(windowAlignedTimestamp)).orElse(new ArrayList<>());
     objectsAtWindow.add(object);
     objectStore.put(windowAlignedTimestamp, objectsAtWindow);
   }
 
-  public void drop(long atTimestampInMs, T object) {
+  public void cancelInvocationAt(long atTimestampInMs, T object) {
     long windowAlignedTimestamp = getWindowAlignedTimestamp(atTimestampInMs);
     List<T> objectsAtWindow =
         Optional.ofNullable(objectStore.get(windowAlignedTimestamp)).orElse(new ArrayList<>());
@@ -50,15 +45,17 @@ public class CallbackRegistryPunctuator<T> implements Punctuator {
         long windowAlignedTimestamp = kv.key;
         for (int i = 0; i < objects.size() && canContinueProcessing(startTimestamp); i++) {
           T object = objects.get(i);
-          CallbackAction action = callbackFunction.apply(punctuateTimestamp, object);
-          drop(windowAlignedTimestamp, object);
+          CallbackAction action = callback(punctuateTimestamp, object);
+          cancelInvocationAt(windowAlignedTimestamp, object);
           if (action.getRescheduleTimestamp().isPresent()) {
-            add(action.getRescheduleTimestamp().get(), object);
+            invokeAt(action.getRescheduleTimestamp().get(), object);
           }
         }
       }
     }
   }
+
+  abstract CallbackAction callback(long punctuateTimestamp, T object);
 
   private boolean canContinueProcessing(long startTimestamp) {
     return System.currentTimeMillis() - startTimestamp < config.getYieldMs();
