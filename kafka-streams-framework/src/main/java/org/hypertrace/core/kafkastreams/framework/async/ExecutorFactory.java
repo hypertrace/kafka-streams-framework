@@ -1,7 +1,7 @@
 package org.hypertrace.core.kafkastreams.framework.async;
 
-import static org.hypertrace.core.kafkastreams.framework.async.Constants.ASYNC_EXECUTOR_POOL_SIZE_KEY;
-import static org.hypertrace.core.kafkastreams.framework.async.Constants.DEFAULT_ASYNC_EXECUTOR_POOL_SIZE;
+import static org.hypertrace.core.kafkastreams.framework.async.Constants.ASYNC_EXECUTOR_POOL_MULTIPLICATION_FACTOR_KEY;
+import static org.hypertrace.core.kafkastreams.framework.async.Constants.DEFAULT_ASYNC_EXECUTOR_POOL_MULTIPLICATION_FACTOR;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.typesafe.config.Config;
@@ -15,12 +15,14 @@ import org.hypertrace.core.serviceframework.metrics.PlatformMetricsRegistry;
 public class ExecutorFactory {
   private static Executor executor;
 
-  public static synchronized Supplier<Executor> getExecutorSupplier(Config config) {
+  public static synchronized Supplier<Executor> getExecutorSupplier(
+      Config config, int numStreamThreads) {
     if (executor == null) {
       int poolSize =
-          config.hasPath(ASYNC_EXECUTOR_POOL_SIZE_KEY)
-              ? config.getInt(ASYNC_EXECUTOR_POOL_SIZE_KEY)
-              : DEFAULT_ASYNC_EXECUTOR_POOL_SIZE;
+          numStreamThreads
+              * (config.hasPath(ASYNC_EXECUTOR_POOL_MULTIPLICATION_FACTOR_KEY)
+                  ? config.getInt(ASYNC_EXECUTOR_POOL_MULTIPLICATION_FACTOR_KEY)
+                  : DEFAULT_ASYNC_EXECUTOR_POOL_MULTIPLICATION_FACTOR);
 
       if (poolSize > 0) {
         ThreadFactory threadFactory =

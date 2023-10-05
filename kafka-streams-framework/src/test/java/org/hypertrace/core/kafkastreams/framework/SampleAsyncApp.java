@@ -45,7 +45,7 @@ public class SampleAsyncApp extends KafkaStreamsApp {
         stream.process(
             () ->
                 new SlowProcessor(
-                    ExecutorFactory.getExecutorSupplier(kafkaStreamsConfig),
+                    ExecutorFactory.getExecutorSupplier(kafkaStreamsConfig, 1),
                     AsyncProcessorConfig.buildWith(kafkaStreamsConfig, "slow.processor")));
     transform.process(LoggingProcessor::new);
     transform.to(OUTPUT_TOPIC);
