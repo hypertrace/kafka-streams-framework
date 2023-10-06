@@ -10,12 +10,12 @@ import org.apache.kafka.streams.state.KeyValueIterator;
 import org.apache.kafka.streams.state.KeyValueStore;
 import org.hypertrace.core.kafkastreams.framework.callbacks.action.CallbackAction;
 
-public abstract class AbstractCallbackRegistryPunctuator<T> implements Punctuator {
+public abstract class AbstractThrottledPunctuator<T> implements Punctuator {
   private final Clock clock;
   private final KeyValueStore<Long, ArrayList<T>> objectStore;
   private final CallbackRegistryPunctuatorConfig config;
 
-  public AbstractCallbackRegistryPunctuator(
+  public AbstractThrottledPunctuator(
       Clock clock,
       CallbackRegistryPunctuatorConfig config,
       KeyValueStore<Long, ArrayList<T>> objectStore) {
@@ -24,7 +24,7 @@ public abstract class AbstractCallbackRegistryPunctuator<T> implements Punctuato
     this.objectStore = objectStore;
   }
 
-  public void invoke(long atTimestampInMs, T object) {
+  public void scheduleTask(long atTimestampInMs, T object) {
     long windowAlignedTimestamp = getWindowAlignedTimestamp(atTimestampInMs);
     ArrayList<T> objectsAtWindow =
         Optional.ofNullable(objectStore.get(windowAlignedTimestamp)).orElse(new ArrayList<>());
@@ -32,7 +32,12 @@ public abstract class AbstractCallbackRegistryPunctuator<T> implements Punctuato
     objectStore.put(windowAlignedTimestamp, objectsAtWindow);
   }
 
-  public void cancelInvocation(long atTimestampInMs, T object) {
+  public void rescheduleTask(long atTimestampInMs, long toTimestampInMs, T object) {
+    cancelTask(atTimestampInMs, object);
+    scheduleTask(toTimestampInMs, object);
+  }
+
+  public void cancelTask(long atTimestampInMs, T object) {
     long windowAlignedTimestamp = getWindowAlignedTimestamp(atTimestampInMs);
     ArrayList<T> objectsAtWindow =
         Optional.ofNullable(objectStore.get(windowAlignedTimestamp)).orElse(new ArrayList<>());
@@ -45,7 +50,7 @@ public abstract class AbstractCallbackRegistryPunctuator<T> implements Punctuato
   }
 
   @Override
-  public void punctuate(long punctuateTimestamp) {
+  public final void punctuate(long punctuateTimestamp) {
     long startTimestamp = System.currentTimeMillis();
     try (KeyValueIterator<Long, ArrayList<T>> it = objectStore.range(0L, punctuateTimestamp)) {
       while (it.hasNext() && canContinueProcessing(startTimestamp)) {
@@ -55,10 +60,10 @@ public abstract class AbstractCallbackRegistryPunctuator<T> implements Punctuato
         for (int i = 0; i < objects.size() && canContinueProcessing(startTimestamp); i++) {
           T object = objects.get(i);
           CallbackAction action = callback(punctuateTimestamp, object);
-          cancelInvocation(windowAlignedTimestamp, object);
+          cancelTask(windowAlignedTimestamp, object);
           action
               .getRescheduleTimestamp()
-              .ifPresent((rescheduleTimestamp) -> invoke(rescheduleTimestamp, object));
+              .ifPresent((rescheduleTimestamp) -> scheduleTask(rescheduleTimestamp, object));
         }
       }
     }
