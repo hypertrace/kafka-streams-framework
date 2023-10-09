@@ -58,7 +58,7 @@ public abstract class AbstractThrottledPunctuator<T> implements Punctuator {
 
   @Override
   public final void punctuate(long punctuateTimestamp) {
-    long startTimestamp = System.currentTimeMillis();
+    long startTimestamp = clock.millis();
     log.debug(
         "Processing tasks with throttling yield of {} until timestamp {}",
         config.getYieldMs(),
