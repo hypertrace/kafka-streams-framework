@@ -32,21 +32,26 @@ public abstract class AbstractThrottledPunctuator<T> implements Punctuator {
     objectStore.put(windowAlignedTimestamp, objectsAtWindow);
   }
 
-  public void rescheduleTask(long atTimestampInMs, long toTimestampInMs, T object) {
-    cancelTask(atTimestampInMs, object);
-    scheduleTask(toTimestampInMs, object);
+  public boolean rescheduleTask(long atTimestampInMs, long toTimestampInMs, T object) {
+    if (cancelTask(atTimestampInMs, object)) {
+      scheduleTask(toTimestampInMs, object);
+      return true;
+    } else {
+      return false;
+    }
   }
 
-  public void cancelTask(long atTimestampInMs, T object) {
+  public boolean cancelTask(long atTimestampInMs, T object) {
     long windowAlignedTimestamp = getWindowAlignedTimestamp(atTimestampInMs);
     ArrayList<T> objectsAtWindow =
         Optional.ofNullable(objectStore.get(windowAlignedTimestamp)).orElse(new ArrayList<>());
-    objectsAtWindow.remove(object);
+    boolean removed = objectsAtWindow.remove(object);
     if (objectsAtWindow.isEmpty()) {
       objectStore.delete(windowAlignedTimestamp);
     } else {
       objectStore.put(windowAlignedTimestamp, objectsAtWindow);
     }
+    return removed;
   }
 
   @Override
@@ -61,6 +66,7 @@ public abstract class AbstractThrottledPunctuator<T> implements Punctuator {
           T object = objects.get(i);
           ScheduleAction action = callback(punctuateTimestamp, object);
           cancelTask(windowAlignedTimestamp, object);
+          // TODO: log if cancel failed, something gone wrong
           action
               .getRescheduleTimestamp()
               .ifPresent((rescheduleTimestamp) -> scheduleTask(rescheduleTimestamp, object));
