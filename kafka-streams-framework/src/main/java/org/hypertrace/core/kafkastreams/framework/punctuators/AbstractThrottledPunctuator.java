@@ -9,7 +9,7 @@ import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.processor.Punctuator;
 import org.apache.kafka.streams.state.KeyValueIterator;
 import org.apache.kafka.streams.state.KeyValueStore;
-import org.hypertrace.core.kafkastreams.framework.punctuators.action.ScheduleAction;
+import org.hypertrace.core.kafkastreams.framework.punctuators.action.TaskResult;
 
 @Slf4j
 public abstract class AbstractThrottledPunctuator<T> implements Punctuator {
@@ -70,7 +70,7 @@ public abstract class AbstractThrottledPunctuator<T> implements Punctuator {
         long windowAlignedTimestamp = kv.key;
         for (int i = 0; i < objects.size() && canContinueProcessing(startTimestamp); i++) {
           T object = objects.get(i);
-          ScheduleAction action = callback(punctuateTimestamp, object);
+          TaskResult action = executeTask(punctuateTimestamp, object);
           if (!cancelTask(windowAlignedTimestamp, object)) {
             log.debug(
                 "Failed to cancel task at key {}, not found in object store at expected window {}",
@@ -85,7 +85,7 @@ public abstract class AbstractThrottledPunctuator<T> implements Punctuator {
     }
   }
 
-  protected abstract ScheduleAction callback(long punctuateTimestamp, T object);
+  protected abstract TaskResult executeTask(long punctuateTimestamp, T object);
 
   private boolean canContinueProcessing(long startTimestamp) {
     return clock.millis() - startTimestamp < config.getYieldMs();
