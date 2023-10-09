@@ -4,12 +4,14 @@ import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.processor.Punctuator;
 import org.apache.kafka.streams.state.KeyValueIterator;
 import org.apache.kafka.streams.state.KeyValueStore;
 import org.hypertrace.core.kafkastreams.framework.punctuators.action.ScheduleAction;
 
+@Slf4j
 public abstract class AbstractThrottledPunctuator<T> implements Punctuator {
   private final Clock clock;
   private final KeyValueStore<Long, ArrayList<T>> objectStore;
@@ -57,6 +59,10 @@ public abstract class AbstractThrottledPunctuator<T> implements Punctuator {
   @Override
   public final void punctuate(long punctuateTimestamp) {
     long startTimestamp = System.currentTimeMillis();
+    log.debug(
+        "Processing tasks with throttling yield of {} until timestamp {}",
+        config.getYieldMs(),
+        punctuateTimestamp);
     try (KeyValueIterator<Long, ArrayList<T>> it = objectStore.range(0L, punctuateTimestamp)) {
       while (it.hasNext() && canContinueProcessing(startTimestamp)) {
         KeyValue<Long, ArrayList<T>> kv = it.next();
@@ -65,8 +71,12 @@ public abstract class AbstractThrottledPunctuator<T> implements Punctuator {
         for (int i = 0; i < objects.size() && canContinueProcessing(startTimestamp); i++) {
           T object = objects.get(i);
           ScheduleAction action = callback(punctuateTimestamp, object);
-          cancelTask(windowAlignedTimestamp, object);
-          // TODO: log if cancel failed, something gone wrong
+          if (!cancelTask(windowAlignedTimestamp, object)) {
+            log.debug(
+                "Failed to cancel task at key {}, not found in object store at expected window {}",
+                object,
+                windowAlignedTimestamp);
+          }
           action
               .getRescheduleTimestamp()
               .ifPresent((rescheduleTimestamp) -> scheduleTask(rescheduleTimestamp, object));
