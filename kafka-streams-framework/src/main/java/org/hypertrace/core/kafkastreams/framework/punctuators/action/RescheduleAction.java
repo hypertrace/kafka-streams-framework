@@ -1,11 +1,11 @@
-package org.hypertrace.core.kafkastreams.framework.callbacks.action;
+package org.hypertrace.core.kafkastreams.framework.punctuators.action;
 
 import java.util.Optional;
 
-public class RescheduleCallbackAction implements CallbackAction {
+public class RescheduleAction implements ScheduleAction {
   private final long rescheduleTimestamp;
 
-  public RescheduleCallbackAction(long rescheduleTimestamp) {
+  public RescheduleAction(long rescheduleTimestamp) {
     this.rescheduleTimestamp = rescheduleTimestamp;
   }
 

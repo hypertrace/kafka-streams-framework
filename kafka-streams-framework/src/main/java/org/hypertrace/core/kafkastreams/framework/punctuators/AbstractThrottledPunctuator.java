@@ -1,4 +1,4 @@
-package org.hypertrace.core.kafkastreams.framework.callbacks;
+package org.hypertrace.core.kafkastreams.framework.punctuators;
 
 import java.time.Clock;
 import java.util.ArrayList;
@@ -8,16 +8,16 @@ import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.processor.Punctuator;
 import org.apache.kafka.streams.state.KeyValueIterator;
 import org.apache.kafka.streams.state.KeyValueStore;
-import org.hypertrace.core.kafkastreams.framework.callbacks.action.CallbackAction;
+import org.hypertrace.core.kafkastreams.framework.punctuators.action.ScheduleAction;
 
 public abstract class AbstractThrottledPunctuator<T> implements Punctuator {
   private final Clock clock;
   private final KeyValueStore<Long, ArrayList<T>> objectStore;
-  private final CallbackRegistryPunctuatorConfig config;
+  private final ThrottledPunctuatorConfig config;
 
   public AbstractThrottledPunctuator(
       Clock clock,
-      CallbackRegistryPunctuatorConfig config,
+      ThrottledPunctuatorConfig config,
       KeyValueStore<Long, ArrayList<T>> objectStore) {
     this.clock = clock;
     this.config = config;
@@ -59,7 +59,7 @@ public abstract class AbstractThrottledPunctuator<T> implements Punctuator {
         long windowAlignedTimestamp = kv.key;
         for (int i = 0; i < objects.size() && canContinueProcessing(startTimestamp); i++) {
           T object = objects.get(i);
-          CallbackAction action = callback(punctuateTimestamp, object);
+          ScheduleAction action = callback(punctuateTimestamp, object);
           cancelTask(windowAlignedTimestamp, object);
           action
               .getRescheduleTimestamp()
@@ -69,7 +69,7 @@ public abstract class AbstractThrottledPunctuator<T> implements Punctuator {
     }
   }
 
-  protected abstract CallbackAction callback(long punctuateTimestamp, T object);
+  protected abstract ScheduleAction callback(long punctuateTimestamp, T object);
 
   private boolean canContinueProcessing(long startTimestamp) {
     return clock.millis() - startTimestamp < config.getYieldMs();

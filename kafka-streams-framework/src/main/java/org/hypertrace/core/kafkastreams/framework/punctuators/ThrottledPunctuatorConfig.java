@@ -1,10 +1,10 @@
-package org.hypertrace.core.kafkastreams.framework.callbacks;
+package org.hypertrace.core.kafkastreams.framework.punctuators;
 
-public class CallbackRegistryPunctuatorConfig {
+public class ThrottledPunctuatorConfig {
   private final long yieldMs;
   private final long windowMs;
 
-  public CallbackRegistryPunctuatorConfig(long yieldMs, long windowMs) {
+  public ThrottledPunctuatorConfig(long yieldMs, long windowMs) {
     this.yieldMs = yieldMs;
     this.windowMs = windowMs;
   }
