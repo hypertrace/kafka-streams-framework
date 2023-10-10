@@ -63,29 +63,43 @@ public abstract class AbstractThrottledPunctuator<T> implements Punctuator {
         "Processing tasks with throttling yield of {} until timestamp {}",
         config.getYieldMs(),
         punctuateTimestamp);
-    try (KeyValueIterator<Long, ArrayList<T>> it = objectStore.range(0L, punctuateTimestamp)) {
+    int keyCounter = 0;
+    int taskCounter = 0;
+    try (KeyValueIterator<Long, ArrayList<T>> it =
+        objectStore.range(getRangeStart(punctuateTimestamp), getRangeEnd(punctuateTimestamp))) {
       while (it.hasNext() && canContinueProcessing(startTimestamp)) {
         KeyValue<Long, ArrayList<T>> kv = it.next();
+        keyCounter++;
         List<T> objects = kv.value;
         long windowAlignedTimestamp = kv.key;
         for (int i = 0; i < objects.size() && canContinueProcessing(startTimestamp); i++) {
           T object = objects.get(i);
+          taskCounter++;
           TaskResult action = executeTask(punctuateTimestamp, object);
+          action
+              .getRescheduleTimestamp()
+              .ifPresent((rescheduleTimestamp) -> scheduleTask(rescheduleTimestamp, object));
           if (!cancelTask(windowAlignedTimestamp, object)) {
             log.debug(
                 "Failed to cancel task at key {}, not found in object store at expected window {}",
                 object,
                 windowAlignedTimestamp);
           }
-          action
-              .getRescheduleTimestamp()
-              .ifPresent((rescheduleTimestamp) -> scheduleTask(rescheduleTimestamp, object));
         }
       }
     }
+    log.debug("Executed {} tasks in total from {} store keys", taskCounter, keyCounter);
   }
 
   protected abstract TaskResult executeTask(long punctuateTimestamp, T object);
+
+  protected long getRangeStart(long punctuateTimestamp) {
+    return 0;
+  }
+
+  protected long getRangeEnd(long punctuateTimestamp) {
+    return punctuateTimestamp;
+  }
 
   private boolean canContinueProcessing(long startTimestamp) {
     return clock.millis() - startTimestamp < config.getYieldMs();

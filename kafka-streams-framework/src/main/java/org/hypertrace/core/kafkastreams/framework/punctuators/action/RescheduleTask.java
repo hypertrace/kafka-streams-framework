@@ -2,10 +2,10 @@ package org.hypertrace.core.kafkastreams.framework.punctuators.action;
 
 import java.util.Optional;
 
-public class ReschduleTask implements TaskResult {
+public class RescheduleTask implements TaskResult {
   private final long rescheduleTimestamp;
 
-  public ReschduleTask(long rescheduleTimestamp) {
+  public RescheduleTask(long rescheduleTimestamp) {
     this.rescheduleTimestamp = rescheduleTimestamp;
   }
 
