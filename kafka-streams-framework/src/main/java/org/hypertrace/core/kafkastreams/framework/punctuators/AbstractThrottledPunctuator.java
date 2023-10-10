@@ -88,7 +88,11 @@ public abstract class AbstractThrottledPunctuator<T> implements Punctuator {
         }
       }
     }
-    log.debug("Executed {} tasks in total from {} store keys", taskCounter, keyCounter);
+    log.info(
+        "Executed {} tasks in total from {} store keys in {}ms",
+        taskCounter,
+        keyCounter,
+        clock.millis() - startTimestamp);
   }
 
   protected abstract TaskResult executeTask(long punctuateTimestamp, T object);
