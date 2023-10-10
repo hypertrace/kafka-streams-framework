@@ -2,6 +2,7 @@ package org.hypertrace.core.kafkastreams.framework.async;
 
 import static org.hypertrace.core.kafkastreams.framework.async.Constants.ASYNC_EXECUTOR_POOL_MULTIPLICATION_FACTOR_KEY;
 import static org.hypertrace.core.kafkastreams.framework.async.Constants.DEFAULT_ASYNC_EXECUTOR_POOL_MULTIPLICATION_FACTOR;
+import static org.hypertrace.core.kafkastreams.framework.constants.KafkaStreamsAppConstants.NUM_STREAM_THREADS_CONFIG_KEY;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.typesafe.config.Config;
@@ -15,11 +16,11 @@ import org.hypertrace.core.serviceframework.metrics.PlatformMetricsRegistry;
 public class ExecutorFactory {
   private static Executor executor;
 
-  public static synchronized Supplier<Executor> getExecutorSupplier(
-      Config config, int numStreamThreads) {
+  /** Config input should be complete kafka streams config */
+  public static synchronized Supplier<Executor> getExecutorSupplier(Config config) {
     if (executor == null) {
       int poolSize =
-          numStreamThreads
+          config.getInt(NUM_STREAM_THREADS_CONFIG_KEY)
               * (config.hasPath(ASYNC_EXECUTOR_POOL_MULTIPLICATION_FACTOR_KEY)
                   ? config.getInt(ASYNC_EXECUTOR_POOL_MULTIPLICATION_FACTOR_KEY)
                   : DEFAULT_ASYNC_EXECUTOR_POOL_MULTIPLICATION_FACTOR);
