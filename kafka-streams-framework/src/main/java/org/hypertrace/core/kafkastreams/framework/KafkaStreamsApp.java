@@ -3,6 +3,8 @@ package org.hypertrace.core.kafkastreams.framework;
 import static io.grpc.Deadline.after;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.kafka.clients.consumer.ConsumerConfig.AUTO_OFFSET_RESET_CONFIG;
+import static org.apache.kafka.clients.consumer.ConsumerConfig.FETCH_MAX_WAIT_MS_CONFIG;
+import static org.apache.kafka.clients.consumer.ConsumerConfig.FETCH_MIN_BYTES_CONFIG;
 import static org.apache.kafka.clients.producer.ProducerConfig.ACKS_CONFIG;
 import static org.apache.kafka.clients.producer.ProducerConfig.BATCH_SIZE_CONFIG;
 import static org.apache.kafka.clients.producer.ProducerConfig.COMPRESSION_TYPE_CONFIG;
@@ -225,7 +227,7 @@ public abstract class KafkaStreamsApp extends PlatformService {
     baseStreamsConfig.put(producerPrefix(LINGER_MS_CONFIG), "500");
     // Increase batch.size for better throughput
     // default = 16384
-    baseStreamsConfig.put(producerPrefix(BATCH_SIZE_CONFIG), "524288");
+    baseStreamsConfig.put(producerPrefix(BATCH_SIZE_CONFIG), "1048576");
     // Enable compression on producer for better throughput
     // default - none
     baseStreamsConfig.put(producerPrefix(COMPRESSION_TYPE_CONFIG), CompressionType.ZSTD.name);
@@ -235,6 +237,12 @@ public abstract class KafkaStreamsApp extends PlatformService {
     // ##########################
     // default - earliest (kafka streams)
     baseStreamsConfig.put(consumerPrefix(AUTO_OFFSET_RESET_CONFIG), "latest");
+    // Increase fetch max wait time for increased throughput, reduced network calls
+    // default - 500ms
+    baseStreamsConfig.put(consumerPrefix(FETCH_MAX_WAIT_MS_CONFIG), 5000);
+    // Increase fetch min bytes for increased throughput, reduced network calls
+    // default - 1 byte
+    baseStreamsConfig.put(consumerPrefix(FETCH_MIN_BYTES_CONFIG), "1048576");
 
     // ##########################
     // Changelog topic configurations
