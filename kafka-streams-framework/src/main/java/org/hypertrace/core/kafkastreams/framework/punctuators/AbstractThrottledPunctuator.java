@@ -3,7 +3,6 @@ package org.hypertrace.core.kafkastreams.framework.punctuators;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
@@ -68,7 +67,7 @@ public abstract class AbstractThrottledPunctuator<T> implements Punctuator {
       while (it.hasNext() && canContinueProcessing(startTimestamp)) {
         KeyValue<Long, ArrayList<T>> kv = it.next();
         keyCounter++;
-        List<T> objects = kv.value;
+        ArrayList<T> objects = kv.value;
         long windowAlignedTimestamp = kv.key;
         Map<Long, ArrayList<T>> rescheduledTasks = new HashMap<>();
         int i = 0;
