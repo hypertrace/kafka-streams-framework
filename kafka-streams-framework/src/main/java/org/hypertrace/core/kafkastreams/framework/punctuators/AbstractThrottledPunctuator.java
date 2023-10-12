@@ -64,17 +64,20 @@ public abstract class AbstractThrottledPunctuator<T> implements Punctuator {
     int taskCounter = 0;
     try (KeyValueIterator<Long, ArrayList<T>> it =
         objectStore.range(getRangeStart(punctuateTimestamp), getRangeEnd(punctuateTimestamp))) {
+      // iterate through all keys in range until yield timeout is reached
       while (it.hasNext() && canContinueProcessing(startTimestamp)) {
         KeyValue<Long, ArrayList<T>> kv = it.next();
         keyCounter++;
         ArrayList<T> objects = kv.value;
         long windowAlignedTimestamp = kv.key;
+        // collect all tasks to be rescheduled by key to perform bulk reschedules
         Map<Long, ArrayList<T>> rescheduledTasks = new HashMap<>();
+        // loop through all objects for this key until yield timeout is reached
         int i = 0;
         for (; i < objects.size() && canContinueProcessing(startTimestamp); i++) {
-          T object = objects.get(i);
+          T executingObject = objects.get(i);
           taskCounter++;
-          TaskResult action = executeTask(punctuateTimestamp, object);
+          TaskResult action = executeTask(punctuateTimestamp, executingObject);
           action
               .getRescheduleTimestamp()
               .ifPresent(
@@ -83,15 +86,15 @@ public abstract class AbstractThrottledPunctuator<T> implements Punctuator {
                           .computeIfAbsent(
                               getWindowAlignedTimestamp(rescheduleTimestamp),
                               (t) -> new ArrayList<>())
-                          .add(object));
+                          .add(executingObject));
         }
         // process all reschedules
         rescheduledTasks.forEach(
             (timestamp, rescheduledObjects) -> {
-              ArrayList<T> finalObjects =
+              ArrayList<T> mergedObjects =
                   Optional.ofNullable(objectStore.get(timestamp)).orElse(new ArrayList<>());
-              finalObjects.addAll(rescheduledObjects);
-              objectStore.put(timestamp, finalObjects);
+              mergedObjects.addAll(rescheduledObjects);
+              objectStore.put(timestamp, mergedObjects);
             });
         // all tasks till i-1 have been cancelled or rescheduled hence to be removed from store
         if (i == objects.size()) {
