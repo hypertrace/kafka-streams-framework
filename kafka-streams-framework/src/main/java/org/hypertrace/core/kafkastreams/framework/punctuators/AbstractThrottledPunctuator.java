@@ -2,7 +2,9 @@ package org.hypertrace.core.kafkastreams.framework.punctuators;
 
 import java.time.Clock;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.streams.KeyValue;
@@ -72,19 +74,37 @@ public abstract class AbstractThrottledPunctuator<T> implements Punctuator {
         keyCounter++;
         List<T> objects = kv.value;
         long windowAlignedTimestamp = kv.key;
-        for (int i = 0; i < objects.size() && canContinueProcessing(startTimestamp); i++) {
+        Map<Long, ArrayList<T>> rescheduledTasks = new HashMap<>();
+        int i = 0;
+        for (; i < objects.size() && canContinueProcessing(startTimestamp); i++) {
           T object = objects.get(i);
           taskCounter++;
           TaskResult action = executeTask(punctuateTimestamp, object);
           action
               .getRescheduleTimestamp()
-              .ifPresent((rescheduleTimestamp) -> scheduleTask(rescheduleTimestamp, object));
-          if (!cancelTask(windowAlignedTimestamp, object)) {
-            log.debug(
-                "Failed to cancel task at key {}, not found in object store at expected window {}",
-                object,
-                windowAlignedTimestamp);
-          }
+              .ifPresent(
+                  (rescheduleTimestamp) ->
+                      rescheduledTasks
+                          .computeIfAbsent(
+                              getWindowAlignedTimestamp(rescheduleTimestamp),
+                              (t) -> new ArrayList<>())
+                          .add(object));
+        }
+        // process all reschedules
+        rescheduledTasks.forEach(
+            (timestamp, rescheduledObjects) -> {
+              ArrayList<T> finalObjects =
+                  Optional.ofNullable(objectStore.get(timestamp)).orElse(new ArrayList<>());
+              finalObjects.addAll(rescheduledObjects);
+              objectStore.put(timestamp, finalObjects);
+            });
+        // all tasks till i-1 have been cancelled or rescheduled hence to be removed from store
+        if (i == objects.size()) {
+          // can directly delete key from store
+          objectStore.delete(windowAlignedTimestamp);
+        } else {
+          objectStore.put(
+              windowAlignedTimestamp, new ArrayList<>(objects.subList(i, objects.size())));
         }
       }
     }
