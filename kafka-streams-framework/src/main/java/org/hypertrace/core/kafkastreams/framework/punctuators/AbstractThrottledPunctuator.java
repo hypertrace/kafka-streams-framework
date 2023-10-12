@@ -37,12 +37,8 @@ public abstract class AbstractThrottledPunctuator<T> implements Punctuator {
   }
 
   public boolean rescheduleTask(long atTimestampInMs, long toTimestampInMs, T object) {
-    if (cancelTask(atTimestampInMs, object)) {
-      scheduleTask(toTimestampInMs, object);
-      return true;
-    } else {
-      return false;
-    }
+    scheduleTask(toTimestampInMs, object);
+    return cancelTask(atTimestampInMs, object);
   }
 
   public boolean cancelTask(long atTimestampInMs, T object) {
@@ -109,7 +105,7 @@ public abstract class AbstractThrottledPunctuator<T> implements Punctuator {
       }
     }
     log.info(
-        "Executed {} tasks in total from {} store keys in {}ms",
+        "Executed {} tasks in total from {} store keys in {} ms",
         taskCounter,
         keyCounter,
         clock.millis() - startTimestamp);
