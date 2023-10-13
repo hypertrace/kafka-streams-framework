@@ -2,6 +2,7 @@ package org.hypertrace.core.kafkastreams.framework.punctuators;
 
 import java.time.Clock;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -15,102 +16,104 @@ import org.hypertrace.core.kafkastreams.framework.punctuators.action.TaskResult;
 @Slf4j
 public abstract class AbstractThrottledPunctuator<T> implements Punctuator {
   private final Clock clock;
-  private final KeyValueStore<Long, ArrayList<T>> objectStore;
+  private final KeyValueStore<Long, ArrayList<T>> eventStore;
   private final ThrottledPunctuatorConfig config;
 
   public AbstractThrottledPunctuator(
-      Clock clock,
-      ThrottledPunctuatorConfig config,
-      KeyValueStore<Long, ArrayList<T>> objectStore) {
+      Clock clock, ThrottledPunctuatorConfig config, KeyValueStore<Long, ArrayList<T>> eventStore) {
     this.clock = clock;
     this.config = config;
-    this.objectStore = objectStore;
+    this.eventStore = eventStore;
   }
 
-  public void scheduleTask(long atTimestampInMs, T object) {
-    long windowAlignedTimestamp = getWindowAlignedTimestamp(atTimestampInMs);
-    ArrayList<T> objectsAtWindow =
-        Optional.ofNullable(objectStore.get(windowAlignedTimestamp)).orElse(new ArrayList<>());
-    objectsAtWindow.add(object);
-    objectStore.put(windowAlignedTimestamp, objectsAtWindow);
+  public void scheduleTask(long scheduleMs, T event) {
+    long windowMs = normalize(scheduleMs);
+    ArrayList<T> events = Optional.ofNullable(eventStore.get(windowMs)).orElse(new ArrayList<>());
+    events.add(event);
+    eventStore.put(windowMs, events);
   }
 
-  public boolean rescheduleTask(long atTimestampInMs, long toTimestampInMs, T object) {
-    scheduleTask(toTimestampInMs, object);
-    return cancelTask(atTimestampInMs, object);
+  public boolean rescheduleTask(long oldScheduleMs, long newScheduleMs, T event) {
+    scheduleTask(newScheduleMs, event);
+    return cancelTask(oldScheduleMs, event);
   }
 
-  public boolean cancelTask(long atTimestampInMs, T object) {
-    long windowAlignedTimestamp = getWindowAlignedTimestamp(atTimestampInMs);
-    ArrayList<T> objectsAtWindow =
-        Optional.ofNullable(objectStore.get(windowAlignedTimestamp)).orElse(new ArrayList<>());
-    boolean removed = objectsAtWindow.remove(object);
-    if (objectsAtWindow.isEmpty()) {
-      objectStore.delete(windowAlignedTimestamp);
+  public boolean cancelTask(long scheduleMs, T event) {
+    long windowMs = normalize(scheduleMs);
+    ArrayList<T> events = Optional.ofNullable(eventStore.get(windowMs)).orElse(new ArrayList<>());
+    boolean removed = events.remove(event);
+    if (removed) {
+      if (events.isEmpty()) {
+        eventStore.delete(windowMs);
+      } else {
+        eventStore.put(windowMs, events);
+      }
     } else {
-      objectStore.put(windowAlignedTimestamp, objectsAtWindow);
+      log.warn(
+          "task cancel failed. event not found for ts: {}, window: {}",
+          new Date(scheduleMs),
+          new Date(windowMs));
     }
     return removed;
   }
 
   @Override
-  public final void punctuate(long punctuateTimestamp) {
-    long startTimestamp = clock.millis();
+  public final void punctuate(long timestamp) {
+    long startTime = clock.millis();
+    int totalProcessedWindows = 0;
+    int totalProcessedTasks = 0;
+
     log.debug(
         "Processing tasks with throttling yield of {} until timestamp {}",
         config.getYieldMs(),
-        punctuateTimestamp);
-    int keyCounter = 0;
-    int taskCounter = 0;
+        timestamp);
     try (KeyValueIterator<Long, ArrayList<T>> it =
-        objectStore.range(getRangeStart(punctuateTimestamp), getRangeEnd(punctuateTimestamp))) {
+        eventStore.range(getRangeStart(timestamp), getRangeEnd(timestamp))) {
       // iterate through all keys in range until yield timeout is reached
-      while (it.hasNext() && canContinueProcessing(startTimestamp)) {
+      while (it.hasNext() && !shouldYieldNow(startTime)) {
         KeyValue<Long, ArrayList<T>> kv = it.next();
-        keyCounter++;
-        ArrayList<T> objects = kv.value;
-        long windowAlignedTimestamp = kv.key;
+        totalProcessedWindows++;
+        ArrayList<T> events = kv.value;
+        long windowMs = kv.key;
         // collect all tasks to be rescheduled by key to perform bulk reschedules
         Map<Long, ArrayList<T>> rescheduledTasks = new HashMap<>();
-        // loop through all objects for this key until yield timeout is reached
+        // loop through all events for this key until yield timeout is reached
         int i = 0;
-        for (; i < objects.size() && canContinueProcessing(startTimestamp); i++) {
-          T executingObject = objects.get(i);
-          taskCounter++;
-          TaskResult action = executeTask(punctuateTimestamp, executingObject);
+        for (; i < events.size() && !shouldYieldNow(startTime); i++) {
+          T event = events.get(i);
+          totalProcessedTasks++;
+          TaskResult action = executeTask(timestamp, event);
           action
               .getRescheduleTimestamp()
               .ifPresent(
                   (rescheduleTimestamp) ->
                       rescheduledTasks
-                          .computeIfAbsent(
-                              getWindowAlignedTimestamp(rescheduleTimestamp),
-                              (t) -> new ArrayList<>())
-                          .add(executingObject));
+                          .computeIfAbsent(normalize(rescheduleTimestamp), (t) -> new ArrayList<>())
+                          .add(event));
         }
         // process all reschedules
         rescheduledTasks.forEach(
-            (timestamp, rescheduledObjects) -> {
-              ArrayList<T> mergedObjects =
-                  Optional.ofNullable(objectStore.get(timestamp)).orElse(new ArrayList<>());
-              mergedObjects.addAll(rescheduledObjects);
-              objectStore.put(timestamp, mergedObjects);
+            (newWindowMs, rescheduledEvents) -> {
+              ArrayList<T> windowTasks =
+                  Optional.ofNullable(eventStore.get(newWindowMs)).orElse(new ArrayList<>());
+              windowTasks.addAll(rescheduledEvents);
+              eventStore.put(newWindowMs, windowTasks);
             });
+
         // all tasks till i-1 have been cancelled or rescheduled hence to be removed from store
-        if (i == objects.size()) {
+        if (i == events.size()) {
           // can directly delete key from store
-          objectStore.delete(windowAlignedTimestamp);
+          eventStore.delete(windowMs);
         } else {
-          objectStore.put(
-              windowAlignedTimestamp, new ArrayList<>(objects.subList(i, objects.size())));
+          eventStore.put(windowMs, new ArrayList<>(events.subList(i, events.size())));
         }
       }
     }
     log.info(
-        "Executed {} tasks in total from {} store keys in {} ms",
-        taskCounter,
-        keyCounter,
-        clock.millis() - startTimestamp);
+        "processed windows: {}, processed tasks: {}, time taken: {}",
+        totalProcessedWindows,
+        totalProcessedTasks,
+        clock.millis() - startTime);
   }
 
   protected abstract TaskResult executeTask(long punctuateTimestamp, T object);
@@ -123,11 +126,11 @@ public abstract class AbstractThrottledPunctuator<T> implements Punctuator {
     return punctuateTimestamp;
   }
 
-  private boolean canContinueProcessing(long startTimestamp) {
-    return clock.millis() - startTimestamp < config.getYieldMs();
+  private boolean shouldYieldNow(long startTimestamp) {
+    return (clock.millis() - startTimestamp > config.getYieldMs());
   }
 
-  private long getWindowAlignedTimestamp(long timestamp) {
+  private long normalize(long timestamp) {
     return timestamp - (timestamp % config.getWindowMs());
   }
 }
