@@ -127,7 +127,7 @@ public abstract class AbstractThrottledPunctuator<T> implements Punctuator {
   }
 
   private boolean shouldYieldNow(long startTimestamp) {
-    return (clock.millis() - startTimestamp > config.getYieldMs());
+    return (clock.millis() - startTimestamp) > config.getYieldMs();
   }
 
   private long normalize(long timestamp) {
