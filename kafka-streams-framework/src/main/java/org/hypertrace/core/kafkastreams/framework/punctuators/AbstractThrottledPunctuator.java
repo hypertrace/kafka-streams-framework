@@ -36,6 +36,10 @@ public abstract class AbstractThrottledPunctuator<T> implements Punctuator {
   }
 
   public boolean rescheduleTask(long oldScheduleMs, long newScheduleMs, T event) {
+    if (normalize(oldScheduleMs) == normalize(newScheduleMs)) {
+      // no-op
+      return true;
+    }
     scheduleTask(newScheduleMs, event);
     return cancelTask(oldScheduleMs, event);
   }
