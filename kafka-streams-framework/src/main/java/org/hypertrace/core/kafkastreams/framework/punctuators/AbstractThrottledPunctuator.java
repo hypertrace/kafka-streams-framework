@@ -2,6 +2,7 @@ package org.hypertrace.core.kafkastreams.framework.punctuators;
 
 import java.time.Clock;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -35,6 +36,10 @@ public abstract class AbstractThrottledPunctuator<T> implements Punctuator {
   }
 
   public boolean rescheduleTask(long oldScheduleMs, long newScheduleMs, T event) {
+    if (normalize(oldScheduleMs) == normalize(newScheduleMs)) {
+      // no-op
+      return true;
+    }
     scheduleTask(newScheduleMs, event);
     return cancelTask(oldScheduleMs, event);
   }
@@ -77,7 +82,7 @@ public abstract class AbstractThrottledPunctuator<T> implements Punctuator {
         List<T> events = kv.value;
         long windowMs = kv.key;
         // collect all tasks to be rescheduled by key to perform bulk reschedules
-        Map<Long, ArrayList<T>> rescheduledTasks = new HashMap<>();
+        Map<Long, List<T>> rescheduledTasks = new HashMap<>();
         // loop through all events for this key until yield timeout is reached
         int i = 0;
         for (; i < events.size() && !shouldYieldNow(startTime); i++) {
@@ -95,6 +100,9 @@ public abstract class AbstractThrottledPunctuator<T> implements Punctuator {
         // process all reschedules
         rescheduledTasks.forEach(
             (newWindowMs, rescheduledEvents) -> {
+              if (newWindowMs == windowMs) {
+                return;
+              }
               List<T> windowTasks =
                   Optional.ofNullable(eventStore.get(newWindowMs)).orElse(new ArrayList<>());
               windowTasks.addAll(rescheduledEvents);
@@ -103,10 +111,16 @@ public abstract class AbstractThrottledPunctuator<T> implements Punctuator {
 
         // all tasks till i-1 have been cancelled or rescheduled hence to be removed from store
         if (i == events.size()) {
-          // can directly delete key from store
-          eventStore.delete(windowMs);
+          if (rescheduledTasks.containsKey(windowMs)) {
+            eventStore.put(windowMs, rescheduledTasks.get(windowMs));
+          } else {
+            // can directly delete key from store
+            eventStore.delete(windowMs);
+          }
         } else {
-          eventStore.put(windowMs, new ArrayList<>(events.subList(i, events.size())));
+          ArrayList<T> windowTasks = new ArrayList<>(events.subList(i, events.size()));
+          windowTasks.addAll(rescheduledTasks.getOrDefault(windowMs, Collections.emptyList()));
+          eventStore.put(windowMs, windowTasks);
         }
       }
     }
