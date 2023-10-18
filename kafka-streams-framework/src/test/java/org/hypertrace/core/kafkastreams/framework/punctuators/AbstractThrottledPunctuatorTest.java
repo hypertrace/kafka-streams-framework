@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 class AbstractThrottledPunctuatorTest {
   TestPunctuator underTest;
   Clock clock;
-  KeyValueStore<Long, ArrayList<String>> objectStore;
+  KeyValueStore<Long, List<String>> objectStore;
 
   @BeforeEach
   void setup() {
@@ -100,9 +100,9 @@ class AbstractThrottledPunctuatorTest {
 
     underTest.punctuate(300);
 
-    try (KeyValueIterator<Long, ArrayList<String>> it = objectStore.range(0L, 601L)) {
+    try (KeyValueIterator<Long, List<String>> it = objectStore.range(0L, 601L)) {
       while (it.hasNext()) {
-        KeyValue<Long, ArrayList<String>> kv = it.next();
+        KeyValue<Long, List<String>> kv = it.next();
         switch (kv.key.intValue()) {
           case 400:
             assertEquals(List.of("schedule4", "schedule1"), kv.value);
@@ -125,9 +125,9 @@ class AbstractThrottledPunctuatorTest {
 
     underTest.punctuate(500);
 
-    try (KeyValueIterator<Long, ArrayList<String>> it = objectStore.range(0L, 601L)) {
+    try (KeyValueIterator<Long, List<String>> it = objectStore.range(0L, 601L)) {
       while (it.hasNext()) {
-        KeyValue<Long, ArrayList<String>> kv = it.next();
+        KeyValue<Long, List<String>> kv = it.next();
         if (kv.key.intValue() == 600) {
           assertEquals(List.of("schedule3"), kv.value);
         } else {
@@ -139,7 +139,7 @@ class AbstractThrottledPunctuatorTest {
     underTest.punctuate(600);
 
     // all tasks done state store will be empty
-    try (KeyValueIterator<Long, ArrayList<String>> it = objectStore.range(0L, 601L)) {
+    try (KeyValueIterator<Long, List<String>> it = objectStore.range(0L, 601L)) {
       assertFalse(it.hasNext());
     }
   }
@@ -170,9 +170,9 @@ class AbstractThrottledPunctuatorTest {
 
     underTest.punctuate(301);
 
-    try (KeyValueIterator<Long, ArrayList<String>> it = objectStore.range(0L, 601L)) {
+    try (KeyValueIterator<Long, List<String>> it = objectStore.range(0L, 601L)) {
       while (it.hasNext()) {
-        KeyValue<Long, ArrayList<String>> kv = it.next();
+        KeyValue<Long, List<String>> kv = it.next();
         switch (kv.key.intValue()) {
           case 200:
             assertEquals(List.of("schedule2.2"), kv.value);
@@ -193,7 +193,7 @@ class AbstractThrottledPunctuatorTest {
     public TestPunctuator(
         Clock clock,
         ThrottledPunctuatorConfig config,
-        KeyValueStore<Long, ArrayList<String>> objectStore) {
+        KeyValueStore<Long, List<String>> objectStore) {
       super(clock, config, objectStore);
     }
 

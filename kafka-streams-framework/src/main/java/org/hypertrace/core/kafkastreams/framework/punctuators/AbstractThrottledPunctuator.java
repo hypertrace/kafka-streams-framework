@@ -4,6 +4,7 @@ import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
@@ -16,11 +17,11 @@ import org.hypertrace.core.kafkastreams.framework.punctuators.action.TaskResult;
 @Slf4j
 public abstract class AbstractThrottledPunctuator<T> implements Punctuator {
   private final Clock clock;
-  private final KeyValueStore<Long, ArrayList<T>> eventStore;
+  private final KeyValueStore<Long, List<T>> eventStore;
   private final ThrottledPunctuatorConfig config;
 
   public AbstractThrottledPunctuator(
-      Clock clock, ThrottledPunctuatorConfig config, KeyValueStore<Long, ArrayList<T>> eventStore) {
+      Clock clock, ThrottledPunctuatorConfig config, KeyValueStore<Long, List<T>> eventStore) {
     this.clock = clock;
     this.config = config;
     this.eventStore = eventStore;
@@ -28,7 +29,7 @@ public abstract class AbstractThrottledPunctuator<T> implements Punctuator {
 
   public void scheduleTask(long scheduleMs, T event) {
     long windowMs = normalize(scheduleMs);
-    ArrayList<T> events = Optional.ofNullable(eventStore.get(windowMs)).orElse(new ArrayList<>());
+    List<T> events = Optional.ofNullable(eventStore.get(windowMs)).orElse(new ArrayList<>());
     events.add(event);
     eventStore.put(windowMs, events);
   }
@@ -40,7 +41,7 @@ public abstract class AbstractThrottledPunctuator<T> implements Punctuator {
 
   public boolean cancelTask(long scheduleMs, T event) {
     long windowMs = normalize(scheduleMs);
-    ArrayList<T> events = Optional.ofNullable(eventStore.get(windowMs)).orElse(new ArrayList<>());
+    List<T> events = Optional.ofNullable(eventStore.get(windowMs)).orElse(new ArrayList<>());
     boolean removed = events.remove(event);
     if (removed) {
       if (events.isEmpty()) {
@@ -67,13 +68,13 @@ public abstract class AbstractThrottledPunctuator<T> implements Punctuator {
         "Processing tasks with throttling yield of {} until timestamp {}",
         config.getYieldMs(),
         timestamp);
-    try (KeyValueIterator<Long, ArrayList<T>> it =
+    try (KeyValueIterator<Long, List<T>> it =
         eventStore.range(getRangeStart(timestamp), getRangeEnd(timestamp))) {
       // iterate through all keys in range until yield timeout is reached
       while (it.hasNext() && !shouldYieldNow(startTime)) {
-        KeyValue<Long, ArrayList<T>> kv = it.next();
+        KeyValue<Long, List<T>> kv = it.next();
         totalProcessedWindows++;
-        ArrayList<T> events = kv.value;
+        List<T> events = kv.value;
         long windowMs = kv.key;
         // collect all tasks to be rescheduled by key to perform bulk reschedules
         Map<Long, ArrayList<T>> rescheduledTasks = new HashMap<>();
@@ -94,7 +95,7 @@ public abstract class AbstractThrottledPunctuator<T> implements Punctuator {
         // process all reschedules
         rescheduledTasks.forEach(
             (newWindowMs, rescheduledEvents) -> {
-              ArrayList<T> windowTasks =
+              List<T> windowTasks =
                   Optional.ofNullable(eventStore.get(newWindowMs)).orElse(new ArrayList<>());
               windowTasks.addAll(rescheduledEvents);
               eventStore.put(newWindowMs, windowTasks);
