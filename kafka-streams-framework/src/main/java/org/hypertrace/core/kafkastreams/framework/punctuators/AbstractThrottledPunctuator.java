@@ -124,7 +124,7 @@ public abstract class AbstractThrottledPunctuator<T> implements Punctuator {
         }
       }
     }
-    log.info(
+    log.debug(
         "processed windows: {}, processed tasks: {}, time taken: {}",
         totalProcessedWindows,
         totalProcessedTasks,
