@@ -14,6 +14,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -25,17 +26,17 @@ import org.apache.kafka.common.serialization.Deserializer;
 import org.hypertrace.core.serviceframework.metrics.PlatformMetricsRegistry;
 
 @Slf4j
-public class KafkaEventConsumer<K, V, D, C> extends Thread {
+class KafkaEventListenerConsumer<K, V, D, C> extends Thread {
   private static final String EVENT_CONSUMER_ERROR_COUNT = "event.consumer.error.count";
   private static final String TOPIC_NAME = "topic.name";
   private static final String POLL_TIMEOUT = "poll.timeout";
   private final List<TopicPartition> topicPartitions;
-  private final KafkaConsumer<D, C> kafkaEventConsumer;
+  private final Consumer<D, C> kafkaConsumer;
   private final Duration pollTimeout;
   private final Counter errorCounter;
   private final KafkaEventListener<K, V> kafkaEventListener;
 
-  public KafkaEventConsumer(
+  KafkaEventListenerConsumer(
       String consumerName,
       Config kafkaConfig,
       Deserializer<D> keyDeserializer,
@@ -46,19 +47,46 @@ public class KafkaEventConsumer<K, V, D, C> extends Thread {
     this.kafkaEventListener = kafkaEventListener;
     Properties props =
         getKafkaConsumerConfigs(kafkaConfig.withFallback(getDefaultKafkaConsumerConfigs()));
-    kafkaEventConsumer = new KafkaConsumer<>(props, keyDeserializer, valueDeserializer);
+    kafkaConsumer = new KafkaConsumer<>(props, keyDeserializer, valueDeserializer);
     this.pollTimeout =
         kafkaConfig.hasPath(POLL_TIMEOUT)
             ? kafkaConfig.getDuration(POLL_TIMEOUT)
             : Duration.ofSeconds(30);
     String topic = kafkaConfig.getString(TOPIC_NAME);
-    List<PartitionInfo> partitions = kafkaEventConsumer.partitionsFor(topic);
+    List<PartitionInfo> partitions = kafkaConsumer.partitionsFor(topic);
     topicPartitions =
         partitions.stream()
             .map(p -> new TopicPartition(p.topic(), p.partition()))
             .collect(Collectors.toList());
-    kafkaEventConsumer.assign(topicPartitions);
-    kafkaEventConsumer.seekToEnd(topicPartitions);
+    kafkaConsumer.assign(topicPartitions);
+    kafkaConsumer.seekToEnd(topicPartitions);
+    this.errorCounter =
+        PlatformMetricsRegistry.registerCounter(
+            consumerName + "." + EVENT_CONSUMER_ERROR_COUNT, Collections.emptyMap());
+  }
+
+  /** only for test usage */
+  KafkaEventListenerConsumer(
+      String consumerName,
+      Config kafkaConfig,
+      Consumer<D, C> kafkaConsumer,
+      KafkaEventListener<K, V> kafkaEventListener) {
+    super(consumerName);
+    this.setDaemon(true);
+    this.kafkaEventListener = kafkaEventListener;
+    this.pollTimeout =
+        kafkaConfig.hasPath(POLL_TIMEOUT)
+            ? kafkaConfig.getDuration(POLL_TIMEOUT)
+            : Duration.ofSeconds(30);
+    String topic = kafkaConfig.getString(TOPIC_NAME);
+    this.kafkaConsumer = kafkaConsumer;
+    List<PartitionInfo> partitions = kafkaConsumer.partitionsFor(topic);
+    topicPartitions =
+        partitions.stream()
+            .map(p -> new TopicPartition(p.topic(), p.partition()))
+            .collect(Collectors.toList());
+    kafkaConsumer.assign(topicPartitions);
+    kafkaConsumer.seekToEnd(topicPartitions);
     this.errorCounter =
         PlatformMetricsRegistry.registerCounter(
             consumerName + "." + EVENT_CONSUMER_ERROR_COUNT, Collections.emptyMap());
@@ -68,11 +96,11 @@ public class KafkaEventConsumer<K, V, D, C> extends Thread {
   public void run() {
     do {
       try {
-        ConsumerRecords<D, C> records = kafkaEventConsumer.poll(pollTimeout);
+        ConsumerRecords<D, C> records = kafkaConsumer.poll(pollTimeout);
         records.forEach(r -> this.kafkaEventListener.actOnEvent(r.key(), r.value()));
         if (log.isDebugEnabled()) {
           for (TopicPartition partition : topicPartitions) {
-            long position = kafkaEventConsumer.position(partition);
+            long position = kafkaConsumer.position(partition);
             log.debug(
                 "Consumer state topic: {}, partition:{}, offset: {}",
                 partition.topic(),
@@ -82,7 +110,7 @@ public class KafkaEventConsumer<K, V, D, C> extends Thread {
         }
       } catch (InterruptException interruptedException) {
         log.warn("Received interrupt exception from kafka poll ", interruptedException);
-        kafkaEventConsumer.close();
+        kafkaConsumer.close();
         return;
       } catch (Exception ex) {
         this.errorCounter.increment();
