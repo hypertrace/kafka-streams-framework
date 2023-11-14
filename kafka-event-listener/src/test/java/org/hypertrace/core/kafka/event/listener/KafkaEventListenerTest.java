@@ -60,6 +60,7 @@ class KafkaEventListenerTest {
     kafkaConsumer.addRecord(new ConsumerRecord<>(topic, 3, 200, "10", -3L));
     Thread.sleep(10);
     assertEquals(-3L, eventModificationCache.get(10));
+    eventModificationCache.close();
   }
 
   private PartitionInfo getPartitionInfo(String topic, int partition) {
