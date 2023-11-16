@@ -27,8 +27,7 @@ import org.apache.kafka.common.serialization.Deserializer;
 import org.hypertrace.core.serviceframework.metrics.PlatformMetricsRegistry;
 
 @Slf4j
-public class KafkaEventListenerListenerConsumer<D, C> extends Thread
-    implements EventListenerConsumer {
+public class KafkaEventListenerConsumer<D, C> extends Thread implements EventListenerConsumer {
   private static final String EVENT_CONSUMER_ERROR_COUNT = "event.consumer.error.count";
   private static final String TOPIC_NAME = "topic.name";
   private static final String POLL_TIMEOUT = "poll.timeout";
@@ -38,7 +37,7 @@ public class KafkaEventListenerListenerConsumer<D, C> extends Thread
   private final Counter errorCounter;
   private final BiConsumer<D, C> listenerCallback;
 
-  KafkaEventListenerListenerConsumer(
+  KafkaEventListenerConsumer(
       String consumerName,
       Config kafkaConfig,
       Deserializer<D> keyDeserializer,
@@ -54,7 +53,7 @@ public class KafkaEventListenerListenerConsumer<D, C> extends Thread
         listenerCallback);
   }
 
-  KafkaEventListenerListenerConsumer(
+  KafkaEventListenerConsumer(
       String consumerName,
       Config kafkaConfig,
       Consumer<D, C> kafkaConsumer,

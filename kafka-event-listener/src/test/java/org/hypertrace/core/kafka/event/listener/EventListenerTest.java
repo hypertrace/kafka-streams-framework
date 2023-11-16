@@ -44,7 +44,7 @@ class EventListenerTest {
     kafkaConsumer.updateEndOffsets(endOffsets);
     // register consumer
     eventModificationCache.registerConsumer(
-        new KafkaEventListenerListenerConsumer<>(
+        new KafkaEventListenerConsumer<>(
             "modification-event-consumer",
             ConfigFactory.parseMap(Map.of("topic.name", topic, "poll.timeout", "9ms")),
             kafkaConsumer,
