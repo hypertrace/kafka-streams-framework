@@ -21,7 +21,7 @@ import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
 import org.junit.jupiter.api.Test;
 
-class KafkaEventListenerTest {
+class EventListenerTest {
 
   @Test
   void testEventModificationCache() throws Exception {
@@ -44,11 +44,11 @@ class KafkaEventListenerTest {
     kafkaConsumer.updateEndOffsets(endOffsets);
     // register consumer
     eventModificationCache.registerConsumer(
-        new KafkaEventListenerConsumer(
+        new KafkaEventListenerListenerConsumer<>(
             "modification-event-consumer",
             ConfigFactory.parseMap(Map.of("topic.name", topic, "poll.timeout", "9ms")),
             kafkaConsumer,
-            eventModificationCache));
+            eventModificationCache::actOnEvent));
     Thread.sleep(10);
     assertEquals(10L, eventModificationCache.get(10));
     assertEquals(100L, eventModificationCache.get(100));
@@ -67,7 +67,7 @@ class KafkaEventListenerTest {
     return new PartitionInfo(topic, partition, mock(Node.class), new Node[0], new Node[0]);
   }
 
-  class EventModificationCache extends KafkaEventListener<Integer, Long> {
+  static class EventModificationCache extends EventListener {
     final AsyncLoadingCache<Integer, Long> cache;
 
     EventModificationCache() {
@@ -88,6 +88,7 @@ class KafkaEventListenerTest {
     }
 
     private Long load(Integer key) {
+      // ideally this will be remote call, just for sake of dummy test we returned a cast
       return (long) (key);
     }
 
