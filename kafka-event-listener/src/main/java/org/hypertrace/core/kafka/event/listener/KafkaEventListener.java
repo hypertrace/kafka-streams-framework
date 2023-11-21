@@ -12,6 +12,11 @@ import lombok.Value;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.common.serialization.Deserializer;
 
+/**
+ * KafkaEventListener consumes events from a single Kafka Topic and on every message invokes
+ * provided callbacks. The callback invocation is done in a separate thread and needs to be
+ * concurrent safe.
+ */
 public class KafkaEventListener<K, V> implements AutoCloseable {
   private final KafkaEventListenerThread<K, V> kafkaEventListenerThread;
 
@@ -51,9 +56,6 @@ public class KafkaEventListener<K, V> implements AutoCloseable {
       return this;
     }
 
-    /**
-     * call back functions should be concurrent safe if reused across multiple KafkaEventListeners
-     */
     public Builder<K, V> registerCallback(BiConsumer<? super K, ? super V> callbackFunction) {
       callbacks.add(callbackFunction);
       return this;
@@ -67,7 +69,7 @@ public class KafkaEventListener<K, V> implements AutoCloseable {
     public KafkaEventListener<K, V> build() {
       if (Objects.isNull(kafkaEventListenerThreadConfig) || callbacks.isEmpty()) {
         throw new IllegalArgumentException(
-            "one kafka topic and atleast one callbacks are required for KafkaEventListener");
+            "one kafka topic and at least one callback are required for KafkaEventListener");
       }
       KafkaEventListenerThread<K, V> kafkaEventListenerThread =
           kafkaEventListenerThreadConfig.getThreadFromConfig(callbacks);
@@ -81,7 +83,7 @@ public class KafkaEventListener<K, V> implements AutoCloseable {
     private void assertAbsenceOfKakfaTopic() {
       if (Objects.nonNull(kafkaEventListenerThreadConfig)) {
         throw new IllegalArgumentException(
-            "only one kafka topic is supported for KafkaEventListener, reuse callback consumers across multiple instances of KafkaEventListeners");
+            "only one kafka topic is supported for KafkaEventListener, reuse callbacks across multiple instances of KafkaEventListeners");
       }
     }
 
