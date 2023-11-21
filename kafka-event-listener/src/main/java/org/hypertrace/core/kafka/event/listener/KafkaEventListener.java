@@ -50,9 +50,10 @@ public class KafkaEventListener<K, V> implements AutoCloseable {
       return this;
     }
 
-    public Builder<K, V> withExecutorService(ExecutorService executorService) {
+    public Builder<K, V> withExecutorService(
+        ExecutorService executorService, boolean cleanupExecutor) {
       this.executorService = executorService;
-      this.cleanupExecutor = false;
+      this.cleanupExecutor = cleanupExecutor;
       return this;
     }
 
