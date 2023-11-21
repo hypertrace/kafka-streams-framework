@@ -8,6 +8,7 @@ import static org.mockito.Mockito.mock;
 import com.github.benmanes.caffeine.cache.AsyncLoadingCache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.typesafe.config.Config;
+import com.typesafe.config.ConfigException;
 import com.typesafe.config.ConfigFactory;
 import java.time.Duration;
 import java.util.HashMap;
@@ -28,22 +29,22 @@ class KafkaEventListenerTest {
 
   @Test
   void testThrowOnInvalidInputs() {
-    assertThrows(
-        IllegalArgumentException.class,
-        () -> new KafkaEventListener.Builder<String, Long>().build());
-    assertThrows(
-        IllegalArgumentException.class,
-        () ->
-            new KafkaEventListener.Builder<String, Long>()
-                .addKafkaConsumer(
-                    "", ConfigFactory.empty(), new MockConsumer<>(OffsetResetStrategy.LATEST))
-                .build());
+    // no callback
     assertThrows(
         IllegalArgumentException.class,
         () ->
             new KafkaEventListener.Builder<String, Long>()
-                .registerCallback((String key, Long value) -> System.out.println(key + ":" + value))
-                .build());
+                .build(
+                    "",
+                    ConfigFactory.parseMap(Map.of("topic.name", "")),
+                    new MockConsumer<>(OffsetResetStrategy.LATEST)));
+    // no topic name
+    assertThrows(
+        ConfigException.class,
+        () ->
+            new KafkaEventListener.Builder<String, Long>()
+                .registerCallback((String k, Long v) -> System.out.println(k + ":" + v))
+                .build("", ConfigFactory.empty(), new MockConsumer<>(OffsetResetStrategy.LATEST)));
   }
 
   @Test
@@ -106,10 +107,9 @@ class KafkaEventListenerTest {
               .buildAsync(this::load);
       eventListener =
           new KafkaEventListener.Builder<String, Long>()
-              .addKafkaConsumer(consumerName, kafkaConfig, consumer)
               .registerCallback(this::actOnEvent)
               .registerCallback(this::log)
-              .build();
+              .build(consumerName, kafkaConfig, consumer);
     }
 
     public void close() throws Exception {
