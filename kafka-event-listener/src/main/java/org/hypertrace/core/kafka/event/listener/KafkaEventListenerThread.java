@@ -27,22 +27,22 @@ import org.apache.kafka.common.serialization.Deserializer;
 import org.hypertrace.core.serviceframework.metrics.PlatformMetricsRegistry;
 
 @Slf4j
-public class KafkaEventListenerConsumer<D, C> extends Thread implements EventListenerConsumer {
+public class KafkaEventListenerThread<K, V> extends Thread {
   private static final String EVENT_CONSUMER_ERROR_COUNT = "event.consumer.error.count";
   private static final String TOPIC_NAME = "topic.name";
   private static final String POLL_TIMEOUT = "poll.timeout";
   private final List<TopicPartition> topicPartitions;
-  private final Consumer<D, C> kafkaConsumer;
+  private final Consumer<K, V> kafkaConsumer;
   private final Duration pollTimeout;
   private final Counter errorCounter;
-  private final BiConsumer<D, C> listenerCallback;
+  private final List<BiConsumer<? super K, ? super V>> callbacks;
 
-  KafkaEventListenerConsumer(
+  KafkaEventListenerThread(
       String consumerName,
       Config kafkaConfig,
-      Deserializer<D> keyDeserializer,
-      Deserializer<C> valueDeserializer,
-      BiConsumer<D, C> listenerCallback) {
+      Deserializer<K> keyDeserializer,
+      Deserializer<V> valueDeserializer,
+      List<BiConsumer<? super K, ? super V>> callbacks) {
     this(
         consumerName,
         kafkaConfig,
@@ -50,17 +50,17 @@ public class KafkaEventListenerConsumer<D, C> extends Thread implements EventLis
             getKafkaConsumerConfigs(kafkaConfig.withFallback(getDefaultKafkaConsumerConfigs())),
             keyDeserializer,
             valueDeserializer),
-        listenerCallback);
+        callbacks);
   }
 
-  KafkaEventListenerConsumer(
+  KafkaEventListenerThread(
       String consumerName,
       Config kafkaConfig,
-      Consumer<D, C> kafkaConsumer,
-      BiConsumer<D, C> listenerCallback) {
+      Consumer<K, V> kafkaConsumer,
+      List<BiConsumer<? super K, ? super V>> callbacks) {
     super(consumerName);
     this.setDaemon(true);
-    this.listenerCallback = listenerCallback;
+    this.callbacks = callbacks;
     this.pollTimeout =
         kafkaConfig.hasPath(POLL_TIMEOUT)
             ? kafkaConfig.getDuration(POLL_TIMEOUT)
@@ -80,22 +80,12 @@ public class KafkaEventListenerConsumer<D, C> extends Thread implements EventLis
   }
 
   @Override
-  public void startConsumer() throws Exception {
-    this.start();
-  }
-
-  @Override
-  public void stopConsumer() throws Exception {
-    this.interrupt();
-    this.join(Duration.ofSeconds(10).toMillis());
-  }
-
-  @Override
   public void run() {
     do {
       try {
-        ConsumerRecords<D, C> records = kafkaConsumer.poll(pollTimeout);
-        records.forEach(r -> this.listenerCallback.accept(r.key(), r.value()));
+        ConsumerRecords<K, V> records = kafkaConsumer.poll(pollTimeout);
+        records.forEach(
+            r -> this.callbacks.forEach(callback -> callback.accept(r.key(), r.value())));
         if (log.isDebugEnabled()) {
           for (TopicPartition partition : topicPartitions) {
             long position = kafkaConsumer.position(partition);
