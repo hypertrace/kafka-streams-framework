@@ -17,21 +17,33 @@ import org.apache.kafka.common.serialization.Deserializer;
  */
 public class KafkaEventListener<K, V> implements AutoCloseable {
   private final KafkaEventListenerThread<K, V> kafkaEventListenerThread;
+  private final ExecutorService executorService;
+  private final boolean cleanupExecutor;
 
-  private KafkaEventListener(KafkaEventListenerThread<K, V> kafkaEventListenerThread) {
+  private KafkaEventListener(
+      KafkaEventListenerThread<K, V> kafkaEventListenerThread,
+      ExecutorService executorService,
+      boolean cleanupExecutor) {
     this.kafkaEventListenerThread = kafkaEventListenerThread;
-    kafkaEventListenerThread.start();
+    this.executorService = executorService;
+    this.cleanupExecutor = cleanupExecutor;
+    executorService.submit(kafkaEventListenerThread);
   }
 
   @Override
   public void close() throws Exception {
     kafkaEventListenerThread.interrupt();
     kafkaEventListenerThread.join(Duration.ofSeconds(10).toMillis());
+    if (cleanupExecutor) {
+      executorService.shutdown();
+    }
   }
 
   public static final class Builder<K, V> {
     List<BiConsumer<? super K, ? super V>> callbacks = new ArrayList<>();
     ExecutorService executorService = Executors.newSingleThreadExecutor();
+    boolean cleanupExecutor =
+        true; // if builder creates executor shutdown executor while closing event listener
 
     public Builder<K, V> registerCallback(BiConsumer<? super K, ? super V> callbackFunction) {
       callbacks.add(callbackFunction);
@@ -40,6 +52,7 @@ public class KafkaEventListener<K, V> implements AutoCloseable {
 
     public Builder<K, V> withExecutorService(ExecutorService executorService) {
       this.executorService = executorService;
+      this.cleanupExecutor = false;
       return this;
     }
 
@@ -47,7 +60,9 @@ public class KafkaEventListener<K, V> implements AutoCloseable {
         String consumerName, Config kafkaConfig, Consumer<K, V> kafkaConsumer) {
       assertCallbacksPresent();
       return new KafkaEventListener<>(
-          new KafkaEventListenerThread<>(consumerName, kafkaConfig, kafkaConsumer, callbacks));
+          new KafkaEventListenerThread<>(consumerName, kafkaConfig, kafkaConsumer, callbacks),
+          executorService,
+          cleanupExecutor);
     }
 
     public KafkaEventListener<K, V> build(
@@ -58,7 +73,9 @@ public class KafkaEventListener<K, V> implements AutoCloseable {
       assertCallbacksPresent();
       return new KafkaEventListener<>(
           new KafkaEventListenerThread<>(
-              consumerName, kafkaConfig, keyDeserializer, valueDeserializer, callbacks));
+              consumerName, kafkaConfig, keyDeserializer, valueDeserializer, callbacks),
+          executorService,
+          cleanupExecutor);
     }
 
     private void assertCallbacksPresent() {

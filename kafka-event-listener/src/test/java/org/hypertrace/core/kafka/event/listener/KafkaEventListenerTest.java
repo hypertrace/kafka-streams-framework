@@ -77,14 +77,10 @@ class KafkaEventListenerTest {
     // not present key won't trigger any population but callback function should be called
     kafkaConsumer.addRecord(new ConsumerRecord<>(topic, 0, 100, "32", 89L));
     Thread.sleep(100);
-    //    verify(eventModificationCache, times(1)).actOnEvent("32", 89L);
-    //    verify(eventModificationCache, times(1)).log("32", 89L);
     assertFalse(eventModificationCache.hasKey(32));
     // existing key will be modified based on entry
     kafkaConsumer.addRecord(new ConsumerRecord<>(topic, 3, 200, "10", -3L));
     Thread.sleep(100);
-    //    verify(eventModificationCache, times(1)).actOnEvent("10", -3L);
-    //    verify(eventModificationCache, times(1)).log("10", -3L);
     assertEquals(-3L, eventModificationCache.get(10));
     eventModificationCache.close();
   }
