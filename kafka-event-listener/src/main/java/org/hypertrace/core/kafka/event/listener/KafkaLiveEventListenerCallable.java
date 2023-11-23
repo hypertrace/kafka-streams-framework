@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +28,7 @@ import org.apache.kafka.common.serialization.Deserializer;
 import org.hypertrace.core.serviceframework.metrics.PlatformMetricsRegistry;
 
 @Slf4j
-class KafkaEventListenerThread<K, V> extends Thread {
+class KafkaLiveEventListenerCallable<K, V> implements Callable<Void> {
   private static final String EVENT_CONSUMER_ERROR_COUNT = "event.consumer.error.count";
   private static final String TOPIC_NAME = "topic.name";
   private static final String POLL_TIMEOUT = "poll.timeout";
@@ -37,7 +38,7 @@ class KafkaEventListenerThread<K, V> extends Thread {
   private final Counter errorCounter;
   private final List<BiConsumer<? super K, ? super V>> callbacks;
 
-  KafkaEventListenerThread(
+  KafkaLiveEventListenerCallable(
       String consumerName,
       Config kafkaConfig,
       Deserializer<K> keyDeserializer,
@@ -53,13 +54,11 @@ class KafkaEventListenerThread<K, V> extends Thread {
         callbacks);
   }
 
-  KafkaEventListenerThread(
+  KafkaLiveEventListenerCallable(
       String consumerName,
       Config kafkaConfig,
       Consumer<K, V> kafkaConsumer,
       List<BiConsumer<? super K, ? super V>> callbacks) {
-    super(consumerName);
-    this.setDaemon(true);
     this.callbacks = callbacks;
     this.pollTimeout =
         kafkaConfig.hasPath(POLL_TIMEOUT)
@@ -67,6 +66,7 @@ class KafkaEventListenerThread<K, V> extends Thread {
             : Duration.ofSeconds(30);
     String topic = kafkaConfig.getString(TOPIC_NAME);
     this.kafkaConsumer = kafkaConsumer;
+    // fetch partitions and seek to end of partitions to consume live events
     List<PartitionInfo> partitions = kafkaConsumer.partitionsFor(topic);
     topicPartitions =
         partitions.stream()
@@ -80,7 +80,7 @@ class KafkaEventListenerThread<K, V> extends Thread {
   }
 
   @Override
-  public void run() {
+  public Void call() {
     do {
       try {
         ConsumerRecords<K, V> records = kafkaConsumer.poll(pollTimeout);
@@ -99,7 +99,7 @@ class KafkaEventListenerThread<K, V> extends Thread {
       } catch (InterruptException interruptedException) {
         log.warn("Received interrupt exception from kafka poll ", interruptedException);
         kafkaConsumer.close();
-        return;
+        return null;
       } catch (Exception ex) {
         this.errorCounter.increment();
         log.error("Consumer Error ", ex);

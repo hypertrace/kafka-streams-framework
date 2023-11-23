@@ -1,41 +1,46 @@
 package org.hypertrace.core.kafka.event.listener;
 
 import com.typesafe.config.Config;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.common.serialization.Deserializer;
 
 /**
- * KafkaEventListener consumes events from a single Kafka Topic and on every message invokes
- * provided callbacks. The callback invocation is done in a separate thread and needs to be
- * concurrent safe.
+ * KafkaLiveEventListener consumes events produced to a single Kafka Topic from its initialisation
+ * and on every message invokes provided callbacks. The thread safety of callback method must be
+ * ensured by provider. It is important to note that there is no guarantee that all messages on
+ * topic are consumed by this listener as every time we create a listener we consume from latest
+ * offsets by design.
+ *
+ * <p>Typical usage of this listener is to back the remote caches to have lower latency of refresh
+ * by generating respective information on kafka topics
  */
-public class KafkaEventListener<K, V> implements AutoCloseable {
-  private final KafkaEventListenerThread<K, V> kafkaEventListenerThread;
+public class KafkaLiveEventListener<K, V> implements AutoCloseable {
+  private final Future<Void> kafkaLiveEventListenerCallableFuture;
   private final ExecutorService executorService;
   private final boolean cleanupExecutor;
 
-  private KafkaEventListener(
-      KafkaEventListenerThread<K, V> kafkaEventListenerThread,
+  private KafkaLiveEventListener(
+      KafkaLiveEventListenerCallable<K, V> kafkaLiveEventListenerCallable,
       ExecutorService executorService,
       boolean cleanupExecutor) {
-    this.kafkaEventListenerThread = kafkaEventListenerThread;
     this.executorService = executorService;
     this.cleanupExecutor = cleanupExecutor;
-    executorService.submit(kafkaEventListenerThread);
+    this.kafkaLiveEventListenerCallableFuture =
+        executorService.submit(kafkaLiveEventListenerCallable);
   }
 
   @Override
   public void close() throws Exception {
-    kafkaEventListenerThread.interrupt();
-    kafkaEventListenerThread.join(Duration.ofSeconds(10).toMillis());
+    kafkaLiveEventListenerCallableFuture.cancel(true);
     if (cleanupExecutor) {
-      executorService.shutdown();
+      executorService.awaitTermination(10, TimeUnit.SECONDS);
     }
   }
 
@@ -57,23 +62,23 @@ public class KafkaEventListener<K, V> implements AutoCloseable {
       return this;
     }
 
-    public KafkaEventListener<K, V> build(
+    public KafkaLiveEventListener<K, V> build(
         String consumerName, Config kafkaConfig, Consumer<K, V> kafkaConsumer) {
       assertCallbacksPresent();
-      return new KafkaEventListener<>(
-          new KafkaEventListenerThread<>(consumerName, kafkaConfig, kafkaConsumer, callbacks),
+      return new KafkaLiveEventListener<>(
+          new KafkaLiveEventListenerCallable<>(consumerName, kafkaConfig, kafkaConsumer, callbacks),
           executorService,
           cleanupExecutor);
     }
 
-    public KafkaEventListener<K, V> build(
+    public KafkaLiveEventListener<K, V> build(
         String consumerName,
         Config kafkaConfig,
         Deserializer<K> keyDeserializer,
         Deserializer<V> valueDeserializer) {
       assertCallbacksPresent();
-      return new KafkaEventListener<>(
-          new KafkaEventListenerThread<>(
+      return new KafkaLiveEventListener<>(
+          new KafkaLiveEventListenerCallable<>(
               consumerName, kafkaConfig, keyDeserializer, valueDeserializer, callbacks),
           executorService,
           cleanupExecutor);
@@ -81,7 +86,7 @@ public class KafkaEventListener<K, V> implements AutoCloseable {
 
     private void assertCallbacksPresent() {
       if (callbacks.isEmpty()) {
-        throw new IllegalArgumentException("no call backs are provided to KafkaEventListener");
+        throw new IllegalArgumentException("no call backs are provided to KafkaLiveEventListener");
       }
     }
   }

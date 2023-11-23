@@ -25,7 +25,7 @@ import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
 import org.junit.jupiter.api.Test;
 
-class KafkaEventListenerTest {
+class KafkaLiveEventListenerTest {
 
   @Test
   void testThrowOnInvalidInputs() {
@@ -33,7 +33,7 @@ class KafkaEventListenerTest {
     assertThrows(
         IllegalArgumentException.class,
         () ->
-            new KafkaEventListener.Builder<String, Long>()
+            new KafkaLiveEventListener.Builder<String, Long>()
                 .build(
                     "",
                     ConfigFactory.parseMap(Map.of("topic.name", "")),
@@ -42,7 +42,7 @@ class KafkaEventListenerTest {
     assertThrows(
         ConfigException.class,
         () ->
-            new KafkaEventListener.Builder<String, Long>()
+            new KafkaLiveEventListener.Builder<String, Long>()
                 .registerCallback((String k, Long v) -> System.out.println(k + ":" + v))
                 .build("", ConfigFactory.empty(), new MockConsumer<>(OffsetResetStrategy.LATEST)));
   }
@@ -91,7 +91,7 @@ class KafkaEventListenerTest {
 
   static class EventModificationCache {
     private final AsyncLoadingCache<Integer, Long> cache;
-    private final KafkaEventListener<String, Long> eventListener;
+    private final KafkaLiveEventListener<String, Long> eventListener;
 
     EventModificationCache(
         String consumerName, Config kafkaConfig, Consumer<String, Long> consumer) {
@@ -102,7 +102,7 @@ class KafkaEventListenerTest {
               .refreshAfterWrite(Duration.ofHours(1))
               .buildAsync(this::load);
       eventListener =
-          new KafkaEventListener.Builder<String, Long>()
+          new KafkaLiveEventListener.Builder<String, Long>()
               .registerCallback(this::actOnEvent)
               .registerCallback(this::log)
               .build(consumerName, kafkaConfig, consumer);
