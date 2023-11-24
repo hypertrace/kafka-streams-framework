@@ -40,6 +40,7 @@ public class KafkaLiveEventListener<K, V> implements AutoCloseable {
   public void close() throws Exception {
     kafkaLiveEventListenerCallableFuture.cancel(true);
     if (cleanupExecutor) {
+      executorService.shutdown();
       executorService.awaitTermination(10, TimeUnit.SECONDS);
     }
   }
