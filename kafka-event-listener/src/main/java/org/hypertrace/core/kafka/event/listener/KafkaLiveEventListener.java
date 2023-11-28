@@ -18,8 +18,13 @@ import org.apache.kafka.common.serialization.Deserializer;
  * topic are consumed by this listener as every time we create a listener we consume from latest
  * offsets by design.
  *
+ * <p>Operational Caveat: The listener subscribes to active partitions only, in case the partition
+ * count changes once the listener is active, it will be opaque to those new partitions and will not
+ * consume them. Only a new listener will go and fetch all active partitions hence it will be
+ * required to restart the consumer application.
+ *
  * <p>Typical usage of this listener is to back the remote caches to have lower latency of refresh
- * by generating respective information on kafka topics
+ * by generating respective information on kafka topics.
  */
 public class KafkaLiveEventListener<K, V> implements AutoCloseable {
   private final Future<Void> kafkaLiveEventListenerCallableFuture;
