@@ -9,7 +9,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import org.apache.kafka.clients.consumer.Consumer;
-import org.apache.kafka.common.serialization.Deserializer;
 
 /**
  * KafkaLiveEventListener consumes events produced to a single Kafka Topic from its initialisation
@@ -73,19 +72,6 @@ public class KafkaLiveEventListener<K, V> implements AutoCloseable {
       assertCallbacksPresent();
       return new KafkaLiveEventListener<>(
           new KafkaLiveEventListenerCallable<>(consumerName, kafkaConfig, kafkaConsumer, callbacks),
-          executorService,
-          cleanupExecutor);
-    }
-
-    public KafkaLiveEventListener<K, V> build(
-        String consumerName,
-        Config kafkaConfig,
-        Deserializer<K> keyDeserializer,
-        Deserializer<V> valueDeserializer) {
-      assertCallbacksPresent();
-      return new KafkaLiveEventListener<>(
-          new KafkaLiveEventListenerCallable<>(
-              consumerName, kafkaConfig, keyDeserializer, valueDeserializer, callbacks),
           executorService,
           cleanupExecutor);
     }
