@@ -56,11 +56,11 @@ class KafkaLiveEventListenerTest {
     assertEquals(10L, eventModificationCache.get(10));
     assertEquals(100L, eventModificationCache.get(100));
     // not present key won't trigger any population but callback function should be called
-    mockConsumerTestUtil.addRecord("32", 89L, 0);
+    mockConsumerTestUtil.addRecordToPartition(0, "32", 89L);
     Thread.sleep(100);
     assertFalse(eventModificationCache.hasKey(32));
     // existing key will be modified based on entry
-    mockConsumerTestUtil.addRecord("10", -3L, 3);
+    mockConsumerTestUtil.addRecordToPartition(3, "10", -3L);
     Thread.sleep(100);
     assertEquals(-3L, eventModificationCache.get(10));
     eventModificationCache.close();

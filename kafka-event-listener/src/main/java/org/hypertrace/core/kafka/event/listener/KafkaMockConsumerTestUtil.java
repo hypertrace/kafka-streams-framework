@@ -19,6 +19,11 @@ public class KafkaMockConsumerTestUtil<K, V> {
   private final Map<TopicPartition, Long> currentOffsets;
   @Getter private final MockConsumer<K, V> mockConsumer;
 
+  /** creates exactly 1 partition by default */
+  public KafkaMockConsumerTestUtil(String topicName) {
+    this(topicName, 1);
+  }
+
   public KafkaMockConsumerTestUtil(String topicName, int numPartitions) {
     this.topicName = topicName;
     mockConsumer = new MockConsumer<>(OffsetResetStrategy.LATEST);
@@ -34,7 +39,12 @@ public class KafkaMockConsumerTestUtil<K, V> {
     mockConsumer.updateEndOffsets(currentOffsets);
   }
 
-  public void addRecord(K key, V value, int partition) {
+  /** adds to 0th partition by default */
+  public void addRecord(K key, V value) {
+    addRecordToPartition(0, key, value);
+  }
+
+  public void addRecordToPartition(int partition, K key, V value) {
     Long latestOffset =
         currentOffsets.computeIfPresent(getTopicPartition(topicName, partition), (k, v) -> v + 1);
     if (Objects.isNull(latestOffset)) {
