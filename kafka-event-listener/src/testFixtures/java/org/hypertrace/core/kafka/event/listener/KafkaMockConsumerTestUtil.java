@@ -6,7 +6,6 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import lombok.Getter;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.MockConsumer;
 import org.apache.kafka.clients.consumer.OffsetResetStrategy;
@@ -17,12 +16,8 @@ import org.apache.kafka.common.TopicPartition;
 public class KafkaMockConsumerTestUtil<K, V> {
   private final String topicName;
   private final Map<TopicPartition, Long> currentOffsets;
-  @Getter private final MockConsumer<K, V> mockConsumer;
 
-  /** creates exactly 1 partition by default */
-  public KafkaMockConsumerTestUtil(String topicName) {
-    this(topicName, 1);
-  }
+  private final MockConsumer<K, V> mockConsumer;
 
   public KafkaMockConsumerTestUtil(String topicName, int numPartitions) {
     this.topicName = topicName;
@@ -37,6 +32,15 @@ public class KafkaMockConsumerTestUtil<K, V> {
             .mapToObj(i -> getTopicPartition(topicName, i))
             .collect(Collectors.toMap(Function.identity(), k -> 1L));
     mockConsumer.updateEndOffsets(currentOffsets);
+  }
+
+  /** creates 1 partition by default */
+  public KafkaMockConsumerTestUtil(String topicName) {
+    this(topicName, 1);
+  }
+
+  public MockConsumer<K, V> getMockConsumer() {
+    return mockConsumer;
   }
 
   /** adds to 0th partition by default */
