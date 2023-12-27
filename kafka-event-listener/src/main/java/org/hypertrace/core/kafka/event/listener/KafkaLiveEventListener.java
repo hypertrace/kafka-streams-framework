@@ -24,6 +24,10 @@ import org.apache.kafka.clients.consumer.Consumer;
  *
  * <p>Typical usage of this listener is to back the remote caches to have lower latency of refresh
  * by generating respective information on kafka topics.
+ *
+ * <p>Refer to
+ * org.hypertrace.core.kafka.event.listener.KafkaLiveEventListenerTest#testEventModificationCache()
+ * for sample usage and test. Note that testing requires Thread.sleep > poll timeout in between
  */
 public class KafkaLiveEventListener<K, V> implements AutoCloseable {
   private final Future<Void> kafkaLiveEventListenerCallableFuture;
