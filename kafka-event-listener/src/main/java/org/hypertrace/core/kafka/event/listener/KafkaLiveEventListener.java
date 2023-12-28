@@ -9,7 +9,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import org.apache.kafka.clients.consumer.Consumer;
-import org.apache.kafka.common.serialization.Deserializer;
 
 /**
  * KafkaLiveEventListener consumes events produced to a single Kafka Topic from its initialisation
@@ -25,6 +24,10 @@ import org.apache.kafka.common.serialization.Deserializer;
  *
  * <p>Typical usage of this listener is to back the remote caches to have lower latency of refresh
  * by generating respective information on kafka topics.
+ *
+ * <p>Refer to
+ * org.hypertrace.core.kafka.event.listener.KafkaLiveEventListenerTest#testEventModificationCache()
+ * for sample usage and test. Note that testing requires Thread.sleep > poll timeout in between
  */
 public class KafkaLiveEventListener<K, V> implements AutoCloseable {
   private final Future<Void> kafkaLiveEventListenerCallableFuture;
@@ -73,19 +76,6 @@ public class KafkaLiveEventListener<K, V> implements AutoCloseable {
       assertCallbacksPresent();
       return new KafkaLiveEventListener<>(
           new KafkaLiveEventListenerCallable<>(consumerName, kafkaConfig, kafkaConsumer, callbacks),
-          executorService,
-          cleanupExecutor);
-    }
-
-    public KafkaLiveEventListener<K, V> build(
-        String consumerName,
-        Config kafkaConfig,
-        Deserializer<K> keyDeserializer,
-        Deserializer<V> valueDeserializer) {
-      assertCallbacksPresent();
-      return new KafkaLiveEventListener<>(
-          new KafkaLiveEventListenerCallable<>(
-              consumerName, kafkaConfig, keyDeserializer, valueDeserializer, callbacks),
           executorService,
           cleanupExecutor);
     }
