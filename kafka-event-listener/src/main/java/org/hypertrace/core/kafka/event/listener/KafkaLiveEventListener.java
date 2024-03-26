@@ -68,6 +68,7 @@ public class KafkaLiveEventListener<K, V> implements AutoCloseable {
     boolean cleanupExecutor =
         true; // if builder creates executor shutdown executor while closing event listener
 
+    /** use registerCallback on the built instance instead */
     @Deprecated(forRemoval = true)
     public Builder<K, V> registerCallback(BiConsumer<? super K, ? super V> callbackFunction) {
       deprecatedCallbacksFlow.add(callbackFunction);
