@@ -22,22 +22,13 @@ class KafkaLiveEventListenerTest {
 
   @Test
   void testThrowOnInvalidInputs() {
-    // no callback
-    assertThrows(
-        IllegalArgumentException.class,
-        () ->
-            new KafkaLiveEventListener.Builder<String, Long>()
-                .build(
-                    "",
-                    ConfigFactory.parseMap(Map.of("topic.name", "")),
-                    new MockConsumer<>(OffsetResetStrategy.LATEST)));
     // no topic name
     assertThrows(
         ConfigException.class,
         () ->
             new KafkaLiveEventListener.Builder<String, Long>()
-                .registerCallback((String k, Long v) -> System.out.println(k + ":" + v))
-                .build("", ConfigFactory.empty(), new MockConsumer<>(OffsetResetStrategy.LATEST)));
+                .build("", ConfigFactory.empty(), new MockConsumer<>(OffsetResetStrategy.LATEST))
+                .registerCallback((String k, Long v) -> System.out.println(k + ":" + v)));
   }
 
   @Test
@@ -80,9 +71,9 @@ class KafkaLiveEventListenerTest {
               .buildAsync(this::load);
       eventListener =
           new KafkaLiveEventListener.Builder<String, Long>()
+              .build(consumerName, kafkaConfig, consumer)
               .registerCallback(this::actOnEvent)
-              .registerCallback(this::log)
-              .build(consumerName, kafkaConfig, consumer);
+              .registerCallback(this::log);
     }
 
     public void close() throws Exception {

@@ -1,8 +1,8 @@
 package org.hypertrace.core.kafka.event.listener;
 
 import com.typesafe.config.Config;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -30,6 +30,7 @@ import org.apache.kafka.clients.consumer.Consumer;
  * for sample usage and test. Note that testing requires Thread.sleep > poll timeout in between
  */
 public class KafkaLiveEventListener<K, V> implements AutoCloseable {
+  private final KafkaLiveEventListenerCallable<K, V> kafkaLiveEventListenerCallable;
   private final Future<Void> kafkaLiveEventListenerCallableFuture;
   private final ExecutorService executorService;
   private final boolean cleanupExecutor;
@@ -40,8 +41,15 @@ public class KafkaLiveEventListener<K, V> implements AutoCloseable {
       boolean cleanupExecutor) {
     this.executorService = executorService;
     this.cleanupExecutor = cleanupExecutor;
+    this.kafkaLiveEventListenerCallable = kafkaLiveEventListenerCallable;
     this.kafkaLiveEventListenerCallableFuture =
         executorService.submit(kafkaLiveEventListenerCallable);
+  }
+
+  public KafkaLiveEventListener<K, V> registerCallback(
+      BiConsumer<? super K, ? super V> callbackFunction) {
+    kafkaLiveEventListenerCallable.addCallback(callbackFunction);
+    return this;
   }
 
   @Override
@@ -54,11 +62,14 @@ public class KafkaLiveEventListener<K, V> implements AutoCloseable {
   }
 
   public static final class Builder<K, V> {
-    List<BiConsumer<? super K, ? super V>> callbacks = new ArrayList<>();
-    ExecutorService executorService = Executors.newSingleThreadExecutor();
-    boolean cleanupExecutor =
+    private final Collection<BiConsumer<? super K, ? super V>> callbacks =
+        new ConcurrentLinkedQueue<>();
+    private ExecutorService executorService = Executors.newSingleThreadExecutor();
+    private boolean cleanupExecutor =
         true; // if builder creates executor shutdown executor while closing event listener
 
+    /** use registerCallback on the built instance instead */
+    @Deprecated(forRemoval = true)
     public Builder<K, V> registerCallback(BiConsumer<? super K, ? super V> callbackFunction) {
       callbacks.add(callbackFunction);
       return this;
@@ -73,17 +84,10 @@ public class KafkaLiveEventListener<K, V> implements AutoCloseable {
 
     public KafkaLiveEventListener<K, V> build(
         String consumerName, Config kafkaConfig, Consumer<K, V> kafkaConsumer) {
-      assertCallbacksPresent();
       return new KafkaLiveEventListener<>(
           new KafkaLiveEventListenerCallable<>(consumerName, kafkaConfig, kafkaConsumer, callbacks),
           executorService,
           cleanupExecutor);
-    }
-
-    private void assertCallbacksPresent() {
-      if (callbacks.isEmpty()) {
-        throw new IllegalArgumentException("no call backs are provided to KafkaLiveEventListener");
-      }
     }
   }
 }
