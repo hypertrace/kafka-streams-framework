@@ -8,6 +8,7 @@ import io.micrometer.core.instrument.Counter;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.Callable;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
@@ -26,13 +27,13 @@ class KafkaLiveEventListenerCallable<K, V> implements Callable<Void> {
   private final Consumer<K, V> kafkaConsumer;
   private final Duration pollTimeout;
   private final Counter errorCounter;
-  private final List<BiConsumer<? super K, ? super V>> callbacks;
+  private final Queue<BiConsumer<? super K, ? super V>> callbacks;
 
   KafkaLiveEventListenerCallable(
       String consumerName,
       Config kafkaConfig,
       Consumer<K, V> kafkaConsumer,
-      List<BiConsumer<? super K, ? super V>> callbacks) {
+      Queue<BiConsumer<? super K, ? super V>> callbacks) {
     this.callbacks = callbacks;
     this.pollTimeout =
         kafkaConfig.hasPath(POLL_TIMEOUT)
