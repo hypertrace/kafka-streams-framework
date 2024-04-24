@@ -101,7 +101,7 @@ class ListenerThreadFactory implements ThreadFactory {
   private final String name;
 
   public ListenerThreadFactory(String consumerName) {
-    this.name = "kafka-live-event-listener-" + consumerName;
+    this.name = "kafka-live-event-listener-" + consumerName + "-" + System.currentTimeMillis();
   }
 
   public Thread newThread(Runnable r) {
