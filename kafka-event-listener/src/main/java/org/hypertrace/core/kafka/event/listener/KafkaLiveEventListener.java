@@ -6,6 +6,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import org.apache.kafka.clients.consumer.Consumer;
@@ -64,7 +65,7 @@ public class KafkaLiveEventListener<K, V> implements AutoCloseable {
   public static final class Builder<K, V> {
     private final Collection<BiConsumer<? super K, ? super V>> callbacks =
         new ConcurrentLinkedQueue<>();
-    private ExecutorService executorService = Executors.newSingleThreadExecutor();
+    private ExecutorService executorService;
     private boolean cleanupExecutor =
         true; // if builder creates executor shutdown executor while closing event listener
 
@@ -84,10 +85,26 @@ public class KafkaLiveEventListener<K, V> implements AutoCloseable {
 
     public KafkaLiveEventListener<K, V> build(
         String consumerName, Config kafkaConfig, Consumer<K, V> kafkaConsumer) {
+      if (executorService == null) {
+        executorService =
+            Executors.newSingleThreadExecutor(new ListenerThreadFactory(consumerName));
+      }
       return new KafkaLiveEventListener<>(
           new KafkaLiveEventListenerCallable<>(consumerName, kafkaConfig, kafkaConsumer, callbacks),
           executorService,
           cleanupExecutor);
     }
+  }
+}
+
+class ListenerThreadFactory implements ThreadFactory {
+  private final String name;
+
+  public ListenerThreadFactory(String consumerName) {
+    this.name = "kafka-live-event-listener-" + consumerName;
+  }
+
+  public Thread newThread(Runnable r) {
+    return new Thread(r, name);
   }
 }
