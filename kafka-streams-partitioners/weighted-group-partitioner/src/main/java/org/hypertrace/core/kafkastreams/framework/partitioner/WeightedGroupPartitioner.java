@@ -50,15 +50,18 @@ public class WeightedGroupPartitioner<K, V> implements StreamPartitioner<K, V> {
   @Override
   public Integer partition(String topic, K key, V value, int numPartitions) {
     WeightedGroup groupConfig = this.getGroupConfig(topic, key, value);
-    int fromIndex = (int) Math.floor(groupConfig.getNormalizedFractionalStart() * numPartitions);
-    int toIndex = (int) Math.ceil(groupConfig.getNormalizedFractionalEnd() * numPartitions);
-    int numPartitionsForGroup = toIndex - fromIndex;
+    int fromIndexInclusive = (int) Math.floor(groupConfig.getNormalizedFractionalStart() * numPartitions);
+    int toIndexExclusive = (int) Math.floor(groupConfig.getNormalizedFractionalEnd() * numPartitions);
+    // Partition indexing starts from 0.
+    // Every group size should be at least one. This prevents divide by zero error in delegate partitioner.
+    // int numPartitionsForGroup = toIndexExclusive - fromIndexInclusive;
+    int numPartitionsForGroup = Math.max(toIndexExclusive - fromIndexInclusive, 1);
 
     // partitioner by contract can return null.
     // Refer api doc:  org.apache.kafka.streams.processor.StreamPartitioner.partition
     // when delegate partitioner returns null, we use fallback partitioner (round-robin within
     // group)
-    return fromIndex
+    return fromIndexInclusive
         + Optional.ofNullable(
                 delegatePartitioner.partition(topic, key, value, numPartitionsForGroup))
             .orElse(
