@@ -175,6 +175,59 @@ public class WeightedGroupPartitionerTest {
     assertEquals(4, partition);
   }
 
+  @Test
+  public void testWithNonMultipleWeightRatio() {
+
+    int testCount = 100;
+    PartitionerConfigServiceClient testClient =
+        (profileName) ->
+            new WeightedGroupProfile(
+                PartitionerProfile.newBuilder()
+                    .addGroups(newPartitionerGroup("group1", new String[] {"tenant-1"}, 27))
+                    .addGroups(
+                        newPartitionerGroup("group2", new String[] {"tenant-2", "tenant-3"}, 27))
+                    .setDefaultGroupWeight(52)
+                    .setName(profileName)
+                    .build());
+
+    WeightedGroupPartitioner<String, String> partitioner =
+        new WeightedGroupPartitioner<>(
+            "spans", testClient, groupKeyExtractor, roundRobinPartitioner);
+    int partition;
+
+    // Test case 1: tenant-1 belong to group-1 (partitions: [0 to 7])
+    for (int i = 1; i <= testCount; i++) {
+      partition = partitioner.partition("test-topic", "tenant-1", "span-" + i, 32);
+      assertTrue(
+          partition >= 0 && partition <= 7,
+          "actual partition not in expected range. partition: " + partition);
+    }
+
+    // Test case 2: tenant-2 belong to group-2 (partitions: [8 to 15])
+    for (int i = 1; i <= testCount; i++) {
+      partition = partitioner.partition("test-topic", "tenant-2", "span-" + i, 32);
+      assertTrue(
+          partition >= 8 && partition <= 15,
+          "actual partition not in expected range. partition: " + partition);
+    }
+
+    // Test case 3: tenant-3 belong to group-2 (partitions: [8 to 15])
+    for (int i = 1; i <= testCount; i++) {
+      partition = partitioner.partition("test-topic", "tenant-3", "span-" + i, 32);
+      assertTrue(
+          partition >= 8 && partition <= 15,
+          "actual partition not in expected range. partition: " + partition);
+    }
+
+    // Test case 4: groupKey=unknown should use default group [16 to 31]
+    for (int i = 1; i <= testCount; i++) {
+      partition = partitioner.partition("test-topic", "unknown", "span-" + i, 32);
+      assertTrue(
+          partition >= 16 && partition <= 31,
+          "actual partition not in expected range. partition: " + partition);
+    }
+  }
+
   private PartitionerConfigServiceClient getTestServiceClient() {
     return (profileName) ->
         new WeightedGroupProfile(
@@ -182,6 +235,7 @@ public class WeightedGroupPartitionerTest {
                 .addGroups(newPartitionerGroup("group1", new String[] {"tenant-1"}, 25))
                 .addGroups(newPartitionerGroup("group2", new String[] {"tenant-2", "tenant-3"}, 25))
                 .setDefaultGroupWeight(50)
+                .setName(profileName)
                 .build());
   }
 
