@@ -50,10 +50,13 @@ public class WeightedGroupPartitioner<K, V> implements StreamPartitioner<K, V> {
   @Override
   public Integer partition(String topic, K key, V value, int numPartitions) {
     WeightedGroup groupConfig = this.getGroupConfig(topic, key, value);
-    int fromIndexInclusive = (int) Math.floor(groupConfig.getNormalizedFractionalStart() * numPartitions);
-    int toIndexExclusive = (int) Math.floor(groupConfig.getNormalizedFractionalEnd() * numPartitions);
+    int fromIndexInclusive =
+        (int) Math.floor(groupConfig.getNormalizedFractionalStart() * numPartitions);
+    int toIndexExclusive =
+        (int) Math.floor(groupConfig.getNormalizedFractionalEnd() * numPartitions);
     // Partition indexing starts from 0.
-    // Every group size should be at least one. This prevents divide by zero error in delegate partitioner.
+    // Every group size should be at least one. This prevents divide by zero error in delegate
+    // partitioner.
     int numPartitionsForGroup = Math.max(toIndexExclusive - fromIndexInclusive, 1);
 
     // partitioner by contract can return null.
