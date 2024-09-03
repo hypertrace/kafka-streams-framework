@@ -23,7 +23,7 @@ public class LoggingStateRestoreListener implements StateRestoreListener {
     long toRestore = end - start;
     totalToRestore.put(topicPartition, toRestore);
     startTimes.put(topicPartition, System.currentTimeMillis());
-    LOGGER.info(
+    LOGGER.debug(
         "Starting restoration for [{}] on topic-partition [{}] total to restore [{}]",
         store,
         topicPartition,
@@ -38,7 +38,7 @@ public class LoggingStateRestoreListener implements StateRestoreListener {
     long currentProgress = batchCompleted + restoredSoFar.getOrDefault(topicPartition, 0L);
     double percentComplete = (double) currentProgress / totalToRestore.get(topicPartition);
 
-    LOGGER.info(
+    LOGGER.debug(
         "Completed [{}] for [{}]% of total restoration for [{}] on [{}]",
         batchCompleted, formatter.format(percentComplete * 100.00), store, topicPartition);
     restoredSoFar.put(topicPartition, currentProgress);
@@ -47,7 +47,7 @@ public class LoggingStateRestoreListener implements StateRestoreListener {
   @Override
   public void onRestoreEnd(TopicPartition topicPartition, String store, long totalRestored) {
     long startTs = startTimes.remove(topicPartition);
-    LOGGER.info(
+    LOGGER.debug(
         "Restoration completed for [{}] on topic-partition [{}]. Total restored [{}] records. Duration [{}]",
         store,
         topicPartition,
