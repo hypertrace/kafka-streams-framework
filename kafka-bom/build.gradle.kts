@@ -4,8 +4,8 @@ plugins {
 }
 
 
-var kafkaVersion = "7.5.2"
-var kafkaCcsVersion = "$kafkaVersion-ccs"
+var confluentVersion = "7.7.0"
+var confluentCcsVersion = "$confluentVersion-ccs"
 var protobufVersion = "3.21.7"
 
 dependencies {
@@ -25,13 +25,13 @@ dependencies {
       because("https://www.tenable.com/cve/CVE-2024-25710")
     }
 
-    api("io.confluent:kafka-streams-avro-serde:$kafkaVersion")
-    api("io.confluent:kafka-protobuf-serializer:$kafkaVersion")
-    api("io.confluent:kafka-avro-serializer:$kafkaVersion")
-    api("io.confluent:kafka-streams-protobuf-serde:$kafkaVersion")
-    api("org.apache.kafka:kafka-clients:$kafkaCcsVersion")
-    api("org.apache.kafka:kafka-streams:$kafkaCcsVersion")
-    api("org.apache.kafka:kafka-streams-test-utils:$kafkaCcsVersion")
+    api("io.confluent:kafka-streams-avro-serde:$confluentVersion")
+    api("io.confluent:kafka-protobuf-serializer:$confluentVersion")
+    api("io.confluent:kafka-avro-serializer:$confluentVersion")
+    api("io.confluent:kafka-streams-protobuf-serde:$confluentVersion")
+    api("org.apache.kafka:kafka-clients:$confluentCcsVersion")
+    api("org.apache.kafka:kafka-streams:$confluentCcsVersion")
+    api("org.apache.kafka:kafka-streams-test-utils:$confluentCcsVersion")
     api("org.apache.avro:avro:1.11.3")
   }
 }
