@@ -13,12 +13,12 @@ import org.apache.kafka.common.serialization.Deserializer;
  * deserialization of byte arrays into Proto message objects by utilizing the provided Parser for
  * the specific Proto message type.
  *
- * <p>Motivation: In setups where both producers and consumers use the same Proto schemas, the need
- * for schema validation becomes redundant. The built-in {@code kafkaProtoSerdes} from Confluent
- * performs schema validation via the schema registry service, which introduces overhead. This
- * custom deserializer eliminates that overhead, simplifying the processing flow by bypassing schema
- * validation.
- *
+ * <p>Motivation: Since the proto. configurations are usually shared between the producer and the
+ * consumers,the field descriptors are well-known to both the parties. In cases when there are other
+ * mechanisms to validate proto. compatibilities schema validation becomes redundant and this class
+ * can be used in such cases. The built-in {@code kafkaProtoSerdes} from Confluent performs schema
+ * validation via the schema registry service, which introduces overhead. This custom deserializer
+ * eliminates that overhead, simplifying the processing flow by bypassing schema validation.
  *
  * <p>Usage: To use this class, create a subclass specifying the Proto message type, pass the
  * corresponding Parser to the superclass constructor, and configure Kafka to use the custom
