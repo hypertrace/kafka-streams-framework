@@ -15,7 +15,7 @@ dependencies {
       because("[https://nvd.nist.gov/vuln/detail/CVE-2023-34455] in 'org.apache.kafka:kafka-clients:*'")
       because("[https://nvd.nist.gov/vuln/detail/CVE-2023-43642]")
     }
-    api("com.google.protobuf:protobuf-java-util:3.21.7") {
+    api("com.google.protobuf:protobuf-java-util:$protobufVersion") {
       because("https://nvd.nist.gov/vuln/detail/CVE-2022-3171")
     }
     api("com.squareup.okio:okio:3.4.0") {
