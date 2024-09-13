@@ -15,6 +15,7 @@ dependencies {
 
   api("org.apache.kafka:kafka-clients")
   api("org.apache.avro:avro")
+  api("com.google.protobuf:protobuf-java-util:3.25.4")
 
   testImplementation("org.junit.jupiter:junit-jupiter:5.8.2")
 }
