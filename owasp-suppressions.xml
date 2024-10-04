@@ -1,18 +1,3 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
-    <suppress>
-        <notes><![CDATA[
-   Any hypertrace core dep
-   ]]></notes>
-        <packageUrl regex="true">^pkg:maven/org\.hypertrace\.core\..*@.*$</packageUrl>
-        <cpe>cpe:/a:grpc:grpc</cpe>
-    </suppress>
-    <suppress>
-        <notes><![CDATA[
-   file name: jackson-databind-2.15.2.jar
-   Excluding the disputed vulnerability (CVE-2023-35116)
-   ]]></notes>
-        <packageUrl regex="true">^pkg:maven/com\.fasterxml\.jackson\.core/jackson\-databind@.*$</packageUrl>
-        <vulnerabilityName>CVE-2023-35116</vulnerabilityName>
-    </suppress>
 </suppressions>
