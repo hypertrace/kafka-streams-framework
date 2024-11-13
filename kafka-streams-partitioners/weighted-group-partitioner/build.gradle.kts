@@ -26,5 +26,5 @@ dependencies {
   testImplementation("org.junit-pioneer:junit-pioneer:1.7.1")
   testImplementation("org.mockito:mockito-core:4.5.1")
   testRuntimeOnly("org.apache.logging.log4j:log4j-slf4j-impl:2.17.2")
-  testRuntimeOnly("io.grpc:grpc-netty:1.56.0")
+  testRuntimeOnly("io.grpc:grpc-netty:1.68.1")
 }
