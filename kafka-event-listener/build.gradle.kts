@@ -13,7 +13,7 @@ dependencies {
   api(platform(project(":kafka-bom")))
   api("org.apache.kafka:kafka-clients")
 
-  implementation("org.hypertrace.core.serviceframework:platform-metrics:0.1.80")
+  implementation("org.hypertrace.core.serviceframework:platform-metrics:0.1.81")
   testImplementation("org.junit.jupiter:junit-jupiter:5.9.2")
   testImplementation("org.mockito:mockito-core:5.2.0")
   testImplementation("com.github.ben-manes.caffeine:caffeine:3.1.8")
