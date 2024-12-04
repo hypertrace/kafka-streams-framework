@@ -41,11 +41,7 @@ public class WeightedGroupProfile {
                 groupConfig ->
                     buildEntriesForEachMember(groupConfig, weightConsumedSoFar, totalWeight))
             .collect(Collectors.toUnmodifiableMap(Entry::getKey, Entry::getValue));
-    this.defaultGroup =
-        new WeightedGroup(
-            "[[default]]",
-            weightConsumedSoFar.get(),
-            weightConsumedSoFar.addAndGet(defaultGroupWeight / totalWeight));
+    this.defaultGroup = new WeightedGroup("[[default]]", weightConsumedSoFar.get(), 1.0);
 
     log.info(
         "partitioner default group config - weight range: {}, range end: {}",
