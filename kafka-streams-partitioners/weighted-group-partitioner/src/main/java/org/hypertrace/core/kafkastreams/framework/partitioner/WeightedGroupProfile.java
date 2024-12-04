@@ -45,7 +45,7 @@ public class WeightedGroupProfile {
         new WeightedGroup(
             "[[default]]",
             weightConsumedSoFar.get(),
-            weightConsumedSoFar.addAndGet(defaultGroupWeight / totalWeight));
+            1.0);
 
     log.info(
         "partitioner default group config - weight range: {}, range end: {}",
