@@ -286,7 +286,7 @@ public class WeightedGroupPartitionerTest {
                     .addGroups(newPartitionerGroup("group1", new String[] {"tenant-1"}, 37))
                     .addGroups(
                         newPartitionerGroup("group2", new String[] {"tenant-2", "tenant-3"}, 29))
-                    .addGroups(newPartitionerGroup("group1", new String[] {"tenant-4"}, 16))
+                    .addGroups(newPartitionerGroup("group3", new String[] {"tenant-4"}, 16))
                     .setDefaultGroupWeight(20)
                     .setName(profileName)
                     .build());
