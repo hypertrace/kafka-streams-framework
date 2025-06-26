@@ -18,7 +18,7 @@ dependencies {
   api(platform(project(":kafka-bom")))
   api("org.apache.kafka:kafka-streams")
   api("io.confluent:kafka-streams-avro-serde")
-  api("org.hypertrace.core.grpcutils:grpc-client-utils:0.13.15")
+  api("org.hypertrace.core.grpcutils:grpc-client-utils:0.13.14")
 
   implementation("org.apache.avro:avro")
   implementation("org.apache.kafka:kafka-clients")
