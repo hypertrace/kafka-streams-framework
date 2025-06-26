@@ -15,6 +15,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '11'
+
       - name: Unit test
         uses: hypertrace/github-actions/gradle@main
         with:
@@ -48,6 +53,14 @@ jobs:
   dependency-check:
     runs-on: ubuntu-24.04
     steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '11'
       - name: Dependency Check
         uses: hypertrace/github-actions/dependency-check@main
         with:
