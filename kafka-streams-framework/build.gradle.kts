@@ -18,12 +18,12 @@ dependencies {
   api(platform(project(":kafka-bom")))
   api("org.apache.kafka:kafka-streams")
   api("io.confluent:kafka-streams-avro-serde")
-  api("org.hypertrace.core.grpcutils:grpc-client-utils:0.13.7")
+  api("org.hypertrace.core.grpcutils:grpc-client-utils:0.13.14")
 
   implementation("org.apache.avro:avro")
   implementation("org.apache.kafka:kafka-clients")
-  implementation("org.hypertrace.core.serviceframework:platform-metrics:0.1.81")
-  implementation("org.hypertrace.core.serviceframework:platform-service-framework:0.1.81")
+  implementation("org.hypertrace.core.serviceframework:platform-metrics:0.1.89")
+  implementation("org.hypertrace.core.serviceframework:platform-service-framework:0.1.89")
   implementation("org.apache.commons:commons-lang3:3.12.0")
 
   testCompileOnly("org.projectlombok:lombok:1.18.26")

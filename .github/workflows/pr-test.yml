@@ -7,13 +7,18 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       # Set fetch-depth: 0 to fetch commit history and tags for use in version calculation
       - name: Check out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '11'
 
       - name: Unit test
         uses: hypertrace/github-actions/gradle@main
@@ -46,7 +51,13 @@ jobs:
           files: ./**/build/test-results/**/*.xml
 
   dependency-check:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '11'
       - name: Dependency Check
         uses: hypertrace/github-actions/dependency-check@main
+        with:
+          nvd-api-key: ${{ secrets.NVD_API_KEY }}
