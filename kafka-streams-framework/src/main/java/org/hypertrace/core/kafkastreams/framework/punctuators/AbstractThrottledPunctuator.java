@@ -1,5 +1,7 @@
 package org.hypertrace.core.kafkastreams.framework.punctuators;
 
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -8,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.processor.Punctuator;
@@ -20,12 +23,26 @@ public abstract class AbstractThrottledPunctuator<T> implements Punctuator {
   private final Clock clock;
   private final KeyValueStore<Long, List<T>> eventStore;
   private final ThrottledPunctuatorConfig config;
+  private final CustomMetrics customMetrics;
 
   public AbstractThrottledPunctuator(
       Clock clock, ThrottledPunctuatorConfig config, KeyValueStore<Long, List<T>> eventStore) {
     this.clock = clock;
     this.config = config;
     this.eventStore = eventStore;
+    this.customMetrics = null;
+  }
+
+  public AbstractThrottledPunctuator(
+      Clock clock,
+      ThrottledPunctuatorConfig config,
+      KeyValueStore<Long, List<T>> eventStore,
+      MeterRegistry meterRegistry,
+      String name) {
+    this.clock = clock;
+    this.config = config;
+    this.eventStore = eventStore;
+    this.customMetrics = new CustomMetrics(meterRegistry, name);
   }
 
   public void scheduleTask(long scheduleMs, T event) {
@@ -85,6 +102,7 @@ public abstract class AbstractThrottledPunctuator<T> implements Punctuator {
         Map<Long, List<T>> rescheduledTasks = new HashMap<>();
         // loop through all events for this key until yield timeout is reached
         int i = 0;
+        int tasksBefore = totalProcessedTasks;
         for (; i < events.size() && !shouldYieldNow(startTime); i++) {
           T event = events.get(i);
           totalProcessedTasks++;
@@ -96,6 +114,10 @@ public abstract class AbstractThrottledPunctuator<T> implements Punctuator {
                       rescheduledTasks
                           .computeIfAbsent(normalize(rescheduleTimestamp), (t) -> new ArrayList<>())
                           .add(event));
+        }
+        if (customMetrics != null) {
+          customMetrics.setTaskProcessingStatus(
+              totalProcessedTasks > tasksBefore ? 0 : 1); // 0 if at least one task processed
         }
         // process all reschedules
         rescheduledTasks.forEach(
@@ -124,6 +146,9 @@ public abstract class AbstractThrottledPunctuator<T> implements Punctuator {
         }
       }
     }
+    if (customMetrics != null) {
+      customMetrics.setEventStoreSize(currentTotalEventCount());
+    }
     log.debug(
         "processed windows: {}, processed tasks: {}, time taken: {}",
         totalProcessedWindows,
@@ -147,5 +172,47 @@ public abstract class AbstractThrottledPunctuator<T> implements Punctuator {
 
   private long normalize(long timestamp) {
     return timestamp - (timestamp % config.getWindowMs());
+  }
+
+  private int currentTotalEventCount() {
+    int count = 0;
+    try (KeyValueIterator<Long, List<T>> it = eventStore.all()) {
+      while (it.hasNext()) {
+        count += Optional.ofNullable(it.next().value).map(List::size).orElse(0);
+      }
+    }
+    return count;
+  }
+
+  protected final class CustomMetrics {
+    private final AtomicInteger eventStoreSize;
+    private final AtomicInteger noTasksProcessed;
+
+    public CustomMetrics(MeterRegistry meterRegistry, String name) {
+      this.noTasksProcessed = new AtomicInteger(1); // default to 1 = no tasks processed
+      this.eventStoreSize = new AtomicInteger(0);
+      if (meterRegistry != null) {
+        Gauge.builder("abstract.throttled.punctuator.task.size", eventStoreSize, AtomicInteger::get)
+            .description("Total number of scheduled tasks across all windows")
+            .tag("name", name)
+            .register(meterRegistry);
+        Gauge.builder(
+                "abstract.throttled.punctuator.no.tasks.processed",
+                noTasksProcessed,
+                AtomicInteger::get)
+            .description(
+                "1 if no tasks processed in last punctuate call, 0 if at least one processed")
+            .tag("name", name)
+            .register(meterRegistry);
+      }
+    }
+
+    public void setTaskProcessingStatus(int value) {
+      this.noTasksProcessed.set(value);
+    }
+
+    public void setEventStoreSize(int value) {
+      this.eventStoreSize.set(value);
+    }
   }
 }
