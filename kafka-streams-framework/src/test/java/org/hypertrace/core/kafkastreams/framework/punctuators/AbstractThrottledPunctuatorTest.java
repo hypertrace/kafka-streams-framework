@@ -194,7 +194,7 @@ class AbstractThrottledPunctuatorTest {
         Clock clock,
         ThrottledPunctuatorConfig config,
         KeyValueStore<Long, List<String>> objectStore) {
-      super(clock, config, objectStore, null);
+      super(clock, config, objectStore);
     }
 
     void setReturnResult(String object, TaskResult result) {

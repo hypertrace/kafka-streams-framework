@@ -41,6 +41,11 @@ public abstract class AbstractThrottledPunctuator<T> implements Punctuator {
     this.meterRegistry = meterRegistry;
   }
 
+  public AbstractThrottledPunctuator(
+      Clock clock, ThrottledPunctuatorConfig config, KeyValueStore<Long, List<T>> eventStore) {
+    this(clock, config, eventStore, null);
+  }
+
   public void scheduleTask(long scheduleMs, T event) {
     long windowMs = normalize(scheduleMs);
     List<T> events = Optional.ofNullable(eventStore.get(windowMs)).orElse(new ArrayList<>());
