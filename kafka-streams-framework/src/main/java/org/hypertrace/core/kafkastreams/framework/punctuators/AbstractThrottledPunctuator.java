@@ -141,7 +141,7 @@ public abstract class AbstractThrottledPunctuator<T> implements Punctuator {
     }
     long timeTakenMs = clock.millis() - startTime;
     boolean yielded = shouldYieldNow(startTime);
-    updateEventCountGauge(totalEventCount, yielded);
+    updateTotalEventCountGauge(totalEventCount, yielded);
 
     log.debug(
         "processed windows: {}, processed tasks: {}, total events: {}, time taken: {}ms",
@@ -169,7 +169,7 @@ public abstract class AbstractThrottledPunctuator<T> implements Punctuator {
     return timestamp - (timestamp % config.getWindowMs());
   }
 
-  private void updateEventCountGauge(int totalEventCount, boolean yielded) {
+  private void updateTotalEventCountGauge(int totalEventCount, boolean yielded) {
     if (meterRegistry == null) {
       return;
     }
