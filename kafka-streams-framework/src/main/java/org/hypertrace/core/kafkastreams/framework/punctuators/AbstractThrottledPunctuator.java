@@ -23,21 +23,28 @@ public abstract class AbstractThrottledPunctuator<T> implements Punctuator {
   private final KeyValueStore<Long, List<T>> eventStore;
   private final ThrottledPunctuatorConfig config;
   private final MeterRegistry meterRegistry;
+  private final String punctuatorName;
 
   public AbstractThrottledPunctuator(
       Clock clock,
       ThrottledPunctuatorConfig config,
       KeyValueStore<Long, List<T>> eventStore,
-      MeterRegistry meterRegistry) {
+      MeterRegistry meterRegistry,
+      String punctuatorName) {
     this.clock = clock;
     this.config = config;
     this.eventStore = eventStore;
     this.meterRegistry = meterRegistry;
+    this.punctuatorName = resolvePunctuatorName(punctuatorName);
   }
 
   public AbstractThrottledPunctuator(
       Clock clock, ThrottledPunctuatorConfig config, KeyValueStore<Long, List<T>> eventStore) {
-    this(clock, config, eventStore, null);
+    this(clock, config, eventStore, null, null);
+  }
+
+  private String resolvePunctuatorName(String name) {
+    return (name != null && !name.isBlank()) ? name : this.getClass().getSimpleName();
   }
 
   public void scheduleTask(long scheduleMs, T event) {
@@ -165,12 +172,12 @@ public abstract class AbstractThrottledPunctuator<T> implements Punctuator {
 
   private void publishMetrics(int totalProcessedTasks, boolean yielded) {
     if (meterRegistry != null) {
-      String className = this.getClass().getSimpleName();
       meterRegistry
-          .counter("throttled.punctuator.processed.task.count", Tags.of("class", className))
+          .counter(
+              "throttled.punctuator.processed.task.count", Tags.of("punctuator", punctuatorName))
           .increment(totalProcessedTasks);
       meterRegistry.gauge(
-          "throttled.punctuator.yielded", Tags.of("class", className), yielded ? 1 : 0);
+          "throttled.punctuator.yielded", Tags.of("punctuator", punctuatorName), yielded ? 1 : 0);
     }
   }
 }
