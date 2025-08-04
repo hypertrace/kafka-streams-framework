@@ -10,8 +10,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.processor.Punctuator;
@@ -21,10 +19,6 @@ import org.hypertrace.core.kafkastreams.framework.punctuators.action.TaskResult;
 
 @Slf4j
 public abstract class AbstractThrottledPunctuator<T> implements Punctuator {
-  private static final ConcurrentHashMap<String, AtomicInteger> totalEventCountGauge =
-      new ConcurrentHashMap<>();
-  private static final String TOTAL_EVENT_COUNT_GAUGE_NAME =
-      "abstract.throttled.punctuator.total.events.count";
   private final Clock clock;
   private final KeyValueStore<Long, List<T>> eventStore;
   private final ThrottledPunctuatorConfig config;
@@ -86,7 +80,6 @@ public abstract class AbstractThrottledPunctuator<T> implements Punctuator {
     long startTime = clock.millis();
     int totalProcessedWindows = 0;
     int totalProcessedTasks = 0;
-    int totalEventCount = 0;
 
     log.debug(
         "Processing tasks with throttling yield of {} until timestamp {}",
@@ -100,7 +93,6 @@ public abstract class AbstractThrottledPunctuator<T> implements Punctuator {
         totalProcessedWindows++;
         List<T> events = kv.value;
         long windowMs = kv.key;
-        totalEventCount += events.size();
         // collect all tasks to be rescheduled by key to perform bulk reschedules
         Map<Long, List<T>> rescheduledTasks = new HashMap<>();
         // loop through all events for this key until yield timeout is reached
@@ -144,16 +136,13 @@ public abstract class AbstractThrottledPunctuator<T> implements Punctuator {
         }
       }
     }
-    long timeTakenMs = clock.millis() - startTime;
     boolean yielded = shouldYieldNow(startTime);
-    updateTotalEventCountGauge(totalEventCount, yielded);
-
+    publishMetrics(totalProcessedTasks, yielded);
     log.debug(
-        "processed windows: {}, processed tasks: {}, total events: {}, time taken: {}ms",
+        "processed windows: {}, processed tasks: {}, time taken: {}",
         totalProcessedWindows,
         totalProcessedTasks,
-        totalEventCount,
-        timeTakenMs);
+        clock.millis() - startTime);
   }
 
   protected abstract TaskResult executeTask(long punctuateTimestamp, T object);
@@ -174,22 +163,14 @@ public abstract class AbstractThrottledPunctuator<T> implements Punctuator {
     return timestamp - (timestamp % config.getWindowMs());
   }
 
-  private void updateTotalEventCountGauge(int totalEventCount, boolean yielded) {
-    if (meterRegistry == null) {
-      return;
+  private void publishMetrics(int totalProcessedTasks, boolean yielded) {
+    if (meterRegistry != null) {
+      String className = this.getClass().getSimpleName();
+      meterRegistry
+          .counter("throttled.punctuator.processed.task.count", Tags.of("class", className))
+          .increment(totalProcessedTasks);
+      meterRegistry.gauge(
+          "throttled.punctuator.yielded", Tags.of("class", className), yielded ? 1 : 0);
     }
-
-    String tagValue = String.valueOf(yielded);
-
-    AtomicInteger gauge =
-        totalEventCountGauge.computeIfAbsent(
-            tagValue,
-            key -> {
-              AtomicInteger newGauge = new AtomicInteger(0);
-              meterRegistry.gauge(TOTAL_EVENT_COUNT_GAUGE_NAME, Tags.of("yielded", key), newGauge);
-              return newGauge;
-            });
-
-    gauge.set(totalEventCount);
   }
 }
