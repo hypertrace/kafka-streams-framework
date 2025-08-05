@@ -24,7 +24,7 @@ dependencies {
   implementation("org.apache.kafka:kafka-clients")
   implementation("org.hypertrace.core.serviceframework:platform-metrics:0.1.89")
   implementation("org.hypertrace.core.serviceframework:platform-service-framework:0.1.89")
-  implementation("org.apache.commons:commons-lang3:3.12.0")
+  implementation("org.apache.commons:commons-lang3:3.18.0")
 
   testCompileOnly("org.projectlombok:lombok:1.18.26")
   testAnnotationProcessor("org.projectlombok:lombok:1.18.26")
