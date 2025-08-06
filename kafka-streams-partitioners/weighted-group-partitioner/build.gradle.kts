@@ -15,7 +15,7 @@ dependencies {
 
   api(platform(project(":kafka-bom")))
   api("org.apache.kafka:kafka-streams")
-  api("org.hypertrace.core.grpcutils:grpc-client-utils:0.13.14")
+  api("org.hypertrace.core.grpcutils:grpc-client-utils:0.13.16")
   api("com.typesafe:config:1.4.2")
   implementation("com.google.guava:guava:32.0.1-jre")
   implementation("org.hypertrace.core.grpcutils:grpc-context-utils:0.13.14")

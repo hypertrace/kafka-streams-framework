@@ -22,6 +22,10 @@ dependencies {
     api("org.apache.commons:commons-compress:1.26.0") {
       because("https://www.tenable.com/cve/CVE-2024-25710")
     }
+    api("org.apache.commons:commons-lang3:3.18.0") {
+      because("CVE-2025-48924 is fixed in 3.18.0")
+    }
+
 
     api("io.confluent:kafka-streams-avro-serde:$confluentVersion")
     api("io.confluent:kafka-protobuf-serializer:$confluentVersion")
@@ -30,6 +34,6 @@ dependencies {
     api("org.apache.kafka:kafka-clients:$confluentCcsVersion")
     api("org.apache.kafka:kafka-streams:$confluentCcsVersion")
     api("org.apache.kafka:kafka-streams-test-utils:$confluentCcsVersion")
-    api("org.apache.avro:avro:1.11.4")
+    api("org.apache.avro:avro:1.12.0")
   }
 }

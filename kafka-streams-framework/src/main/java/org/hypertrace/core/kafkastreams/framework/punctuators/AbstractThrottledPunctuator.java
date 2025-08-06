@@ -1,5 +1,7 @@
 package org.hypertrace.core.kafkastreams.framework.punctuators;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tags;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -20,12 +22,29 @@ public abstract class AbstractThrottledPunctuator<T> implements Punctuator {
   private final Clock clock;
   private final KeyValueStore<Long, List<T>> eventStore;
   private final ThrottledPunctuatorConfig config;
+  private final MeterRegistry meterRegistry;
+  private final String punctuatorName;
 
   public AbstractThrottledPunctuator(
-      Clock clock, ThrottledPunctuatorConfig config, KeyValueStore<Long, List<T>> eventStore) {
+      Clock clock,
+      ThrottledPunctuatorConfig config,
+      KeyValueStore<Long, List<T>> eventStore,
+      MeterRegistry meterRegistry,
+      String punctuatorName) {
     this.clock = clock;
     this.config = config;
     this.eventStore = eventStore;
+    this.meterRegistry = meterRegistry;
+    this.punctuatorName = resolvePunctuatorName(punctuatorName);
+  }
+
+  public AbstractThrottledPunctuator(
+      Clock clock, ThrottledPunctuatorConfig config, KeyValueStore<Long, List<T>> eventStore) {
+    this(clock, config, eventStore, null, null);
+  }
+
+  private String resolvePunctuatorName(String name) {
+    return (name != null && !name.isBlank()) ? name : this.getClass().getSimpleName();
   }
 
   public void scheduleTask(long scheduleMs, T event) {
@@ -124,6 +143,8 @@ public abstract class AbstractThrottledPunctuator<T> implements Punctuator {
         }
       }
     }
+    boolean yielded = shouldYieldNow(startTime);
+    publishMetrics(totalProcessedTasks, yielded);
     log.debug(
         "processed windows: {}, processed tasks: {}, time taken: {}",
         totalProcessedWindows,
@@ -147,5 +168,16 @@ public abstract class AbstractThrottledPunctuator<T> implements Punctuator {
 
   private long normalize(long timestamp) {
     return timestamp - (timestamp % config.getWindowMs());
+  }
+
+  private void publishMetrics(int totalProcessedTasks, boolean yielded) {
+    if (meterRegistry != null) {
+      meterRegistry
+          .counter(
+              "throttled.punctuator.processed.task.count", Tags.of("punctuator", punctuatorName))
+          .increment(totalProcessedTasks);
+      meterRegistry.gauge(
+          "throttled.punctuator.yielded", Tags.of("punctuator", punctuatorName), yielded ? 1 : 0);
+    }
   }
 }
