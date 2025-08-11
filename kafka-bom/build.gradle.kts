@@ -6,7 +6,7 @@ plugins {
 
 var confluentVersion = "7.7.0"
 var confluentCcsVersion = "$confluentVersion-ccs"
-var protobufVersion = "3.25.5"
+var protobufVersion = "3.25.8"
 
 dependencies {
   constraints {
