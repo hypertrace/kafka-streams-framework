@@ -11,8 +11,8 @@ tasks.test {
 }
 
 dependencies {
-  annotationProcessor("org.projectlombok:lombok:1.18.26")
-  compileOnly("org.projectlombok:lombok:1.18.26")
+  annotationProcessor("org.projectlombok:lombok:1.18.38")
+  compileOnly("org.projectlombok:lombok:1.18.38")
 
   api(project(":kafka-streams-serdes"))
   api(platform(project(":kafka-bom")))
@@ -26,8 +26,8 @@ dependencies {
   implementation("org.hypertrace.core.serviceframework:platform-service-framework:0.1.89")
   implementation("org.apache.commons:commons-lang3:3.18.0")
 
-  testCompileOnly("org.projectlombok:lombok:1.18.26")
-  testAnnotationProcessor("org.projectlombok:lombok:1.18.26")
+  testCompileOnly("org.projectlombok:lombok:1.18.38")
+  testAnnotationProcessor("org.projectlombok:lombok:1.18.38")
   testImplementation("org.apache.kafka:kafka-streams-test-utils")
   testImplementation("org.junit.jupiter:junit-jupiter:5.9.2")
   testImplementation("org.junit-pioneer:junit-pioneer:2.0.0")
