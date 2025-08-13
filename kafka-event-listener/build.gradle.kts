@@ -7,8 +7,8 @@ plugins {
 }
 
 dependencies {
-  annotationProcessor("org.projectlombok:lombok:1.18.26")
-  compileOnly("org.projectlombok:lombok:1.18.26")
+  annotationProcessor("org.projectlombok:lombok:1.18.38")
+  compileOnly("org.projectlombok:lombok:1.18.38")
 
   api(platform(project(":kafka-bom")))
   api("org.apache.kafka:kafka-clients")

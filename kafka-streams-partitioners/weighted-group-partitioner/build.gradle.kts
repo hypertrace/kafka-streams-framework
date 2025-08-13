@@ -10,8 +10,8 @@ tasks.test {
 }
 
 dependencies {
-  annotationProcessor("org.projectlombok:lombok:1.18.24")
-  compileOnly("org.projectlombok:lombok:1.18.24")
+  annotationProcessor("org.projectlombok:lombok:1.18.38")
+  compileOnly("org.projectlombok:lombok:1.18.38")
 
   api(platform(project(":kafka-bom")))
   api("org.apache.kafka:kafka-streams")

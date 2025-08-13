@@ -13,8 +13,8 @@ tasks.test {
 dependencies {
   api(platform(project(":kafka-bom")))
 
-  annotationProcessor("org.projectlombok:lombok:1.18.24")
-  compileOnly("org.projectlombok:lombok:1.18.24")
+  annotationProcessor("org.projectlombok:lombok:1.18.38")
+  compileOnly("org.projectlombok:lombok:1.18.38")
 
   implementation("com.google.guava:guava:32.0.1-jre")
   implementation("org.apache.avro:avro")
