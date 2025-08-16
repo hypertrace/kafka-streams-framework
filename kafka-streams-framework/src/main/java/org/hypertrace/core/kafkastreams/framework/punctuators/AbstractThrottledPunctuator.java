@@ -135,6 +135,7 @@ public abstract class AbstractThrottledPunctuator<T> implements Punctuator {
           } else {
             // can directly delete key from store
             eventStore.delete(windowMs);
+            log.debug("Deleted empty window for ts: {}", windowMs);
           }
         } else {
           ArrayList<T> windowTasks = new ArrayList<>(events.subList(i, events.size()));
