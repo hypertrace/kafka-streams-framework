@@ -32,7 +32,7 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t kafka-clients-scan:latest scan-context
+          docker build -t kafka-clients-scan scan-context
 
       - name: Run Trivy vulnerability scanner
         uses: hypertrace/github-actions/trivy-image-scan@main
