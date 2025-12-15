@@ -1,9 +1,6 @@
 name: Trivy Dependency Scan
 
 on:
-  schedule:
-    # Run daily at 2 AM UTC
-    - cron: '0 2 * * *'
   workflow_dispatch:
   pull_request:
     paths:
@@ -27,24 +24,7 @@ jobs:
             https://packages.confluent.io/maven/org/apache/kafka/kafka-clients/7.9.5-ccs/kafka-clients-7.9.5-ccs.jar
 
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
+        uses: hypertrace/github-actions/trivy-image-scan@main
         with:
-          scan-type: 'fs'
-          scan-ref: 'artifacts/kafka-clients-7.9.5-ccs.jar'
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-          severity: 'CRITICAL,HIGH'
-
-      - name: Upload Trivy results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
-        with:
-          sarif_file: 'trivy-results.sarif'
-
-      - name: Run Trivy vulnerability scanner (table output)
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: 'fs'
-          scan-ref: 'artifacts/kafka-clients-7.9.5-ccs.jar'
-          format: 'table'
-          severity: 'CRITICAL,HIGH'
+          image: artifacts/kafka-clients-7.9.5-ccs.jar
+          output-mode: github
