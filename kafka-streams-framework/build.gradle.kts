@@ -4,6 +4,7 @@ plugins {
   id("org.hypertrace.publish-plugin")
   id("org.hypertrace.jacoco-report-plugin")
   id("org.hypertrace.avro-plugin")
+  id("org.hypertrace.docker-java-application-plugin")
 }
 
 tasks.test {
