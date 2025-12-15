@@ -8,34 +8,30 @@ on:
       - '.github/workflows/trivy-dependency-scan.yml'
 
 jobs:
-  scan-kafka-clients:
+  build:
     runs-on: ubuntu-22.04
-    permissions:
-      contents: read
-      security-events: write
     steps:
-      - name: Checkout code
+      # Set fetch-depth: 0 to fetch commit history and tags for use in version calculation
+      - name: Check out code
         uses: actions/checkout@v4
+        with:
+          ref: ${{github.event.pull_request.head.ref}}
+          repository: ${{github.event.pull_request.head.repo.full_name}}
+          fetch-depth: 0
 
-      - name: Download Kafka Clients JAR
-        run: |
-          mkdir -p scan-context
-          curl -o scan-context/kafka-clients-7.9.5-ccs.jar \
-            https://packages.confluent.io/maven/org/apache/kafka/kafka-clients/7.9.5-ccs/kafka-clients-7.9.5-ccs.jar
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_READ_USER }}
+          password: ${{ secrets.DOCKERHUB_READ_TOKEN }}
 
-      - name: Create Dockerfile for scanning
-        run: |
-          cat > scan-context/Dockerfile <<EOF
-          FROM scratch
-          COPY kafka-clients-7.9.5-ccs.jar /
-          EOF
-
-      - name: Build Docker image
-        run: |
-          docker build -t kafka-clients-scan scan-context
+      - name: Build with Gradle
+        uses: hypertrace/github-actions/gradle@main
+        with:
+          args: assemble dockerBuildImages
 
       - name: Run Trivy vulnerability scanner
         uses: hypertrace/github-actions/trivy-image-scan@main
         with:
-          image: kafka-clients-scan
+          image: hypertrace/kafka-streams-framework
           output-mode: github
