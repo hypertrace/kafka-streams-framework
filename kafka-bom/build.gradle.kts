@@ -3,7 +3,6 @@ plugins {
   id("org.hypertrace.publish-plugin")
 }
 
-
 var confluentVersion = "7.9.5"
 var confluentCcsVersion = "$confluentVersion-ccs"
 var protobufVersion = "3.25.8"
@@ -24,10 +23,6 @@ dependencies {
     }
     api("org.apache.commons:commons-lang3:3.18.0") {
       because("CVE-2025-48924 is fixed in 3.18.0")
-    }
-    api("org.lz4:lz4-java:1.8.1") {
-      because("[https://nvd.nist.gov/vuln/detail/CVE-2025-12183] in org.lz4:lz4-java:1.8.0")
-      because("CVE-2025-12183 is fixed in 1.8.1")
     }
 
     api("io.confluent:kafka-streams-avro-serde:$confluentVersion")

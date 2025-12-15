@@ -29,14 +29,13 @@ subprojects {
     }
   }
 
-  // Handle lz4-java redirect capability conflict:
-  // Sonatype added a redirect from org.lz4:lz4-java:1.8.1 -> at.yawk.lz4:lz4-java:1.8.1 to address CVE-2025-12183.
-  // Both artifacts declare the same capability, causing a conflict when upgrading from Kafka's org.lz4:lz4-java:1.8.0.
-  // This resolution strategy tells Gradle to automatically select the highest version when this conflict occurs.
+  // Replace org.lz4:lz4-java with at.yawk.lz4:lz4-java to handle Sonatype relocation
+  // This MUST be in each consuming repo - BOMs cannot enforce this automatically
   configurations.all {
-    resolutionStrategy.capabilitiesResolution.withCapability("org.lz4:lz4-java") {
-      select("at.yawk.lz4:lz4-java:1.8.1")
-      because("Both org.lz4 and at.yawk.lz4 provide lz4-java due to Sonatype redirect")
+    resolutionStrategy.dependencySubstitution {
+      substitute(module("org.lz4:lz4-java"))
+        .using(module("at.yawk.lz4:lz4-java:1.10.1"))
+        .because("org.lz4:lz4-java has been relocated to at.yawk.lz4:lz4-java to fix CVE-2025-12183")
     }
   }
 }
