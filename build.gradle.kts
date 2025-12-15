@@ -9,6 +9,7 @@ plugins {
   id("org.hypertrace.jacoco-report-plugin") version "0.3.0" apply false
   id("org.hypertrace.code-style-plugin") version "2.1.2" apply false
   id("org.owasp.dependencycheck") version "12.1.3"
+  id("org.hypertrace.docker-java-application-plugin") version "0.11.3"
 }
 
 subprojects {
