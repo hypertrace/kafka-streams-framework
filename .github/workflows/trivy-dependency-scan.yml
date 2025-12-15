@@ -1,0 +1,50 @@
+name: Trivy Dependency Scan
+
+on:
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'kafka-bom/build.gradle.kts'
+      - '.github/workflows/trivy-dependency-scan.yml'
+
+jobs:
+  scan-kafka-clients:
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Kafka Clients JAR
+        run: |
+          mkdir -p artifacts
+          curl -o artifacts/kafka-clients-7.9.5-ccs.jar \
+            https://packages.confluent.io/maven/org/apache/kafka/kafka-clients/7.9.5-ccs/kafka-clients-7.9.5-ccs.jar
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: 'artifacts/kafka-clients-7.9.5-ccs.jar'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Upload Trivy results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: Run Trivy vulnerability scanner (table output)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: 'artifacts/kafka-clients-7.9.5-ccs.jar'
+          format: 'table'
+          severity: 'CRITICAL,HIGH'
