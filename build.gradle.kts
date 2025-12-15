@@ -35,7 +35,7 @@ subprojects {
   // This resolution strategy tells Gradle to automatically select the highest version when this conflict occurs.
   configurations.all {
     resolutionStrategy.capabilitiesResolution.withCapability("org.lz4:lz4-java") {
-      select("at.yawk.lz4:lz4-java:1.10.1")
+      select("at.yawk.lz4:lz4-java:1.8.1")
       because("Both org.lz4 and at.yawk.lz4 provide lz4-java due to Sonatype redirect")
     }
   }
