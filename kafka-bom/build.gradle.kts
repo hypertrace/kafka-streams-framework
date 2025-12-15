@@ -27,7 +27,7 @@ dependencies {
     }
     api("at.yawk.lz4:lz4-java:1.10.1") {
       because("[https://nvd.nist.gov/vuln/detail/CVE-2025-66566] in at.yawk.lz4:lz4-java (lz4-java-1.8.1.jar)")
-      because("CVE-2025-66566 is fixed in 1.8.1")
+      because("CVE-2025-66566 is fixed in 1.10.1")
     }
 
     api("io.confluent:kafka-streams-avro-serde:$confluentVersion")
