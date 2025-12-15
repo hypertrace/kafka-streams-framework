@@ -19,12 +19,23 @@ jobs:
 
       - name: Download Kafka Clients JAR
         run: |
-          mkdir -p artifacts
-          curl -o artifacts/kafka-clients-7.9.5-ccs.jar \
+          mkdir -p scan-context
+          curl -o scan-context/kafka-clients-7.9.5-ccs.jar \
             https://packages.confluent.io/maven/org/apache/kafka/kafka-clients/7.9.5-ccs/kafka-clients-7.9.5-ccs.jar
+
+      - name: Create Dockerfile for scanning
+        run: |
+          cat > scan-context/Dockerfile <<EOF
+          FROM scratch
+          COPY kafka-clients-7.9.5-ccs.jar /
+          EOF
+
+      - name: Build Docker image
+        run: |
+          docker build -t kafka-clients-scan:7.9.5-ccs scan-context
 
       - name: Run Trivy vulnerability scanner
         uses: hypertrace/github-actions/trivy-image-scan@main
         with:
-          image: artifacts/kafka-clients-7.9.5-ccs.jar
+          image: kafka-clients-scan:7.9.5-ccs
           output-mode: github
