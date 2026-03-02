@@ -18,7 +18,6 @@ import org.rocksdb.CompactionStyle;
 import org.rocksdb.CompressionType;
 import org.rocksdb.InfoLogLevel;
 import org.rocksdb.Options;
-import org.rocksdb.WriteOptions;
 
 public class BoundedMemoryConfigSetter implements RocksDBConfigSetter {
 
@@ -55,9 +54,10 @@ public class BoundedMemoryConfigSetter implements RocksDBConfigSetter {
     }
 
     if (configs.containsKey(WAL_DISABLED)) {
-      options.setWalDir("");
-      WriteOptions writeOptions = new WriteOptions();
-      writeOptions.setDisableWAL(true);
+      boolean disableWAL = Boolean.parseBoolean(String.valueOf(configs.get(WAL_DISABLED)));
+      // WriteOptions.setDisableWAL() is per-write and cannot be applied through RocksDBConfigSetter.
+      // setManualWalFlush suppresses implicit WAL flushes after each write; closest option-level equivalent.
+      options.setManualWalFlush(disableWAL);
     }
 
     if (configs.containsKey(OPTIMIZE_FOR_POINT_LOOKUPS)) {
