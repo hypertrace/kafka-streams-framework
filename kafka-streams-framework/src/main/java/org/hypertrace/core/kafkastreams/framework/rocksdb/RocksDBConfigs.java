@@ -36,6 +36,7 @@ public class RocksDBConfigs {
   public static final String DIRECT_READS_ENABLED = rocksdbPrefix("direct.reads.enabled");
   public static final String OPTIMIZE_FOR_POINT_LOOKUPS = rocksdbPrefix("optimize.point.lookups");
   public static final String LOG_LEVEL_CONFIG = rocksdbPrefix("log.level");
+  public static final String WAL_DISABLED = rocksdbPrefix("disable.wal");
 
   public static String rocksdbPrefix(String configKey) {
     return ROCKS_DB_PREFIX + configKey;

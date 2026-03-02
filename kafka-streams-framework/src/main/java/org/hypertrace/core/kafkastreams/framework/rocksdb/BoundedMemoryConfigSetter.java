@@ -8,6 +8,7 @@ import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.MAX_SIZE_AMPLIFICATION_PERCENT;
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.OPTIMIZE_FOR_POINT_LOOKUPS;
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.PERIODIC_COMPACTION_SECONDS;
+import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.WAL_DISABLED;
 
 import java.util.Map;
 import org.apache.kafka.streams.state.RocksDBConfigSetter;
@@ -50,6 +51,12 @@ public class BoundedMemoryConfigSetter implements RocksDBConfigSetter {
 
     if (configs.containsKey(DIRECT_READS_ENABLED)) {
       options.setUseDirectReads(Boolean.valueOf(String.valueOf(configs.get(DIRECT_READS_ENABLED))));
+    }
+
+    if (configs.containsKey(WAL_DISABLED) && Boolean.parseBoolean(String.valueOf(configs.get(WAL_DISABLED)))) {
+      // WriteOptions.setDisableWAL() is per-write and cannot be applied through RocksDBConfigSetter.
+      // setManualWalFlush suppresses implicit WAL flushes after each write; closest option-level equivalent.
+      options.setManualWalFlush(true);
     }
 
     if (configs.containsKey(OPTIMIZE_FOR_POINT_LOOKUPS)) {
