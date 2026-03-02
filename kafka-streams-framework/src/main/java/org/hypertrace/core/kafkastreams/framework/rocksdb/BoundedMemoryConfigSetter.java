@@ -53,11 +53,10 @@ public class BoundedMemoryConfigSetter implements RocksDBConfigSetter {
       options.setUseDirectReads(Boolean.valueOf(String.valueOf(configs.get(DIRECT_READS_ENABLED))));
     }
 
-    if (configs.containsKey(WAL_DISABLED)) {
-      boolean disableWAL = Boolean.parseBoolean(String.valueOf(configs.get(WAL_DISABLED)));
+    if (configs.containsKey(WAL_DISABLED) && Boolean.parseBoolean(String.valueOf(configs.get(WAL_DISABLED)))) {
       // WriteOptions.setDisableWAL() is per-write and cannot be applied through RocksDBConfigSetter.
       // setManualWalFlush suppresses implicit WAL flushes after each write; closest option-level equivalent.
-      options.setManualWalFlush(disableWAL);
+      options.setManualWalFlush(true);
     }
 
     if (configs.containsKey(OPTIMIZE_FOR_POINT_LOOKUPS)) {
