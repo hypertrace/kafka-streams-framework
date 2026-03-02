@@ -8,6 +8,7 @@ import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.MAX_SIZE_AMPLIFICATION_PERCENT;
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.OPTIMIZE_FOR_POINT_LOOKUPS;
 import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.PERIODIC_COMPACTION_SECONDS;
+import static org.hypertrace.core.kafkastreams.framework.rocksdb.RocksDBConfigs.WAL_DISABLED;
 
 import java.util.Map;
 import org.apache.kafka.streams.state.RocksDBConfigSetter;
@@ -17,6 +18,7 @@ import org.rocksdb.CompactionStyle;
 import org.rocksdb.CompressionType;
 import org.rocksdb.InfoLogLevel;
 import org.rocksdb.Options;
+import org.rocksdb.WriteOptions;
 
 public class BoundedMemoryConfigSetter implements RocksDBConfigSetter {
 
@@ -50,6 +52,12 @@ public class BoundedMemoryConfigSetter implements RocksDBConfigSetter {
 
     if (configs.containsKey(DIRECT_READS_ENABLED)) {
       options.setUseDirectReads(Boolean.valueOf(String.valueOf(configs.get(DIRECT_READS_ENABLED))));
+    }
+
+    if (configs.containsKey(WAL_DISABLED)) {
+      options.setWalDir("");
+      WriteOptions writeOptions = new WriteOptions();
+      writeOptions.setDisableWAL(true);
     }
 
     if (configs.containsKey(OPTIMIZE_FOR_POINT_LOOKUPS)) {
