@@ -1,4 +1,4 @@
-package org.hypertrace.core.kafkastreams.framework;
+package org.hypertrace.core.kafkastreams.framework.interceptors;
 
 import java.util.Collection;
 import java.util.List;

@@ -46,6 +46,8 @@ import org.apache.kafka.streams.errors.LogAndContinueExceptionHandler;
 import org.apache.kafka.streams.kstream.KStream;
 import org.hypertrace.core.grpcutils.client.GrpcChannelRegistry;
 import org.hypertrace.core.grpcutils.client.GrpcRegistryConfig;
+import org.hypertrace.core.kafkastreams.framework.interceptors.StreamsBuilderWithInterceptor;
+import org.hypertrace.core.kafkastreams.framework.interceptors.metrics.MetricsInterceptorFactory;
 import org.hypertrace.core.kafkastreams.framework.listeners.LoggingStateListener;
 import org.hypertrace.core.kafkastreams.framework.listeners.LoggingStateRestoreListener;
 import org.hypertrace.core.kafkastreams.framework.rocksdb.BoundedMemoryConfigSetter;
@@ -103,8 +105,13 @@ public abstract class KafkaStreamsApp extends PlatformService {
       // build topologies
       Map<String, KStream<?, ?>> sourceStreams = new HashMap<>();
       StreamsBuilder streamsBuilder = new StreamsBuilder();
+
+      // initialize MetricsInterceptorFactory
+      MetricsInterceptorFactory metricsInterceptorFactory = new MetricsInterceptorFactory();
       streamsBuilder =
-          new StreamsBuilderWithInterceptor(streamsBuilder, List.of(MetricsProcessor::new));
+          new StreamsBuilderWithInterceptor(
+              streamsBuilder, List.of(metricsInterceptorFactory::create));
+
       streamsBuilder = buildTopology(streamsConfig, streamsBuilder, sourceStreams);
       this.topology = streamsBuilder.build();
 
