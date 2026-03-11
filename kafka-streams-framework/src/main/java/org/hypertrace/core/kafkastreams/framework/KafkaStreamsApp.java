@@ -104,13 +104,10 @@ public abstract class KafkaStreamsApp extends PlatformService {
       streamsConfig = mergeProperties(getBaseStreamsConfig(), getJobStreamsConfig(getAppConfig()));
       // build topologies
       Map<String, KStream<?, ?>> sourceStreams = new HashMap<>();
-      StreamsBuilder streamsBuilder = new StreamsBuilder();
-
       // initialize MetricsInterceptorFactory
       MetricsInterceptorFactory metricsInterceptorFactory = new MetricsInterceptorFactory();
-      streamsBuilder =
-          new StreamsBuilderWithInterceptor(
-              streamsBuilder, List.of(metricsInterceptorFactory::create));
+      StreamsBuilder streamsBuilder =
+          new StreamsBuilderWithInterceptor(List.of(metricsInterceptorFactory::create));
 
       streamsBuilder = buildTopology(streamsConfig, streamsBuilder, sourceStreams);
       this.topology = streamsBuilder.build();
