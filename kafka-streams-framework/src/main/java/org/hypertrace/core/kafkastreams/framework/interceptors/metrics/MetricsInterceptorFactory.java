@@ -5,8 +5,8 @@ import java.util.Collections;
 import org.hypertrace.core.serviceframework.metrics.PlatformMetricsRegistry;
 
 public class MetricsInterceptorFactory {
-  private static final String TIME_LAG_COUNTER_NAME = "time_lag";
-  private static final String NUM_RECORDS_COUNTER_NAME = "num_records";
+  private static final String TIME_LAG_COUNTER_NAME = "kafka_records_time_lag";
+  private static final String NUM_RECORDS_COUNTER_NAME = "kafka_records_count";
 
   private final Counter timeLagCounter;
   private final Counter numRecordsCounter;

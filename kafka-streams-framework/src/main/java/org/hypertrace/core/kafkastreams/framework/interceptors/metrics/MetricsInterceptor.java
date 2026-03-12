@@ -16,7 +16,6 @@ public class MetricsInterceptor implements Processor {
 
   @Override
   public void process(Record record) {
-    System.out.println("Inside custom processor");
     timeLagCounter.increment(System.currentTimeMillis() - record.timestamp());
     numRecordsCounter.increment();
   }
