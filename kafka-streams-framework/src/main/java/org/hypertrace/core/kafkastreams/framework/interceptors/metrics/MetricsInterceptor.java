@@ -15,7 +15,6 @@ public class MetricsInterceptor implements ConsumerInterceptor<Object, Object> {
 
   @Override
   public ConsumerRecords<Object, Object> onConsume(ConsumerRecords<Object, Object> records) {
-    System.out.println("Hello world! 2.0");
     for (ConsumerRecord<Object, Object> record : records) {
       timeLagCounter.increment(System.currentTimeMillis() - record.timestamp());
       numRecordsCounter.increment();
@@ -35,7 +34,6 @@ public class MetricsInterceptor implements ConsumerInterceptor<Object, Object> {
 
   @Override
   public void configure(Map<String, ?> configs) {
-    System.out.println("Hello world! 3.0");
     this.timeLagCounter = PlatformMetricsRegistry.getMeterRegistry().counter(TIME_LAG_COUNTER_NAME);
     this.numRecordsCounter =
         PlatformMetricsRegistry.getMeterRegistry().counter(NUM_RECORDS_COUNTER_NAME);
