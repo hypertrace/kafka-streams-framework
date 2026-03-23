@@ -29,9 +29,6 @@ dependencies {
       because("[https://nvd.nist.gov/vuln/detail/CVE-2025-12183] in org.lz4:lz4-java:1.8.0")
       because("CVE-2025-12183 is fixed in 1.8.1")
     }
-    api("org.eclipse.jetty:jetty-bom:11.0.26") {
-      because("CVE-2025-5115 is fixed in 11.0.26")
-    }
 
     api("io.confluent:kafka-streams-avro-serde:$confluentVersion")
     api("io.confluent:kafka-protobuf-serializer:$confluentVersion")
@@ -40,6 +37,6 @@ dependencies {
     api("org.apache.kafka:kafka-clients:$confluentCcsVersion")
     api("org.apache.kafka:kafka-streams:$confluentCcsVersion")
     api("org.apache.kafka:kafka-streams-test-utils:$confluentCcsVersion")
-    api("org.apache.avro:avro:1.12.0")
+    api("org.apache.avro:avro:1.12.1")
   }
 }
