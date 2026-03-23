@@ -5,19 +5,17 @@ import java.util.Map;
 import org.apache.kafka.clients.consumer.ConsumerInterceptor;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.hypertrace.core.serviceframework.metrics.PlatformMetricsRegistry;
 
 public class MetricsInterceptor implements ConsumerInterceptor<Object, Object> {
-
-  private final Counter timeLagCounter;
-  private final Counter numRecordsCounter;
-
-  MetricsInterceptor(Counter numRecordsCounter, Counter timeLagCounter) {
-    this.numRecordsCounter = numRecordsCounter;
-    this.timeLagCounter = timeLagCounter;
-  }
+  private static final String TIME_LAG_COUNTER_NAME = "kafka_records_time_lag";
+  private static final String NUM_RECORDS_COUNTER_NAME = "kafka_records_count";
+  private Counter timeLagCounter;
+  private Counter numRecordsCounter;
 
   @Override
   public ConsumerRecords<Object, Object> onConsume(ConsumerRecords<Object, Object> records) {
+    System.out.println("Hello world! 2.0");
     for (ConsumerRecord<Object, Object> record : records) {
       timeLagCounter.increment(System.currentTimeMillis() - record.timestamp());
       numRecordsCounter.increment();
@@ -37,6 +35,9 @@ public class MetricsInterceptor implements ConsumerInterceptor<Object, Object> {
 
   @Override
   public void configure(Map<String, ?> configs) {
-    // no-op
+    System.out.println("Hello world! 3.0");
+    this.timeLagCounter = PlatformMetricsRegistry.getMeterRegistry().counter(TIME_LAG_COUNTER_NAME);
+    this.numRecordsCounter =
+        PlatformMetricsRegistry.getMeterRegistry().counter(NUM_RECORDS_COUNTER_NAME);
   }
 }
