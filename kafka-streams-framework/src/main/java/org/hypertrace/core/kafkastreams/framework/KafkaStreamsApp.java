@@ -20,6 +20,7 @@ import static org.apache.kafka.streams.StreamsConfig.METRICS_RECORDING_LEVEL_CON
 import static org.apache.kafka.streams.StreamsConfig.ROCKSDB_CONFIG_SETTER_CLASS_CONFIG;
 import static org.apache.kafka.streams.StreamsConfig.TOPOLOGY_OPTIMIZATION;
 import static org.apache.kafka.streams.StreamsConfig.consumerPrefix;
+import static org.apache.kafka.streams.StreamsConfig.mainConsumerPrefix;
 import static org.apache.kafka.streams.StreamsConfig.producerPrefix;
 import static org.apache.kafka.streams.StreamsConfig.topicPrefix;
 
@@ -252,9 +253,10 @@ public abstract class KafkaStreamsApp extends PlatformService {
     // ##########################
     baseStreamsConfig.put(topicPrefix(RETENTION_MS_CONFIG), TimeUnit.HOURS.toMillis(12));
 
-    // set metrics interceptor
+    // set metrics interceptor, only apply to the main consumer and skip instrumenting the restore
+    // consumer
     baseStreamsConfig.put(
-        consumerPrefix(INTERCEPTOR_CLASSES_CONFIG), MetricsInterceptor.class.getName());
+        mainConsumerPrefix(INTERCEPTOR_CLASSES_CONFIG), MetricsInterceptor.class.getName());
 
     return baseStreamsConfig;
   }
