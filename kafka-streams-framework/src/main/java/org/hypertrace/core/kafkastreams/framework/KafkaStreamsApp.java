@@ -5,6 +5,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.kafka.clients.consumer.ConsumerConfig.AUTO_OFFSET_RESET_CONFIG;
 import static org.apache.kafka.clients.consumer.ConsumerConfig.FETCH_MAX_WAIT_MS_CONFIG;
 import static org.apache.kafka.clients.consumer.ConsumerConfig.FETCH_MIN_BYTES_CONFIG;
+import static org.apache.kafka.clients.consumer.ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG;
 import static org.apache.kafka.clients.producer.ProducerConfig.ACKS_CONFIG;
 import static org.apache.kafka.clients.producer.ProducerConfig.BATCH_SIZE_CONFIG;
 import static org.apache.kafka.clients.producer.ProducerConfig.COMPRESSION_TYPE_CONFIG;
@@ -19,6 +20,7 @@ import static org.apache.kafka.streams.StreamsConfig.METRICS_RECORDING_LEVEL_CON
 import static org.apache.kafka.streams.StreamsConfig.ROCKSDB_CONFIG_SETTER_CLASS_CONFIG;
 import static org.apache.kafka.streams.StreamsConfig.TOPOLOGY_OPTIMIZATION;
 import static org.apache.kafka.streams.StreamsConfig.consumerPrefix;
+import static org.apache.kafka.streams.StreamsConfig.mainConsumerPrefix;
 import static org.apache.kafka.streams.StreamsConfig.producerPrefix;
 import static org.apache.kafka.streams.StreamsConfig.topicPrefix;
 
@@ -46,6 +48,7 @@ import org.apache.kafka.streams.errors.LogAndContinueExceptionHandler;
 import org.apache.kafka.streams.kstream.KStream;
 import org.hypertrace.core.grpcutils.client.GrpcChannelRegistry;
 import org.hypertrace.core.grpcutils.client.GrpcRegistryConfig;
+import org.hypertrace.core.kafkastreams.framework.interceptors.metrics.MetricsInterceptor;
 import org.hypertrace.core.kafkastreams.framework.listeners.LoggingStateListener;
 import org.hypertrace.core.kafkastreams.framework.listeners.LoggingStateRestoreListener;
 import org.hypertrace.core.kafkastreams.framework.rocksdb.BoundedMemoryConfigSetter;
@@ -102,6 +105,7 @@ public abstract class KafkaStreamsApp extends PlatformService {
       streamsConfig = mergeProperties(getBaseStreamsConfig(), getJobStreamsConfig(getAppConfig()));
       // build topologies
       Map<String, KStream<?, ?>> sourceStreams = new HashMap<>();
+
       StreamsBuilder streamsBuilder = new StreamsBuilder();
       streamsBuilder = buildTopology(streamsConfig, streamsBuilder, sourceStreams);
       this.topology = streamsBuilder.build();
@@ -248,6 +252,11 @@ public abstract class KafkaStreamsApp extends PlatformService {
     // Changelog topic configurations
     // ##########################
     baseStreamsConfig.put(topicPrefix(RETENTION_MS_CONFIG), TimeUnit.HOURS.toMillis(12));
+
+    // set metrics interceptor, only apply to the main consumer and skip instrumenting the restore
+    // consumer
+    baseStreamsConfig.put(
+        mainConsumerPrefix(INTERCEPTOR_CLASSES_CONFIG), MetricsInterceptor.class.getName());
 
     return baseStreamsConfig;
   }
