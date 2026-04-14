@@ -26,7 +26,7 @@ dependencies {
   testImplementation("org.junit.jupiter:junit-jupiter:5.8.2")
   testImplementation("org.junit-pioneer:junit-pioneer:1.7.1")
   testImplementation("org.mockito:mockito-core:4.5.1")
-  testRuntimeOnly("org.apache.logging.log4j:log4j-slf4j-impl:2.17.2")
+  testRuntimeOnly("org.apache.logging.log4j:log4j-slf4j-impl:2.25.3")
 }
 
 // Disabling compatibility check for the test avro definitions.
