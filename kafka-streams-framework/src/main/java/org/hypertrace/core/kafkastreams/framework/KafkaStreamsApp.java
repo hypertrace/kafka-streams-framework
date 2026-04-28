@@ -236,7 +236,7 @@ public abstract class KafkaStreamsApp extends PlatformService {
     // Consumer configurations
     // ##########################
     // default - earliest (kafka streams)
-    baseStreamsConfig.put(consumerPrefix(AUTO_OFFSET_RESET_CONFIG), "latest");
+    baseStreamsConfig.put(consumerPrefix(AUTO_OFFSET_RESET_CONFIG), "earliest");
     // Increase fetch max wait time for increased throughput, reduced network calls
     // default - 500ms
     baseStreamsConfig.put(consumerPrefix(FETCH_MAX_WAIT_MS_CONFIG), 5000);
