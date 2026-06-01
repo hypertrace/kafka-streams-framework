@@ -8,6 +8,10 @@ plugins {
 
 tasks.test {
   useJUnitPlatform()
+  jvmArgs(
+    "--add-opens=java.base/java.util=ALL-UNNAMED",
+    "--add-opens=java.base/java.lang=ALL-UNNAMED",
+  )
 }
 
 dependencies {
@@ -18,20 +22,20 @@ dependencies {
   api(platform(project(":kafka-bom")))
   api("org.apache.kafka:kafka-streams")
   api("io.confluent:kafka-streams-avro-serde")
-  api("org.hypertrace.core.grpcutils:grpc-client-utils:0.13.16")
+  api("org.hypertrace.core.grpcutils:grpc-client-utils:0.13.23")
 
   implementation("org.apache.avro:avro")
   implementation("org.apache.kafka:kafka-clients")
-  implementation("org.hypertrace.core.serviceframework:platform-metrics:0.1.89")
-  implementation("org.hypertrace.core.serviceframework:platform-service-framework:0.1.89")
+  implementation("org.hypertrace.core.serviceframework:platform-metrics:0.1.94")
+  implementation("org.hypertrace.core.serviceframework:platform-service-framework:0.1.94")
   implementation("org.apache.commons:commons-lang3:3.18.0")
 
   testCompileOnly("org.projectlombok:lombok:1.18.38")
   testAnnotationProcessor("org.projectlombok:lombok:1.18.38")
   testImplementation("org.apache.kafka:kafka-streams-test-utils")
   testImplementation("org.junit.jupiter:junit-jupiter:5.9.2")
-  testImplementation("org.junit-pioneer:junit-pioneer:2.0.0")
-  testImplementation("org.mockito:mockito-core:5.2.0")
+  testImplementation("org.junit-pioneer:junit-pioneer:2.3.0")
+  testImplementation("org.mockito:mockito-core:5.15.2")
   testImplementation("org.hamcrest:hamcrest-core:2.2")
   testRuntimeOnly("org.apache.logging.log4j:log4j-slf4j-impl:2.20.0")
 }
