@@ -16,7 +16,7 @@ dependencies {
 
   implementation(commonLibs.hypertrace.framework.metrics)
   testImplementation(commonLibs.junit.jupiter)
-  testImplementation(localLibs.mockito.core)
+  testImplementation(commonLibs.mockito.core)
   testImplementation(localLibs.caffeine)
 
   testFixturesApi(platform(project(":kafka-bom")))

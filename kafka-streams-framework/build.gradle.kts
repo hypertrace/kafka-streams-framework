@@ -32,9 +32,9 @@ dependencies {
   testImplementation(localLibs.kafka.streams.test.utils)
   testImplementation(commonLibs.junit.jupiter)
   testImplementation(localLibs.junit.pioneer)
-  testImplementation(localLibs.mockito.core)
+  testImplementation(commonLibs.mockito.core)
   testImplementation(localLibs.hamcrest.core)
-  testRuntimeOnly(localLibs.log4j.slf4j.impl)
+  testRuntimeOnly(commonLibs.log4j.slf4j2.impl)
 }
 
 // Disabling compatibility check for the test avro definitions.

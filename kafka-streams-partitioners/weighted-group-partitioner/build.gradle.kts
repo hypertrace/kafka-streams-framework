@@ -19,13 +19,13 @@ dependencies {
   api(commonLibs.hypertrace.grpcutils.client)
   api(commonLibs.typesafe.config)
   implementation(commonLibs.guava)
-  implementation(localLibs.hypertrace.grpcutils.context)
+  implementation(commonLibs.hypertrace.grpcutils.context)
   implementation(localLibs.hypertrace.config.partitioner.api)
   implementation(commonLibs.slf4j2.api)
 
   testImplementation(commonLibs.junit.jupiter)
   testImplementation(localLibs.junit.pioneer)
-  testImplementation(localLibs.mockito.core)
-  testRuntimeOnly(localLibs.log4j.slf4j.impl)
-  testRuntimeOnly(localLibs.grpc.netty)
+  testImplementation(commonLibs.mockito.core)
+  testRuntimeOnly(commonLibs.log4j.slf4j2.impl)
+  testRuntimeOnly(commonLibs.grpc.netty)
 }
