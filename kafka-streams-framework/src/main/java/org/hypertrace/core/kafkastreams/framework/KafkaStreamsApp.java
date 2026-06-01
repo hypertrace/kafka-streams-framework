@@ -264,9 +264,27 @@ public abstract class KafkaStreamsApp extends PlatformService {
 
   /**
    * Override in subclasses that want auto-sized {@code num.stream.threads}. Return a resolver
-   * configured with this app's replica count source. The framework only invokes this when {@code
+   * configured with this app's replica-count source. The framework only invokes this when {@code
    * num.stream.threads} is set to {@link StreamThreadsCountResolver#DYNAMIC_SENTINEL}; returning an
    * empty optional disables dynamic resolution and the app keeps whatever value was configured.
+   *
+   * <p>Apps that don't override this are unaffected — the default returns {@code Optional.empty()}
+   * and the framework leaves {@code num.stream.threads} exactly as configured. Apps that do
+   * override should supply replica count from wherever the deployment exposes it (e.g. the {@code
+   * REPLICA_COUNT} environment variable injected by the k8s template, or a HOCON config key).
+   *
+   * <p>Example:
+   *
+   * <pre>{@code
+   * @Override
+   * protected Optional<StreamThreadsCountResolver> getStreamThreadsCountResolver() {
+   *   final Optional<Integer> replicaCount =
+   *       ConfigUtils.optionalInteger(getAppConfig(), "replica.count");
+   *   return Optional.of(
+   *       new StreamThreadsCountResolver(
+   *           StreamThreadsCountResolver.optionalReplicaCount(replicaCount)));
+   * }
+   * }</pre>
    */
   protected Optional<StreamThreadsCountResolver> getStreamThreadsCountResolver() {
     return Optional.empty();
