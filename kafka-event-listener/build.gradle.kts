@@ -14,7 +14,7 @@ dependencies {
   api(platform(commonLibs.hypertrace.bom))
   api(commonLibs.kafka.clients)
 
-  implementation(commonLibs.hypertrace.framework.metrics.jakarta)
+  implementation(commonLibs.hypertrace.framework.metrics)
   testImplementation(commonLibs.junit.jupiter)
   testImplementation(localLibs.mockito.core)
   testImplementation(localLibs.caffeine)

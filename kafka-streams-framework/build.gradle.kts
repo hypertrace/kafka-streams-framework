@@ -23,8 +23,8 @@ dependencies {
 
   implementation(localLibs.avro)
   implementation(commonLibs.kafka.clients)
-  implementation(commonLibs.hypertrace.framework.metrics.jakarta)
-  implementation(commonLibs.hypertrace.framework.service.jakarta)
+  implementation(commonLibs.hypertrace.framework.metrics)
+  implementation(commonLibs.hypertrace.framework.service)
   implementation(commonLibs.commons.lang)
 
   testCompileOnly(commonLibs.lombok)
