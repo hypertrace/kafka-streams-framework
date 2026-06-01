@@ -21,8 +21,12 @@ subprojects {
 
   pluginManager.withPlugin("java") {
     configure<JavaPluginExtension> {
-      sourceCompatibility = JavaVersion.VERSION_17
-      targetCompatibility = JavaVersion.VERSION_17
+      // Use a Gradle toolchain so the build provisions and compiles with JDK 17
+      // regardless of the launcher JDK the CI action uses (the shared
+      // hypertrace gradle action launches with JDK 11).
+      toolchain {
+        languageVersion.set(JavaLanguageVersion.of(17))
+      }
 
       apply(plugin = "org.hypertrace.code-style-plugin")
     }
