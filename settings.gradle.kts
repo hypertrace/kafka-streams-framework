@@ -1,3 +1,5 @@
+import org.hypertrace.gradle.dependency.DependencyPluginSettingExtension
+
 rootProject.name = "kafka-streams-framework"
 
 pluginManagement {
@@ -10,6 +12,11 @@ pluginManagement {
 
 plugins {
   id("org.hypertrace.version-settings") version "0.3.0"
+  id("org.hypertrace.dependency-settings") version "0.2.0"
+}
+
+configure<DependencyPluginSettingExtension> {
+  catalogVersion.set("0.3.80")
 }
 
 include(":kafka-streams-framework")

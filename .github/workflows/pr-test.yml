@@ -18,7 +18,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'
 
       - name: Unit test
         uses: hypertrace/github-actions/gradle@main
@@ -56,7 +56,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'
       - name: Dependency Check
         uses: hypertrace/github-actions/dependency-check@main
         with:

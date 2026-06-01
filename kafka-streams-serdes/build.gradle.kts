@@ -1,9 +1,9 @@
 plugins {
   `java-library`
   jacoco
-  id("org.hypertrace.avro-plugin")
-  id("org.hypertrace.publish-plugin")
-  id("org.hypertrace.jacoco-report-plugin")
+  alias(commonLibs.plugins.hypertrace.publish)
+  alias(commonLibs.plugins.hypertrace.jacoco)
+  alias(localLibs.plugins.hypertrace.avro)
 }
 
 tasks.test {
@@ -12,11 +12,12 @@ tasks.test {
 
 dependencies {
   api(platform(project(":kafka-bom")))
+  api(platform(commonLibs.hypertrace.bom))
 
-  api("org.apache.kafka:kafka-clients")
-  api("org.apache.avro:avro")
+  api(commonLibs.kafka.clients)
+  api(localLibs.avro)
 
-  testImplementation("org.junit.jupiter:junit-jupiter:5.8.2")
+  testImplementation(commonLibs.junit.jupiter)
 }
 
 // Disabling compatibility check for the test avro definitions.

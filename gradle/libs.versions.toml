@@ -1,0 +1,25 @@
+[versions]
+mockito = "5.15.2"
+log4j = "2.20.0"
+caffeine = "3.1.8"
+junit-pioneer = "2.3.0"
+hypertrace-config = "0.1.73"
+hypertrace-grpcutils = "0.13.23"
+grpc = "1.68.1"
+hypertrace-avro-plugin = "0.5.1"
+
+[plugins]
+hypertrace-avro = { id = "org.hypertrace.avro-plugin", version.ref = "hypertrace-avro-plugin" }
+
+[libraries]
+junit-pioneer = { module = "org.junit-pioneer:junit-pioneer", version.ref = "junit-pioneer" }
+mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockito" }
+log4j-slf4j-impl = { module = "org.apache.logging.log4j:log4j-slf4j-impl", version.ref = "log4j" }
+hamcrest-core = { module = "org.hamcrest:hamcrest-core", version = "2.2" }
+caffeine = { module = "com.github.ben-manes.caffeine:caffeine", version.ref = "caffeine" }
+kafka-streams-avro-serde = { module = "io.confluent:kafka-streams-avro-serde" }
+kafka-streams-test-utils = { module = "org.apache.kafka:kafka-streams-test-utils" }
+avro = { module = "org.apache.avro:avro" }
+hypertrace-grpcutils-context = { module = "org.hypertrace.core.grpcutils:grpc-context-utils", version.ref = "hypertrace-grpcutils" }
+hypertrace-config-partitioner-api = { module = "org.hypertrace.config.service:partitioner-config-service-api", version.ref = "hypertrace-config" }
+grpc-netty = { module = "io.grpc:grpc-netty", version.ref = "grpc" }

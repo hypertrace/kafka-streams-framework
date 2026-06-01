@@ -1,43 +1,40 @@
 plugins {
   `java-library`
   jacoco
-  id("org.hypertrace.publish-plugin")
-  id("org.hypertrace.jacoco-report-plugin")
-  id("org.hypertrace.avro-plugin")
+  alias(commonLibs.plugins.hypertrace.publish)
+  alias(commonLibs.plugins.hypertrace.jacoco)
+  alias(localLibs.plugins.hypertrace.avro)
 }
 
 tasks.test {
   useJUnitPlatform()
-  jvmArgs(
-    "--add-opens=java.base/java.util=ALL-UNNAMED",
-    "--add-opens=java.base/java.lang=ALL-UNNAMED",
-  )
 }
 
 dependencies {
-  annotationProcessor("org.projectlombok:lombok:1.18.38")
-  compileOnly("org.projectlombok:lombok:1.18.38")
+  annotationProcessor(commonLibs.lombok)
+  compileOnly(commonLibs.lombok)
 
   api(project(":kafka-streams-serdes"))
   api(platform(project(":kafka-bom")))
+  api(platform(commonLibs.hypertrace.bom))
   api("org.apache.kafka:kafka-streams")
-  api("io.confluent:kafka-streams-avro-serde")
-  api("org.hypertrace.core.grpcutils:grpc-client-utils:0.13.23")
+  api(localLibs.kafka.streams.avro.serde)
+  api(commonLibs.hypertrace.grpcutils.client)
 
-  implementation("org.apache.avro:avro")
-  implementation("org.apache.kafka:kafka-clients")
-  implementation("org.hypertrace.core.serviceframework:platform-metrics:0.1.94")
-  implementation("org.hypertrace.core.serviceframework:platform-service-framework:0.1.94")
-  implementation("org.apache.commons:commons-lang3:3.18.0")
+  implementation(localLibs.avro)
+  implementation(commonLibs.kafka.clients)
+  implementation(commonLibs.hypertrace.framework.metrics.jakarta)
+  implementation(commonLibs.hypertrace.framework.service.jakarta)
+  implementation(commonLibs.commons.lang)
 
-  testCompileOnly("org.projectlombok:lombok:1.18.38")
-  testAnnotationProcessor("org.projectlombok:lombok:1.18.38")
-  testImplementation("org.apache.kafka:kafka-streams-test-utils")
-  testImplementation("org.junit.jupiter:junit-jupiter:5.9.2")
-  testImplementation("org.junit-pioneer:junit-pioneer:2.3.0")
-  testImplementation("org.mockito:mockito-core:5.15.2")
-  testImplementation("org.hamcrest:hamcrest-core:2.2")
-  testRuntimeOnly("org.apache.logging.log4j:log4j-slf4j-impl:2.20.0")
+  testCompileOnly(commonLibs.lombok)
+  testAnnotationProcessor(commonLibs.lombok)
+  testImplementation(localLibs.kafka.streams.test.utils)
+  testImplementation(commonLibs.junit.jupiter)
+  testImplementation(localLibs.junit.pioneer)
+  testImplementation(localLibs.mockito.core)
+  testImplementation(localLibs.hamcrest.core)
+  testRuntimeOnly(localLibs.log4j.slf4j.impl)
 }
 
 // Disabling compatibility check for the test avro definitions.

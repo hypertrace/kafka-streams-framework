@@ -1,9 +1,9 @@
 plugins {
   `java-library`
   jacoco
-  id("org.hypertrace.avro-plugin")
-  id("org.hypertrace.publish-plugin")
-  id("org.hypertrace.jacoco-report-plugin")
+  alias(commonLibs.plugins.hypertrace.publish)
+  alias(commonLibs.plugins.hypertrace.jacoco)
+  alias(localLibs.plugins.hypertrace.avro)
 }
 
 tasks.test {
@@ -12,21 +12,22 @@ tasks.test {
 
 dependencies {
   api(platform(project(":kafka-bom")))
+  api(platform(commonLibs.hypertrace.bom))
 
-  annotationProcessor("org.projectlombok:lombok:1.18.38")
-  compileOnly("org.projectlombok:lombok:1.18.38")
+  annotationProcessor(commonLibs.lombok)
+  compileOnly(commonLibs.lombok)
 
-  implementation("com.google.guava:guava:32.0.1-jre")
-  implementation("org.apache.avro:avro")
-  implementation("com.typesafe:config:1.4.2")
-  implementation("org.apache.kafka:kafka-clients")
+  implementation(commonLibs.guava)
+  implementation(localLibs.avro)
+  implementation(commonLibs.typesafe.config)
+  implementation(commonLibs.kafka.clients)
   implementation("org.apache.kafka:kafka-streams")
-  implementation("org.slf4j:slf4j-api:1.7.36")
+  implementation(commonLibs.slf4j2.api)
 
-  testImplementation("org.junit.jupiter:junit-jupiter:5.8.2")
-  testImplementation("org.junit-pioneer:junit-pioneer:1.7.1")
-  testImplementation("org.mockito:mockito-core:4.5.1")
-  testRuntimeOnly("org.apache.logging.log4j:log4j-slf4j-impl:2.17.2")
+  testImplementation(commonLibs.junit.jupiter)
+  testImplementation(localLibs.junit.pioneer)
+  testImplementation(localLibs.mockito.core)
+  testRuntimeOnly(localLibs.log4j.slf4j.impl)
 }
 
 // Disabling compatibility check for the test avro definitions.
