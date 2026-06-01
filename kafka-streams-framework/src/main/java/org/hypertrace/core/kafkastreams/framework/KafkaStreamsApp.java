@@ -16,6 +16,7 @@ import static org.apache.kafka.streams.StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CON
 import static org.apache.kafka.streams.StreamsConfig.DEFAULT_TIMESTAMP_EXTRACTOR_CLASS_CONFIG;
 import static org.apache.kafka.streams.StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG;
 import static org.apache.kafka.streams.StreamsConfig.METRICS_RECORDING_LEVEL_CONFIG;
+import static org.apache.kafka.streams.StreamsConfig.NUM_STREAM_THREADS_CONFIG;
 import static org.apache.kafka.streams.StreamsConfig.ROCKSDB_CONFIG_SETTER_CLASS_CONFIG;
 import static org.apache.kafka.streams.StreamsConfig.TOPOLOGY_OPTIMIZATION;
 import static org.apache.kafka.streams.StreamsConfig.consumerPrefix;
@@ -34,6 +35,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -49,6 +51,7 @@ import org.hypertrace.core.grpcutils.client.GrpcRegistryConfig;
 import org.hypertrace.core.kafkastreams.framework.listeners.LoggingStateListener;
 import org.hypertrace.core.kafkastreams.framework.listeners.LoggingStateRestoreListener;
 import org.hypertrace.core.kafkastreams.framework.rocksdb.BoundedMemoryConfigSetter;
+import org.hypertrace.core.kafkastreams.framework.threading.StreamThreadsCountResolver;
 import org.hypertrace.core.kafkastreams.framework.timestampextractors.UseWallclockTimeOnInvalidTimestamp;
 import org.hypertrace.core.kafkastreams.framework.topics.creator.KafkaTopicCreator;
 import org.hypertrace.core.kafkastreams.framework.util.ExceptionUtils;
@@ -105,6 +108,8 @@ public abstract class KafkaStreamsApp extends PlatformService {
       StreamsBuilder streamsBuilder = new StreamsBuilder();
       streamsBuilder = buildTopology(streamsConfig, streamsBuilder, sourceStreams);
       this.topology = streamsBuilder.build();
+
+      resolveDynamicStreamThreads(streamsConfig);
 
       getLogger().info("Finalized kafka streams configuration: {}", streamsConfig);
 
@@ -256,6 +261,43 @@ public abstract class KafkaStreamsApp extends PlatformService {
       Map<String, Object> streamsConfig,
       StreamsBuilder streamsBuilder,
       Map<String, KStream<?, ?>> sourceStreams);
+
+  /**
+   * Override in subclasses that want auto-sized {@code num.stream.threads}. Return a resolver
+   * configured with this app's replica count source. The framework only invokes this when {@code
+   * num.stream.threads} is set to {@link StreamThreadsCountResolver#DYNAMIC_SENTINEL}; returning an
+   * empty optional disables dynamic resolution and the app keeps whatever value was configured.
+   */
+  protected Optional<StreamThreadsCountResolver> getStreamThreadsCountResolver() {
+    return Optional.empty();
+  }
+
+  // Defensive: any unexpected failure in dynamic resolution must NOT prevent the app from starting.
+  // If something goes wrong, log and leave streamsProperties untouched so Kafka Streams uses
+  // whatever value was originally configured (or its own default).
+  private void resolveDynamicStreamThreads(Map<String, Object> streamsProperties) {
+    try {
+      if (!StreamThreadsCountResolver.isDynamic(streamsProperties)) {
+        return;
+      }
+      Optional<StreamThreadsCountResolver> resolver = getStreamThreadsCountResolver();
+      if (resolver.isEmpty()) {
+        getLogger()
+            .warn(
+                "{} is set to DYNAMIC but no StreamThreadsCountResolver is provided; leaving as-is",
+                NUM_STREAM_THREADS_CONFIG);
+        return;
+      }
+      int resolved = resolver.get().resolve(this.topology, streamsProperties);
+      streamsProperties.put(NUM_STREAM_THREADS_CONFIG, resolved);
+    } catch (Throwable throwable) {
+      getLogger()
+          .error(
+              "Unexpected error resolving dynamic {}; leaving config untouched",
+              NUM_STREAM_THREADS_CONFIG,
+              throwable);
+    }
+  }
 
   public Map<String, Object> getStreamsConfig(Config jobConfig) {
     return new HashMap<>(ConfigUtils.getFlatMapConfig(jobConfig, getStreamsConfigKey()));
