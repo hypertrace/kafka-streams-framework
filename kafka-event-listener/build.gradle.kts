@@ -1,25 +1,26 @@
 plugins {
   `java-library`
   jacoco
-  id("org.hypertrace.publish-plugin")
-  id("org.hypertrace.jacoco-report-plugin")
+  alias(commonLibs.plugins.hypertrace.publish)
+  alias(commonLibs.plugins.hypertrace.jacoco)
   id("java-test-fixtures")
 }
 
 dependencies {
-  annotationProcessor("org.projectlombok:lombok:1.18.38")
-  compileOnly("org.projectlombok:lombok:1.18.38")
+  annotationProcessor(commonLibs.lombok)
+  compileOnly(commonLibs.lombok)
 
   api(platform(project(":kafka-bom")))
-  api("org.apache.kafka:kafka-clients")
+  api(platform(commonLibs.hypertrace.bom))
+  api(commonLibs.kafka.clients)
 
-  implementation("org.hypertrace.core.serviceframework:platform-metrics:0.1.89")
-  testImplementation("org.junit.jupiter:junit-jupiter:5.9.2")
-  testImplementation("org.mockito:mockito-core:5.2.0")
-  testImplementation("com.github.ben-manes.caffeine:caffeine:3.1.8")
+  implementation(commonLibs.hypertrace.framework.metrics)
+  testImplementation(commonLibs.junit.jupiter)
+  testImplementation(commonLibs.mockito.core)
+  testImplementation(localLibs.caffeine)
 
   testFixturesApi(platform(project(":kafka-bom")))
-  testFixturesApi("org.apache.kafka:kafka-clients")
+  testFixturesApi(commonLibs.kafka.clients)
 }
 
 tasks.test {

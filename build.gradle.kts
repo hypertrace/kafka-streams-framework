@@ -2,30 +2,25 @@ import org.hypertrace.gradle.publishing.HypertracePublishExtension
 import org.hypertrace.gradle.publishing.License
 
 plugins {
-  id("org.hypertrace.repository-plugin") version "0.5.0"
-  id("org.hypertrace.ci-utils-plugin") version "0.4.0"
-  id("org.hypertrace.avro-plugin") version "0.5.1" apply false
-  id("org.hypertrace.publish-plugin") version "1.1.1" apply false
-  id("org.hypertrace.jacoco-report-plugin") version "0.3.0" apply false
-  id("org.hypertrace.code-style-plugin") version "2.1.2" apply false
-  id("org.owasp.dependencycheck") version "12.1.3"
+  alias(commonLibs.plugins.hypertrace.repository)
+  alias(commonLibs.plugins.hypertrace.ciutils)
+  alias(commonLibs.plugins.hypertrace.publish) apply false
+  alias(commonLibs.plugins.hypertrace.codestyle) apply false
+  alias(commonLibs.plugins.hypertrace.java.convention)
+  alias(commonLibs.plugins.owasp.dependencycheck)
+  alias(localLibs.plugins.hypertrace.avro) apply false
 }
 
 subprojects {
   group = "org.hypertrace.core.kafkastreams.framework"
-  pluginManager.withPlugin("org.hypertrace.publish-plugin") {
+  pluginManager.withPlugin(rootProject.commonLibs.plugins.hypertrace.publish.get().pluginId) {
     configure<HypertracePublishExtension> {
       license.set(License.APACHE_2_0)
     }
   }
 
   pluginManager.withPlugin("java") {
-    configure<JavaPluginExtension> {
-      sourceCompatibility = JavaVersion.VERSION_11
-      targetCompatibility = JavaVersion.VERSION_11
-
-      apply(plugin = "org.hypertrace.code-style-plugin")
-    }
+    apply(plugin = rootProject.commonLibs.plugins.hypertrace.codestyle.get().pluginId)
   }
 
   // Handle lz4-java redirect capability conflict:

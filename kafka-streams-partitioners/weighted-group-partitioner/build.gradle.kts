@@ -1,8 +1,8 @@
 plugins {
   `java-library`
   jacoco
-  id("org.hypertrace.publish-plugin")
-  id("org.hypertrace.jacoco-report-plugin")
+  alias(commonLibs.plugins.hypertrace.publish)
+  alias(commonLibs.plugins.hypertrace.jacoco)
 }
 
 tasks.test {
@@ -10,21 +10,22 @@ tasks.test {
 }
 
 dependencies {
-  annotationProcessor("org.projectlombok:lombok:1.18.38")
-  compileOnly("org.projectlombok:lombok:1.18.38")
+  annotationProcessor(commonLibs.lombok)
+  compileOnly(commonLibs.lombok)
 
   api(platform(project(":kafka-bom")))
+  api(platform(commonLibs.hypertrace.bom))
   api("org.apache.kafka:kafka-streams")
-  api("org.hypertrace.core.grpcutils:grpc-client-utils:0.13.16")
-  api("com.typesafe:config:1.4.2")
-  implementation("com.google.guava:guava:32.0.1-jre")
-  implementation("org.hypertrace.core.grpcutils:grpc-context-utils:0.13.16")
-  implementation("org.hypertrace.config.service:partitioner-config-service-api:0.1.73")
-  implementation("org.slf4j:slf4j-api:1.7.36")
+  api(commonLibs.hypertrace.grpcutils.client)
+  api(commonLibs.typesafe.config)
+  implementation(commonLibs.guava)
+  implementation(commonLibs.hypertrace.grpcutils.context)
+  implementation(localLibs.hypertrace.config.partitioner.api)
+  implementation(commonLibs.slf4j2.api)
 
-  testImplementation("org.junit.jupiter:junit-jupiter:5.8.2")
-  testImplementation("org.junit-pioneer:junit-pioneer:1.7.1")
-  testImplementation("org.mockito:mockito-core:4.5.1")
-  testRuntimeOnly("org.apache.logging.log4j:log4j-slf4j-impl:2.17.2")
-  testRuntimeOnly("io.grpc:grpc-netty:1.68.1")
+  testImplementation(commonLibs.junit.jupiter)
+  testImplementation(localLibs.junit.pioneer)
+  testImplementation(commonLibs.mockito.core)
+  testRuntimeOnly(commonLibs.log4j.slf4j2.impl)
+  testRuntimeOnly(commonLibs.grpc.netty)
 }
