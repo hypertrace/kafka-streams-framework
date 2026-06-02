@@ -3,6 +3,7 @@ package org.hypertrace.core.kafkastreams.framework.threading;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.function.Function;
 import java.util.function.IntSupplier;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.streams.Topology;
@@ -27,16 +28,19 @@ public class StreamThreadsCountResolver {
 
   private final DynamicStreamThreadsCountCalculator calculator;
   private final IntSupplier replicaCountSupplier;
+  private final Function<Properties, AdminClient> adminClientFactory;
 
   public StreamThreadsCountResolver(final IntSupplier replicaCountSupplier) {
-    this(new DynamicStreamThreadsCountCalculator(), replicaCountSupplier);
+    this(new DynamicStreamThreadsCountCalculator(), replicaCountSupplier, AdminClient::create);
   }
 
-  StreamThreadsCountResolver(
+  public StreamThreadsCountResolver(
       final DynamicStreamThreadsCountCalculator calculator,
-      final IntSupplier replicaCountSupplier) {
+      final IntSupplier replicaCountSupplier,
+      final Function<Properties, AdminClient> adminClientFactory) {
     this.calculator = calculator;
     this.replicaCountSupplier = replicaCountSupplier;
+    this.adminClientFactory = adminClientFactory;
   }
 
   /**
@@ -56,7 +60,8 @@ public class StreamThreadsCountResolver {
   public int resolve(final Topology topology, final Map<String, Object> streamsProperties) {
     try {
       final int replicas = requirePositiveReplicaCount();
-      try (final AdminClient adminClient = AdminClient.create(toProperties(streamsProperties))) {
+      try (final AdminClient adminClient =
+          adminClientFactory.apply(toProperties(streamsProperties))) {
         return calculator.compute(topology, adminClient, replicas);
       }
     } catch (final RuntimeException runtimeException) {

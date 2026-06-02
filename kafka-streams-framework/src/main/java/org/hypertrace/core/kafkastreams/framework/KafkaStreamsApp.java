@@ -36,6 +36,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -109,7 +110,8 @@ public abstract class KafkaStreamsApp extends PlatformService {
       streamsBuilder = buildTopology(streamsConfig, streamsBuilder, sourceStreams);
       this.topology = streamsBuilder.build();
 
-      resolveDynamicStreamThreads(streamsConfig);
+      resolveDynamicStreamThreads(streamsConfig)
+          .ifPresent(threads -> streamsConfig.put(NUM_STREAM_THREADS_CONFIG, threads));
 
       getLogger().info("Finalized kafka streams configuration: {}", streamsConfig);
 
@@ -290,13 +292,13 @@ public abstract class KafkaStreamsApp extends PlatformService {
     return Optional.empty();
   }
 
-  // Defensive: any unexpected failure in dynamic resolution must NOT prevent the app from starting.
-  // If something goes wrong, log and leave streamsProperties untouched so Kafka Streams uses
-  // whatever value was originally configured (or its own default).
-  private void resolveDynamicStreamThreads(Map<String, Object> streamsProperties) {
+  // Defensive: any unexpected runtime failure in dynamic resolution must NOT prevent the app from
+  // starting. If something goes wrong, log and return empty so the caller leaves the streams
+  // config untouched. JVM Errors (OOM, LinkageError, etc.) propagate — those are not recoverable.
+  private OptionalInt resolveDynamicStreamThreads(Map<String, Object> streamsProperties) {
     try {
       if (!StreamThreadsCountResolver.isDynamic(streamsProperties)) {
-        return;
+        return OptionalInt.empty();
       }
       Optional<StreamThreadsCountResolver> resolver = getStreamThreadsCountResolver();
       if (resolver.isEmpty()) {
@@ -304,16 +306,16 @@ public abstract class KafkaStreamsApp extends PlatformService {
             .warn(
                 "{} is set to DYNAMIC but no StreamThreadsCountResolver is provided; leaving as-is",
                 NUM_STREAM_THREADS_CONFIG);
-        return;
+        return OptionalInt.empty();
       }
-      int resolved = resolver.get().resolve(this.topology, streamsProperties);
-      streamsProperties.put(NUM_STREAM_THREADS_CONFIG, resolved);
-    } catch (Throwable throwable) {
+      return OptionalInt.of(resolver.get().resolve(this.topology, streamsProperties));
+    } catch (Exception exception) {
       getLogger()
           .error(
               "Unexpected error resolving dynamic {}; leaving config untouched",
               NUM_STREAM_THREADS_CONFIG,
-              throwable);
+              exception);
+      return OptionalInt.empty();
     }
   }
 
