@@ -17,12 +17,16 @@ import org.slf4j.LoggerFactory;
  * resolution fails.
  *
  * <p>The replica count is supplied externally — applications typically wire it from a {@code
- * REPLICA_COUNT} environment variable injected by the deployment template.
+ * REPLICA_COUNT} environment variable injected by the deployment template. A non-positive value
+ * (zero, negative, or unset) falls back to {@link #FALLBACK_NUM_STREAM_THREADS}.
  */
 public class StreamThreadsCountResolver {
 
   public static final String DYNAMIC_SENTINEL = "DYNAMIC";
-  static final int FALLBACK_NUM_STREAM_THREADS = 8;
+
+  // Reasonable default for current Hypertrace Kafka Streams apps. Apps that need a different
+  // value should configure a numeric num.stream.threads explicitly instead of using DYNAMIC.
+  public static final int FALLBACK_NUM_STREAM_THREADS = 8;
 
   private static final Logger logger = LoggerFactory.getLogger(StreamThreadsCountResolver.class);
 
@@ -55,15 +59,21 @@ public class StreamThreadsCountResolver {
 
   /**
    * Resolve a concrete thread count for the given topology. Returns {@link
-   * #FALLBACK_NUM_STREAM_THREADS} on any failure so the application can still start.
+   * #FALLBACK_NUM_STREAM_THREADS} when prerequisites are missing (non-positive replica count) or
+   * the AdminClient/calculator call fails, so the application can still start.
    */
   public int resolve(final Topology topology, final Map<String, Object> streamsProperties) {
-    try {
-      final int replicas = requirePositiveReplicaCount();
-      try (final AdminClient adminClient =
-          adminClientFactory.apply(toProperties(streamsProperties))) {
-        return calculator.compute(topology, adminClient, replicas);
-      }
+    final int replicas = replicaCountSupplier.getAsInt();
+    if (replicas <= 0) {
+      logger.warn(
+          "replica.count is non-positive ({}); falling back to {} stream threads",
+          replicas,
+          FALLBACK_NUM_STREAM_THREADS);
+      return FALLBACK_NUM_STREAM_THREADS;
+    }
+    try (final AdminClient adminClient =
+        adminClientFactory.apply(toProperties(streamsProperties))) {
+      return calculator.compute(topology, adminClient, replicas);
     } catch (final RuntimeException runtimeException) {
       logger.error(
           "Failed to compute dynamic num.stream.threads; falling back to {}",
@@ -75,12 +85,11 @@ public class StreamThreadsCountResolver {
 
   /**
    * Convenience adapter — given an {@code Optional<Integer>} replica-count source (the common
-   * config-loaded shape), produce a supplier that this resolver accepts.
+   * config-loaded shape), produce a supplier that yields the value when present and {@code 0} when
+   * absent (treated as a fallback signal by {@link #resolve}).
    */
   public static IntSupplier optionalReplicaCount(final Optional<Integer> replicaCount) {
-    return () ->
-        replicaCount.orElseThrow(
-            () -> new IllegalStateException("replica.count is not configured"));
+    return () -> replicaCount.orElse(0);
   }
 
   private static Properties toProperties(final Map<String, Object> streamsProperties) {
@@ -92,13 +101,5 @@ public class StreamThreadsCountResolver {
           }
         });
     return properties;
-  }
-
-  private int requirePositiveReplicaCount() {
-    final int replicas = replicaCountSupplier.getAsInt();
-    if (replicas <= 0) {
-      throw new IllegalStateException("replica.count must be positive, got " + replicas);
-    }
-    return replicas;
   }
 }

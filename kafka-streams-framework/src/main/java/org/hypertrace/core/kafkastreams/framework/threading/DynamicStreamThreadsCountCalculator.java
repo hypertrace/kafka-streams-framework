@@ -29,6 +29,9 @@ import org.slf4j.LoggerFactory;
  * <p>For each sub-topology the maximum partition count across its source topics is the number of
  * stream tasks. Summing across sub-topologies and dividing by the replica count yields the threads
  * each instance should run to keep all tasks active without idle threads.
+ *
+ * <p>Regex/pattern subscriptions ({@link Source#topicPattern()}) are not supported — those
+ * sub-topologies contribute zero tasks. No current app subscribes via regex.
  */
 public class DynamicStreamThreadsCountCalculator {
 
@@ -93,13 +96,19 @@ public class DynamicStreamThreadsCountCalculator {
       return Map.of();
     }
     final DescribeTopicsResult result = adminClient.describeTopics(topics);
+    final Map<String, KafkaFuture<TopicDescription>> futures = result.topicNameValues();
+
+    // Single shared deadline across all topics — worst-case wait is one timeout, not N.
+    // AdminClient retries the underlying RPC internally per its own retry config.
+    awaitAll(futures.values(), DESCRIBE_TOPICS_TIMEOUT_MILLIS);
+
     final Map<String, Integer> partitions = new HashMap<>();
-    for (final Entry<String, KafkaFuture<TopicDescription>> entry :
-        result.topicNameValues().entrySet()) {
+    for (final Entry<String, KafkaFuture<TopicDescription>> entry : futures.entrySet()) {
       try {
-        final TopicDescription description =
-            entry.getValue().get(DESCRIBE_TOPICS_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
-        partitions.put(entry.getKey(), description.partitions().size());
+        // Non-blocking after awaitAll: each future is already complete (or completed
+        // exceptionally). Per-topic handling stays so UnknownTopicOrPartitionException
+        // doesn't fail the whole batch.
+        partitions.put(entry.getKey(), entry.getValue().get().partitions().size());
       } catch (final ExecutionException executionException) {
         if (executionException.getCause() instanceof UnknownTopicOrPartitionException) {
           logger.warn(
@@ -114,11 +123,25 @@ public class DynamicStreamThreadsCountCalculator {
         Thread.currentThread().interrupt();
         throw new RuntimeException(
             "Interrupted while describing topic " + entry.getKey(), interruptedException);
-      } catch (final TimeoutException timeoutException) {
-        throw new RuntimeException(
-            "Timed out describing topic " + entry.getKey(), timeoutException);
       }
     }
     return Map.copyOf(partitions);
+  }
+
+  private static void awaitAll(
+      final java.util.Collection<KafkaFuture<TopicDescription>> futures, final long timeoutMillis) {
+    try {
+      KafkaFuture.allOf(futures.toArray(KafkaFuture[]::new))
+          .get(timeoutMillis, TimeUnit.MILLISECONDS);
+    } catch (final TimeoutException timeoutException) {
+      throw new RuntimeException(
+          "Timed out describing topics after " + timeoutMillis + "ms", timeoutException);
+    } catch (final InterruptedException interruptedException) {
+      Thread.currentThread().interrupt();
+      throw new RuntimeException("Interrupted describing topics", interruptedException);
+    } catch (final ExecutionException executionException) {
+      // At least one topic future completed exceptionally; per-future handling below classifies
+      // (UnknownTopicOrPartitionException → 0 partitions; everything else → fail).
+    }
   }
 }

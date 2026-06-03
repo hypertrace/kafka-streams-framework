@@ -36,7 +36,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.OptionalInt;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -110,8 +109,9 @@ public abstract class KafkaStreamsApp extends PlatformService {
       streamsBuilder = buildTopology(streamsConfig, streamsBuilder, sourceStreams);
       this.topology = streamsBuilder.build();
 
-      resolveDynamicStreamThreads(streamsConfig)
-          .ifPresent(threads -> streamsConfig.put(NUM_STREAM_THREADS_CONFIG, threads));
+      if (StreamThreadsCountResolver.isDynamic(streamsConfig)) {
+        streamsConfig.put(NUM_STREAM_THREADS_CONFIG, resolveDynamicStreamThreads(streamsConfig));
+      }
 
       getLogger().info("Finalized kafka streams configuration: {}", streamsConfig);
 
@@ -292,31 +292,31 @@ public abstract class KafkaStreamsApp extends PlatformService {
     return Optional.empty();
   }
 
-  // Defensive: any unexpected runtime failure in dynamic resolution must NOT prevent the app from
-  // starting. If something goes wrong, log and return empty so the caller leaves the streams
-  // config untouched. JVM Errors (OOM, LinkageError, etc.) propagate — those are not recoverable.
-  private OptionalInt resolveDynamicStreamThreads(Map<String, Object> streamsProperties) {
+  // Caller must check StreamThreadsCountResolver.isDynamic(...) before invoking. Always returns
+  // a concrete value: either the resolver's computed count or FALLBACK_NUM_STREAM_THREADS.
+  // The string sentinel "DYNAMIC" must never leak back to Kafka Streams config — it can't be
+  // parsed as an integer.
+  private int resolveDynamicStreamThreads(Map<String, Object> streamsProperties) {
+    Optional<StreamThreadsCountResolver> resolver;
     try {
-      if (!StreamThreadsCountResolver.isDynamic(streamsProperties)) {
-        return OptionalInt.empty();
-      }
-      Optional<StreamThreadsCountResolver> resolver = getStreamThreadsCountResolver();
-      if (resolver.isEmpty()) {
-        getLogger()
-            .warn(
-                "{} is set to DYNAMIC but no StreamThreadsCountResolver is provided; leaving as-is",
-                NUM_STREAM_THREADS_CONFIG);
-        return OptionalInt.empty();
-      }
-      return OptionalInt.of(resolver.get().resolve(this.topology, streamsProperties));
+      resolver = getStreamThreadsCountResolver();
     } catch (Exception exception) {
       getLogger()
-          .error(
-              "Unexpected error resolving dynamic {}; leaving config untouched",
-              NUM_STREAM_THREADS_CONFIG,
+          .warn(
+              "getStreamThreadsCountResolver() threw; falling back to {} stream threads",
+              StreamThreadsCountResolver.FALLBACK_NUM_STREAM_THREADS,
               exception);
-      return OptionalInt.empty();
+      return StreamThreadsCountResolver.FALLBACK_NUM_STREAM_THREADS;
     }
+    if (resolver.isEmpty()) {
+      getLogger()
+          .warn(
+              "{} is set to DYNAMIC but no StreamThreadsCountResolver is provided; falling back to {}",
+              NUM_STREAM_THREADS_CONFIG,
+              StreamThreadsCountResolver.FALLBACK_NUM_STREAM_THREADS);
+      return StreamThreadsCountResolver.FALLBACK_NUM_STREAM_THREADS;
+    }
+    return resolver.get().resolve(this.topology, streamsProperties);
   }
 
   public Map<String, Object> getStreamsConfig(Config jobConfig) {
