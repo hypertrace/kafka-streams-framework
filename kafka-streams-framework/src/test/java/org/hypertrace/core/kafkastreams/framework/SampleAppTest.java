@@ -4,14 +4,17 @@ import static org.apache.kafka.clients.producer.ProducerConfig.ACKS_CONFIG;
 import static org.apache.kafka.streams.StreamsConfig.DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG;
 import static org.apache.kafka.streams.StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG;
 import static org.apache.kafka.streams.StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG;
+import static org.apache.kafka.streams.StreamsConfig.NUM_STREAM_THREADS_CONFIG;
 import static org.apache.kafka.streams.StreamsConfig.ROCKSDB_CONFIG_SETTER_CLASS_CONFIG;
 import static org.apache.kafka.streams.StreamsConfig.producerPrefix;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
+import com.typesafe.config.Config;
 import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.TestInputTopic;
@@ -19,6 +22,7 @@ import org.apache.kafka.streams.TestOutputTopic;
 import org.apache.kafka.streams.TopologyTestDriver;
 import org.apache.kafka.streams.errors.LogAndContinueExceptionHandler;
 import org.hypertrace.core.kafkastreams.framework.rocksdb.BoundedMemoryConfigSetter;
+import org.hypertrace.core.kafkastreams.framework.threading.StreamThreadsCountResolver;
 import org.hypertrace.core.serviceframework.config.ConfigClientFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -83,5 +87,54 @@ public class SampleAppTest {
         baseStreamsConfig.get(DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG),
         is(LogAndContinueExceptionHandler.class));
     assertThat(baseStreamsConfig.get(producerPrefix(ACKS_CONFIG)), is("all"));
+  }
+
+  // Verifies the fix for "DYNAMIC sentinel could leak to Kafka Streams config when no resolver is
+  // wired up" — without resolver override, the framework must replace DYNAMIC with the integer
+  // fallback so Kafka Streams receives a parseable value.
+  @Test
+  public void dynamicWithoutResolverFallsBackToEight() {
+    SampleApp dynamicApp =
+        new SampleApp(ConfigClientFactory.getClient()) {
+          @Override
+          public Map<String, Object> getStreamsConfig(Config jobConfig) {
+            Map<String, Object> properties = super.getStreamsConfig(jobConfig);
+            properties.put(NUM_STREAM_THREADS_CONFIG, StreamThreadsCountResolver.DYNAMIC_SENTINEL);
+            return properties;
+          }
+        };
+
+    dynamicApp.doInit();
+
+    assertThat(
+        dynamicApp.streamsConfig.get(NUM_STREAM_THREADS_CONFIG),
+        is(StreamThreadsCountResolver.FALLBACK_NUM_STREAM_THREADS));
+  }
+
+  // Verifies the fix for "exception while obtaining the resolver should not leak DYNAMIC" — when
+  // getStreamThreadsCountResolver() throws, the framework must catch and fall back to the integer
+  // default rather than letting the literal sentinel reach Kafka Streams.
+  @Test
+  public void dynamicWithThrowingResolverFallsBackToEight() {
+    SampleApp dynamicApp =
+        new SampleApp(ConfigClientFactory.getClient()) {
+          @Override
+          public Map<String, Object> getStreamsConfig(Config jobConfig) {
+            Map<String, Object> properties = super.getStreamsConfig(jobConfig);
+            properties.put(NUM_STREAM_THREADS_CONFIG, StreamThreadsCountResolver.DYNAMIC_SENTINEL);
+            return properties;
+          }
+
+          @Override
+          protected Optional<StreamThreadsCountResolver> getStreamThreadsCountResolver() {
+            throw new RuntimeException("simulated wiring failure");
+          }
+        };
+
+    dynamicApp.doInit();
+
+    assertThat(
+        dynamicApp.streamsConfig.get(NUM_STREAM_THREADS_CONFIG),
+        is(StreamThreadsCountResolver.FALLBACK_NUM_STREAM_THREADS));
   }
 }
