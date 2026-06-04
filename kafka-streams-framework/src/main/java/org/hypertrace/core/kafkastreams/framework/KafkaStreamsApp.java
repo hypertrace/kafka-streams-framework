@@ -288,16 +288,24 @@ public abstract class KafkaStreamsApp extends PlatformService {
    *           StreamThreadsCountResolver.optionalReplicaCount(replicaCount)));
    * }
    * }</pre>
+   *
+   * <p>Fallback to {@link StreamThreadsCountResolver#FALLBACK_NUM_STREAM_THREADS} occurs when:
+   *
+   * <ul>
+   *   <li>{@code num.stream.threads} is set to {@code DYNAMIC} but this method returns empty
+   *   <li>this method itself throws
+   *   <li>replica count supplied to the resolver is non-positive (env var unset/zero/negative)
+   *   <li>the AdminClient/calculator call throws (broker unreachable, describe timeout, etc.)
+   *   <li>the topology contains a regex/pattern source — partitions cannot be enumerated up-front
+   * </ul>
    */
   protected Optional<StreamThreadsCountResolver> getStreamThreadsCountResolver() {
     return Optional.empty();
   }
 
   // Caller must check StreamThreadsCountResolver.isDynamic(...) before invoking. Always returns a
-  // concrete int — every "cannot resolve" path (resolver-supplier throws, no resolver wired,
-  // resolver returns empty for unsupported topologies / non-positive replicas / AdminClient
-  // failure) collapses to FALLBACK_NUM_STREAM_THREADS so the literal "DYNAMIC" sentinel never
-  // reaches Kafka Streams.
+  // concrete int so the literal "DYNAMIC" sentinel never reaches Kafka Streams config — see
+  // getStreamThreadsCountResolver() javadoc for the full list of fallback triggers.
   private int resolveDynamicStreamThreads(Map<String, Object> streamsProperties) {
     Optional<StreamThreadsCountResolver> resolver;
     try {
