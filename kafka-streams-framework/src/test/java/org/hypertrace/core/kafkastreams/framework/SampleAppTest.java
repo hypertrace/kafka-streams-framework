@@ -16,11 +16,15 @@ import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.regex.Pattern;
 import org.apache.kafka.common.serialization.Serdes;
+import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.TestInputTopic;
 import org.apache.kafka.streams.TestOutputTopic;
 import org.apache.kafka.streams.TopologyTestDriver;
 import org.apache.kafka.streams.errors.LogAndContinueExceptionHandler;
+import org.apache.kafka.streams.kstream.Consumed;
+import org.apache.kafka.streams.kstream.KStream;
 import org.hypertrace.core.kafkastreams.framework.rocksdb.BoundedMemoryConfigSetter;
 import org.hypertrace.core.kafkastreams.framework.threading.StreamThreadsCountResolver;
 import org.hypertrace.core.serviceframework.config.ConfigClientFactory;
@@ -101,6 +105,44 @@ public class SampleAppTest {
             Map<String, Object> properties = super.getStreamsConfig(jobConfig);
             properties.put(NUM_STREAM_THREADS_CONFIG, StreamThreadsCountResolver.DYNAMIC_SENTINEL);
             return properties;
+          }
+        };
+
+    dynamicApp.doInit();
+
+    assertThat(
+        dynamicApp.streamsConfig.get(NUM_STREAM_THREADS_CONFIG),
+        is(StreamThreadsCountResolver.FALLBACK_NUM_STREAM_THREADS));
+  }
+
+  // Pattern-source topology: calculator returns OptionalInt.empty() because regex subscriptions
+  // can't be enumerated up-front against the broker. The framework must substitute the integer
+  // fallback so Kafka Streams gets a parseable value (not the literal "DYNAMIC").
+  @Test
+  public void dynamicWithPatternSourceFallsBackToEight() {
+    SampleApp dynamicApp =
+        new SampleApp(ConfigClientFactory.getClient()) {
+          @Override
+          public Map<String, Object> getStreamsConfig(Config jobConfig) {
+            Map<String, Object> properties = super.getStreamsConfig(jobConfig);
+            properties.put(NUM_STREAM_THREADS_CONFIG, StreamThreadsCountResolver.DYNAMIC_SENTINEL);
+            return properties;
+          }
+
+          @Override
+          public StreamsBuilder buildTopology(
+              Map<String, Object> streamsConfig,
+              StreamsBuilder streamsBuilder,
+              Map<String, KStream<?, ?>> sourceStreams) {
+            streamsBuilder.stream(
+                    Pattern.compile("input-.*"), Consumed.with(Serdes.String(), Serdes.String()))
+                .foreach((key, value) -> {});
+            return streamsBuilder;
+          }
+
+          @Override
+          protected Optional<StreamThreadsCountResolver> getStreamThreadsCountResolver() {
+            return Optional.of(new StreamThreadsCountResolver(() -> 8));
           }
         };
 

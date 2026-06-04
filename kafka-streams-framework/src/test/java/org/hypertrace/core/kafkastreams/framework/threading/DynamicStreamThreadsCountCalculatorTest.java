@@ -10,7 +10,9 @@ import static org.mockito.Mockito.when;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalInt;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.DescribeTopicsResult;
@@ -44,7 +46,7 @@ class DynamicStreamThreadsCountCalculatorTest {
     final Topology topology = topologyForSubtopologies(Set.of("topic-a"));
     stubPartitions(Map.of("topic-a", 30));
 
-    assertEquals(4, calculator.compute(topology, adminClient, 8));
+    assertEquals(OptionalInt.of(4), calculator.compute(topology, adminClient, 8));
   }
 
   @Test
@@ -52,7 +54,7 @@ class DynamicStreamThreadsCountCalculatorTest {
     final Topology topology = topologyForSubtopologies(Set.of("topic-a"), Set.of("topic-b"));
     stubPartitions(Map.of("topic-a", 10, "topic-b", 20));
 
-    assertEquals(4, calculator.compute(topology, adminClient, 8));
+    assertEquals(OptionalInt.of(4), calculator.compute(topology, adminClient, 8));
   }
 
   @Test
@@ -60,7 +62,7 @@ class DynamicStreamThreadsCountCalculatorTest {
     final Topology topology = topologyForSubtopologies(Set.of("topic-a"), Set.of("topic-missing"));
     stubPartitions(Map.of("topic-a", 16, "topic-missing", ABSENT));
 
-    assertEquals(2, calculator.compute(topology, adminClient, 8));
+    assertEquals(OptionalInt.of(2), calculator.compute(topology, adminClient, 8));
   }
 
   @Test
@@ -78,7 +80,20 @@ class DynamicStreamThreadsCountCalculatorTest {
     final Topology topology = topologyForSubtopologies(Set.of("topic-a"));
     stubPartitions(Map.of("topic-a", ABSENT));
 
-    assertEquals(1, calculator.compute(topology, adminClient, 8));
+    assertEquals(OptionalInt.of(1), calculator.compute(topology, adminClient, 8));
+  }
+
+  // Regex/pattern subscriptions cannot be enumerated up-front against the broker, so dynamic
+  // sizing would silently under-count tasks. Calculator must signal "not applicable" via empty
+  // so the caller falls back to its configured default.
+  @Test
+  void patternSubscriptionReturnsEmpty() {
+    final StreamsBuilder builder = new StreamsBuilder();
+    builder.stream(Pattern.compile("topic-.*"), Consumed.with(Serdes.String(), Serdes.String()))
+        .foreach((key, value) -> {});
+    final Topology topology = builder.build();
+
+    assertEquals(OptionalInt.empty(), calculator.compute(topology, adminClient, 8));
   }
 
   @SafeVarargs

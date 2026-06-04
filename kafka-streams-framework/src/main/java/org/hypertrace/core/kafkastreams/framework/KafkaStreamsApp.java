@@ -36,6 +36,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -292,10 +293,11 @@ public abstract class KafkaStreamsApp extends PlatformService {
     return Optional.empty();
   }
 
-  // Caller must check StreamThreadsCountResolver.isDynamic(...) before invoking. Always returns
-  // a concrete value: either the resolver's computed count or FALLBACK_NUM_STREAM_THREADS.
-  // The string sentinel "DYNAMIC" must never leak back to Kafka Streams config — it can't be
-  // parsed as an integer.
+  // Caller must check StreamThreadsCountResolver.isDynamic(...) before invoking. Always returns a
+  // concrete int — every "cannot resolve" path (resolver-supplier throws, no resolver wired,
+  // resolver returns empty for unsupported topologies / non-positive replicas / AdminClient
+  // failure) collapses to FALLBACK_NUM_STREAM_THREADS so the literal "DYNAMIC" sentinel never
+  // reaches Kafka Streams.
   private int resolveDynamicStreamThreads(Map<String, Object> streamsProperties) {
     Optional<StreamThreadsCountResolver> resolver;
     try {
@@ -316,7 +318,14 @@ public abstract class KafkaStreamsApp extends PlatformService {
               StreamThreadsCountResolver.FALLBACK_NUM_STREAM_THREADS);
       return StreamThreadsCountResolver.FALLBACK_NUM_STREAM_THREADS;
     }
-    return resolver.get().resolve(this.topology, streamsProperties);
+    final OptionalInt resolved = resolver.get().resolve(this.topology, streamsProperties);
+    if (resolved.isEmpty()) {
+      getLogger()
+          .warn(
+              "Resolver could not compute dynamic num.stream.threads; falling back to {}",
+              StreamThreadsCountResolver.FALLBACK_NUM_STREAM_THREADS);
+    }
+    return resolved.orElse(StreamThreadsCountResolver.FALLBACK_NUM_STREAM_THREADS);
   }
 
   public Map<String, Object> getStreamsConfig(Config jobConfig) {

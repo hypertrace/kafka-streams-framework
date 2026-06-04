@@ -2,6 +2,7 @@ package org.hypertrace.core.kafkastreams.framework.threading;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Properties;
 import java.util.function.Function;
 import java.util.function.IntSupplier;
@@ -58,28 +59,25 @@ public class StreamThreadsCountResolver {
   }
 
   /**
-   * Resolve a concrete thread count for the given topology. Returns {@link
-   * #FALLBACK_NUM_STREAM_THREADS} when prerequisites are missing (non-positive replica count) or
-   * the AdminClient/calculator call fails, so the application can still start.
+   * Resolve a thread count for the given topology. Returns {@link OptionalInt#empty()} when
+   * prerequisites are missing (non-positive replica count), the topology is unsupported (regex
+   * sources), or the AdminClient/calculator call fails — the caller substitutes its fallback so the
+   * application can still start.
    */
-  public int resolve(final Topology topology, final Map<String, Object> streamsProperties) {
+  public OptionalInt resolve(final Topology topology, final Map<String, Object> streamsProperties) {
     final int replicas = replicaCountSupplier.getAsInt();
     if (replicas <= 0) {
-      logger.warn(
-          "replica.count is non-positive ({}); falling back to {} stream threads",
-          replicas,
-          FALLBACK_NUM_STREAM_THREADS);
-      return FALLBACK_NUM_STREAM_THREADS;
+      logger.warn("replica.count is non-positive ({}); skipping dynamic resolution", replicas);
+      return OptionalInt.empty();
     }
     try (final AdminClient adminClient =
         adminClientFactory.apply(toProperties(streamsProperties))) {
       return calculator.compute(topology, adminClient, replicas);
     } catch (final RuntimeException runtimeException) {
       logger.error(
-          "Failed to compute dynamic num.stream.threads; falling back to {}",
-          FALLBACK_NUM_STREAM_THREADS,
+          "Failed to compute dynamic num.stream.threads; skipping dynamic resolution",
           runtimeException);
-      return FALLBACK_NUM_STREAM_THREADS;
+      return OptionalInt.empty();
     }
   }
 

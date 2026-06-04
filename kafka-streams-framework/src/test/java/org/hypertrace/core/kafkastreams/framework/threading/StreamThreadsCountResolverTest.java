@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Properties;
 import java.util.function.Function;
 import java.util.function.IntSupplier;
@@ -31,43 +32,35 @@ import org.junit.jupiter.api.Test;
 class StreamThreadsCountResolverTest {
 
   @Test
-  void calculatorThrowFallsBackToEight() {
+  void calculatorThrowReturnsEmpty() {
     final AdminClient adminClient = mock(AdminClient.class);
     when(adminClient.describeTopics(anySet()))
         .thenThrow(new RuntimeException("simulated broker outage"));
     final StreamThreadsCountResolver resolver = resolverWith(() -> 8, adminClient);
 
-    final int resolved = resolver.resolve(simpleTopology(), bootstrapProperties());
-
-    assertEquals(StreamThreadsCountResolver.FALLBACK_NUM_STREAM_THREADS, resolved);
+    assertEquals(OptionalInt.empty(), resolver.resolve(simpleTopology(), bootstrapProperties()));
   }
 
   @Test
-  void missingReplicaCountFallsBack() {
+  void missingReplicaCountReturnsEmpty() {
     final IntSupplier missing = StreamThreadsCountResolver.optionalReplicaCount(Optional.empty());
     final StreamThreadsCountResolver resolver = resolverWith(missing, mock(AdminClient.class));
 
-    final int resolved = resolver.resolve(simpleTopology(), bootstrapProperties());
-
-    assertEquals(StreamThreadsCountResolver.FALLBACK_NUM_STREAM_THREADS, resolved);
+    assertEquals(OptionalInt.empty(), resolver.resolve(simpleTopology(), bootstrapProperties()));
   }
 
   @Test
-  void zeroReplicaCountFallsBack() {
+  void zeroReplicaCountReturnsEmpty() {
     final StreamThreadsCountResolver resolver = resolverWith(() -> 0, mock(AdminClient.class));
 
-    final int resolved = resolver.resolve(simpleTopology(), bootstrapProperties());
-
-    assertEquals(StreamThreadsCountResolver.FALLBACK_NUM_STREAM_THREADS, resolved);
+    assertEquals(OptionalInt.empty(), resolver.resolve(simpleTopology(), bootstrapProperties()));
   }
 
   @Test
-  void negativeReplicaCountFallsBack() {
+  void negativeReplicaCountReturnsEmpty() {
     final StreamThreadsCountResolver resolver = resolverWith(() -> -1, mock(AdminClient.class));
 
-    final int resolved = resolver.resolve(simpleTopology(), bootstrapProperties());
-
-    assertEquals(StreamThreadsCountResolver.FALLBACK_NUM_STREAM_THREADS, resolved);
+    assertEquals(OptionalInt.empty(), resolver.resolve(simpleTopology(), bootstrapProperties()));
   }
 
   @Test
@@ -78,9 +71,7 @@ class StreamThreadsCountResolverTest {
     stubPartitions(adminClient, Map.of("topic-a", 30));
     final StreamThreadsCountResolver resolver = resolverWith(() -> 8, adminClient);
 
-    final int resolved = resolver.resolve(simpleTopology(), bootstrapProperties());
-
-    assertEquals(4, resolved);
+    assertEquals(OptionalInt.of(4), resolver.resolve(simpleTopology(), bootstrapProperties()));
   }
 
   @Test

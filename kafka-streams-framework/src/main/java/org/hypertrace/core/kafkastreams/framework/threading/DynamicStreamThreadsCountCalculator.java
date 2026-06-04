@@ -6,6 +6,7 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -30,8 +31,10 @@ import org.slf4j.LoggerFactory;
  * stream tasks. Summing across sub-topologies and dividing by the replica count yields the threads
  * each instance should run to keep all tasks active without idle threads.
  *
- * <p>Regex/pattern subscriptions ({@link Source#topicPattern()}) are not supported — those
- * sub-topologies contribute zero tasks. No current app subscribes via regex.
+ * <p>Returns {@link OptionalInt#empty()} when the topology contains a regex/pattern subscription
+ * ({@link Source#topicPattern()}) — those sub-topologies cannot be enumerated against the broker
+ * up-front, so dynamic sizing would silently under-count tasks. The caller falls back to its
+ * configured default in that case.
  */
 public class DynamicStreamThreadsCountCalculator {
 
@@ -47,12 +50,33 @@ public class DynamicStreamThreadsCountCalculator {
         .collect(toUnmodifiableSet());
   }
 
-  public int compute(final Topology topology, final AdminClient adminClient, final int replicas) {
+  private static boolean hasPatternSource(final Subtopology subtopology) {
+    return subtopology.nodes().stream()
+        .filter(node -> node instanceof Source)
+        .map(node -> (Source) node)
+        .anyMatch(source -> source.topicPattern() != null);
+  }
+
+  public OptionalInt compute(
+      final Topology topology, final AdminClient adminClient, final int replicas) {
     if (replicas <= 0) {
       throw new IllegalArgumentException("replicas must be positive, got " + replicas);
     }
 
     final TopologyDescription description = topology.describe();
+
+    // Bail out if any sub-topology subscribes via regex — topicSet() is empty for those, so
+    // dynamic sizing would silently under-count tasks. The caller substitutes its fallback.
+    final boolean anyPatternSource =
+        description.subtopologies().stream()
+            .anyMatch(DynamicStreamThreadsCountCalculator::hasPatternSource);
+    if (anyPatternSource) {
+      logger.warn(
+          "Topology contains a regex/pattern source; dynamic num.stream.threads is not supported. "
+              + "Caller will fall back to its configured default.");
+      return OptionalInt.empty();
+    }
+
     final Set<String> sourceTopics =
         description.subtopologies().stream()
             .flatMap(subtopology -> sourceTopicsOf(subtopology).stream())
@@ -87,9 +111,12 @@ public class DynamicStreamThreadsCountCalculator {
         subtopologyCount,
         replicas,
         threads);
-    return threads;
+    return OptionalInt.of(threads);
   }
 
+  // Single-loop implementation: AdminClient.describeTopics() already fires all RPCs concurrently
+  // before returning futures, so iteration here only consumes a shared deadline (now+timeout) —
+  // total wall-clock is capped at DESCRIBE_TOPICS_TIMEOUT_MILLIS regardless of topic count.
   private Map<String, Integer> describePartitions(
       final AdminClient adminClient, final Set<String> topics) {
     if (topics.isEmpty()) {
@@ -97,18 +124,26 @@ public class DynamicStreamThreadsCountCalculator {
     }
     final DescribeTopicsResult result = adminClient.describeTopics(topics);
     final Map<String, KafkaFuture<TopicDescription>> futures = result.topicNameValues();
-
-    // Single shared deadline across all topics — worst-case wait is one timeout, not N.
-    // AdminClient retries the underlying RPC internally per its own retry config.
-    awaitAll(futures.values(), DESCRIBE_TOPICS_TIMEOUT_MILLIS);
-
+    final long deadlineMillis = System.currentTimeMillis() + DESCRIBE_TOPICS_TIMEOUT_MILLIS;
     final Map<String, Integer> partitions = new HashMap<>();
+
     for (final Entry<String, KafkaFuture<TopicDescription>> entry : futures.entrySet()) {
+      final long remainingMillis = deadlineMillis - System.currentTimeMillis();
+      if (remainingMillis <= 0) {
+        throw new RuntimeException(
+            "Timed out describing topics after " + DESCRIBE_TOPICS_TIMEOUT_MILLIS + "ms");
+      }
       try {
-        // Non-blocking after awaitAll: each future is already complete (or completed
-        // exceptionally). Per-topic handling stays so UnknownTopicOrPartitionException
-        // doesn't fail the whole batch.
-        partitions.put(entry.getKey(), entry.getValue().get().partitions().size());
+        partitions.put(
+            entry.getKey(),
+            entry.getValue().get(remainingMillis, TimeUnit.MILLISECONDS).partitions().size());
+      } catch (final TimeoutException timeoutException) {
+        throw new RuntimeException(
+            "Timed out describing topic " + entry.getKey(), timeoutException);
+      } catch (final InterruptedException interruptedException) {
+        Thread.currentThread().interrupt();
+        throw new RuntimeException(
+            "Interrupted while describing topic " + entry.getKey(), interruptedException);
       } catch (final ExecutionException executionException) {
         if (executionException.getCause() instanceof UnknownTopicOrPartitionException) {
           logger.warn(
@@ -119,29 +154,8 @@ public class DynamicStreamThreadsCountCalculator {
           throw new RuntimeException(
               "Failed to describe topic " + entry.getKey(), executionException);
         }
-      } catch (final InterruptedException interruptedException) {
-        Thread.currentThread().interrupt();
-        throw new RuntimeException(
-            "Interrupted while describing topic " + entry.getKey(), interruptedException);
       }
     }
     return Map.copyOf(partitions);
-  }
-
-  private static void awaitAll(
-      final java.util.Collection<KafkaFuture<TopicDescription>> futures, final long timeoutMillis) {
-    try {
-      KafkaFuture.allOf(futures.toArray(KafkaFuture[]::new))
-          .get(timeoutMillis, TimeUnit.MILLISECONDS);
-    } catch (final TimeoutException timeoutException) {
-      throw new RuntimeException(
-          "Timed out describing topics after " + timeoutMillis + "ms", timeoutException);
-    } catch (final InterruptedException interruptedException) {
-      Thread.currentThread().interrupt();
-      throw new RuntimeException("Interrupted describing topics", interruptedException);
-    } catch (final ExecutionException executionException) {
-      // At least one topic future completed exceptionally; per-future handling below classifies
-      // (UnknownTopicOrPartitionException → 0 partitions; everything else → fail).
-    }
   }
 }
