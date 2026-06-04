@@ -24,7 +24,6 @@ import org.apache.kafka.common.Node;
 import org.apache.kafka.common.TopicPartitionInfo;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
-import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.kstream.Consumed;
 import org.junit.jupiter.api.Test;
@@ -72,24 +71,6 @@ class StreamThreadsCountResolverTest {
     final StreamThreadsCountResolver resolver = resolverWith(() -> 8, adminClient);
 
     assertEquals(OptionalInt.of(4), resolver.resolve(simpleTopology(), bootstrapProperties()));
-  }
-
-  @Test
-  void isDynamicTrueWhenSentinelSet() {
-    assertEquals(
-        true,
-        StreamThreadsCountResolver.isDynamic(
-            Map.of(
-                StreamsConfig.NUM_STREAM_THREADS_CONFIG,
-                StreamThreadsCountResolver.DYNAMIC_SENTINEL)));
-  }
-
-  @Test
-  void isDynamicFalseForNumericValueOrAbsent() {
-    assertEquals(
-        false,
-        StreamThreadsCountResolver.isDynamic(Map.of(StreamsConfig.NUM_STREAM_THREADS_CONFIG, 4)));
-    assertEquals(false, StreamThreadsCountResolver.isDynamic(Map.of()));
   }
 
   private static StreamThreadsCountResolver resolverWith(

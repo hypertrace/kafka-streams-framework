@@ -69,6 +69,16 @@ public abstract class KafkaStreamsApp extends PlatformService {
   public static final String CLEANUP_LOCAL_STATE = "cleanup.local.state";
   public static final String PRE_CREATE_TOPICS = "precreate.topics";
   public static final String KAFKA_STREAMS_CONFIG_KEY = "kafka.streams.config";
+
+  /**
+   * Framework-level boolean opt-in (set in the streams config map) that gates dynamic {@code
+   * num.stream.threads} resolution. Apps must also override {@link
+   * #getStreamThreadsCountResolver()}; this flag exists separately so deployments can roll out and
+   * roll back per-cluster without code changes. The flag is consumed by the framework before the
+   * config reaches Kafka Streams and is not a Kafka config key.
+   */
+  public static final String DYNAMIC_NUM_STREAM_THREADS_CONFIG = "dynamic.num.stream.threads";
+
   private static final String SHUTDOWN_DURATION = "shutdown.duration";
   private static final Logger logger = LoggerFactory.getLogger(KafkaStreamsApp.class);
 
@@ -110,8 +120,15 @@ public abstract class KafkaStreamsApp extends PlatformService {
       streamsBuilder = buildTopology(streamsConfig, streamsBuilder, sourceStreams);
       this.topology = streamsBuilder.build();
 
-      if (StreamThreadsCountResolver.isDynamic(streamsConfig)) {
-        streamsConfig.put(NUM_STREAM_THREADS_CONFIG, resolveDynamicStreamThreads(streamsConfig));
+      // Strip the dynamic-resolution flag before it reaches Kafka Streams (it's a framework-level
+      // opt-in, not a Kafka config). When enabled and a resolver is wired up, replace the
+      // configured num.stream.threads with the dynamically-computed value; otherwise the
+      // configured value flows through unchanged.
+      final boolean dynamicEnabled = isDynamicNumStreamThreadsEnabled(streamsConfig);
+      streamsConfig.remove(DYNAMIC_NUM_STREAM_THREADS_CONFIG);
+      if (dynamicEnabled) {
+        resolveDynamicStreamThreads(streamsConfig)
+            .ifPresent(threads -> streamsConfig.put(NUM_STREAM_THREADS_CONFIG, threads));
       }
 
       getLogger().info("Finalized kafka streams configuration: {}", streamsConfig);
@@ -267,9 +284,9 @@ public abstract class KafkaStreamsApp extends PlatformService {
 
   /**
    * Override in subclasses that want auto-sized {@code num.stream.threads}. Return a resolver
-   * configured with this app's replica-count source. The framework only invokes this when {@code
-   * num.stream.threads} is set to {@link StreamThreadsCountResolver#DYNAMIC_SENTINEL}; returning an
-   * empty optional disables dynamic resolution and the app keeps whatever value was configured.
+   * configured with this app's replica-count source. The framework only invokes this when {@link
+   * #DYNAMIC_NUM_STREAM_THREADS_CONFIG} is {@code true} in the streams config; returning an empty
+   * optional (the default) disables dynamic resolution.
    *
    * <p>Apps that don't override this are unaffected — the default returns {@code Optional.empty()}
    * and the framework leaves {@code num.stream.threads} exactly as configured. Apps that do
@@ -289,51 +306,54 @@ public abstract class KafkaStreamsApp extends PlatformService {
    * }
    * }</pre>
    *
-   * <p>Fallback to {@link StreamThreadsCountResolver#FALLBACK_NUM_STREAM_THREADS} occurs when:
+   * <p>The configured numeric {@code num.stream.threads} flows through unchanged when:
    *
    * <ul>
-   *   <li>{@code num.stream.threads} is set to {@code DYNAMIC} but this method returns empty
-   *   <li>this method itself throws
-   *   <li>replica count supplied to the resolver is non-positive (env var unset/zero/negative)
-   *   <li>the AdminClient/calculator call throws (broker unreachable, describe timeout, etc.)
-   *   <li>the topology contains a regex/pattern source — partitions cannot be enumerated up-front
+   *   <li>{@link #DYNAMIC_NUM_STREAM_THREADS_CONFIG} is {@code false} or unset
+   *   <li>this method returns empty (no resolver wired up)
+   *   <li>this method throws
+   *   <li>the resolver returns empty: replica count is non-positive, the AdminClient/calculator
+   *       call throws, the topology contains a regex/pattern source, or no source partitions are
+   *       resolvable on the broker
    * </ul>
    */
   protected Optional<StreamThreadsCountResolver> getStreamThreadsCountResolver() {
     return Optional.empty();
   }
 
-  // Caller must check StreamThreadsCountResolver.isDynamic(...) before invoking. Always returns a
-  // concrete int so the literal "DYNAMIC" sentinel never reaches Kafka Streams config — see
-  // getStreamThreadsCountResolver() javadoc for the full list of fallback triggers.
-  private int resolveDynamicStreamThreads(Map<String, Object> streamsProperties) {
-    Optional<StreamThreadsCountResolver> resolver;
+  // Caller must check the dynamic-enabled flag before invoking. Returns OptionalInt.empty() when
+  // no resolver is wired or resolution cannot produce a value — caller keeps the configured
+  // num.stream.threads as the fallback.
+  private OptionalInt resolveDynamicStreamThreads(Map<String, Object> streamsProperties) {
+    final Optional<StreamThreadsCountResolver> resolver;
     try {
       resolver = getStreamThreadsCountResolver();
     } catch (Exception exception) {
       getLogger()
           .warn(
-              "getStreamThreadsCountResolver() threw; falling back to {} stream threads",
-              StreamThreadsCountResolver.FALLBACK_NUM_STREAM_THREADS,
+              "getStreamThreadsCountResolver() threw; keeping configured num.stream.threads",
               exception);
-      return StreamThreadsCountResolver.FALLBACK_NUM_STREAM_THREADS;
+      return OptionalInt.empty();
     }
     if (resolver.isEmpty()) {
       getLogger()
           .warn(
-              "{} is set to DYNAMIC but no StreamThreadsCountResolver is provided; falling back to {}",
-              NUM_STREAM_THREADS_CONFIG,
-              StreamThreadsCountResolver.FALLBACK_NUM_STREAM_THREADS);
-      return StreamThreadsCountResolver.FALLBACK_NUM_STREAM_THREADS;
+              "{} is true but no StreamThreadsCountResolver is provided; keeping configured num.stream.threads",
+              DYNAMIC_NUM_STREAM_THREADS_CONFIG);
+      return OptionalInt.empty();
     }
     final OptionalInt resolved = resolver.get().resolve(this.topology, streamsProperties);
     if (resolved.isEmpty()) {
       getLogger()
-          .warn(
-              "Resolver could not compute dynamic num.stream.threads; falling back to {}",
-              StreamThreadsCountResolver.FALLBACK_NUM_STREAM_THREADS);
+          .warn("Resolver could not compute dynamic num.stream.threads; keeping configured value");
     }
-    return resolved.orElse(StreamThreadsCountResolver.FALLBACK_NUM_STREAM_THREADS);
+    return resolved;
+  }
+
+  private static boolean isDynamicNumStreamThreadsEnabled(
+      final Map<String, Object> streamsProperties) {
+    final Object value = streamsProperties.get(DYNAMIC_NUM_STREAM_THREADS_CONFIG);
+    return value != null && Boolean.parseBoolean(String.valueOf(value));
   }
 
   public Map<String, Object> getStreamsConfig(Config jobConfig) {

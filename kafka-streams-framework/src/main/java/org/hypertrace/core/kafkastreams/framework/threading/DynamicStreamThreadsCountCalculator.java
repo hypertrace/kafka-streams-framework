@@ -104,7 +104,14 @@ public class DynamicStreamThreadsCountCalculator {
       totalTasks += tasksForSubtopology;
     }
 
-    final int threads = totalTasks == 0 ? 1 : (int) Math.ceil((double) totalTasks / replicas);
+    if (totalTasks == 0) {
+      logger.warn(
+          "No resolvable partitions across {} sub-topologies; skipping dynamic num.stream.threads.",
+          subtopologyCount);
+      return OptionalInt.empty();
+    }
+
+    final int threads = (int) Math.ceil((double) totalTasks / replicas);
     logger.info(
         "Dynamic num.stream.threads: totalTasks={} across {} sub-topologies, replicas={}, computed={}",
         totalTasks,

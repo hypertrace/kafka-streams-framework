@@ -93,39 +93,43 @@ public class SampleAppTest {
     assertThat(baseStreamsConfig.get(producerPrefix(ACKS_CONFIG)), is("all"));
   }
 
-  // Verifies the fix for "DYNAMIC sentinel could leak to Kafka Streams config when no resolver is
-  // wired up" — without resolver override, the framework must replace DYNAMIC with the integer
-  // fallback so Kafka Streams receives a parseable value.
+  // No resolver wired up → framework must keep the configured num.stream.threads (the configured
+  // value is the fallback by definition) and strip the framework-only flag before it reaches
+  // Kafka Streams.
   @Test
-  public void dynamicWithoutResolverFallsBackToEight() {
+  public void dynamicWithoutResolverKeepsConfiguredValue() {
+    final Object configuredThreads = sampleApp.streamsConfig.get(NUM_STREAM_THREADS_CONFIG);
+
     SampleApp dynamicApp =
         new SampleApp(ConfigClientFactory.getClient()) {
           @Override
           public Map<String, Object> getStreamsConfig(Config jobConfig) {
             Map<String, Object> properties = super.getStreamsConfig(jobConfig);
-            properties.put(NUM_STREAM_THREADS_CONFIG, StreamThreadsCountResolver.DYNAMIC_SENTINEL);
+            properties.put(KafkaStreamsApp.DYNAMIC_NUM_STREAM_THREADS_CONFIG, true);
             return properties;
           }
         };
 
     dynamicApp.doInit();
 
+    assertThat(dynamicApp.streamsConfig.get(NUM_STREAM_THREADS_CONFIG), is(configuredThreads));
     assertThat(
-        dynamicApp.streamsConfig.get(NUM_STREAM_THREADS_CONFIG),
-        is(StreamThreadsCountResolver.FALLBACK_NUM_STREAM_THREADS));
+        dynamicApp.streamsConfig.containsKey(KafkaStreamsApp.DYNAMIC_NUM_STREAM_THREADS_CONFIG),
+        is(false));
   }
 
-  // Pattern-source topology: calculator returns OptionalInt.empty() because regex subscriptions
-  // can't be enumerated up-front against the broker. The framework must substitute the integer
-  // fallback so Kafka Streams gets a parseable value (not the literal "DYNAMIC").
+  // Pattern-source topology: calculator returns OptionalInt.empty(). Configured num.stream.threads
+  // flows through unchanged.
   @Test
-  public void dynamicWithPatternSourceFallsBackToEight() {
+  public void dynamicWithPatternSourceKeepsConfiguredValue() {
+    final Object configuredThreads = sampleApp.streamsConfig.get(NUM_STREAM_THREADS_CONFIG);
+
     SampleApp dynamicApp =
         new SampleApp(ConfigClientFactory.getClient()) {
           @Override
           public Map<String, Object> getStreamsConfig(Config jobConfig) {
             Map<String, Object> properties = super.getStreamsConfig(jobConfig);
-            properties.put(NUM_STREAM_THREADS_CONFIG, StreamThreadsCountResolver.DYNAMIC_SENTINEL);
+            properties.put(KafkaStreamsApp.DYNAMIC_NUM_STREAM_THREADS_CONFIG, true);
             return properties;
           }
 
@@ -148,22 +152,20 @@ public class SampleAppTest {
 
     dynamicApp.doInit();
 
-    assertThat(
-        dynamicApp.streamsConfig.get(NUM_STREAM_THREADS_CONFIG),
-        is(StreamThreadsCountResolver.FALLBACK_NUM_STREAM_THREADS));
+    assertThat(dynamicApp.streamsConfig.get(NUM_STREAM_THREADS_CONFIG), is(configuredThreads));
   }
 
-  // Verifies the fix for "exception while obtaining the resolver should not leak DYNAMIC" — when
-  // getStreamThreadsCountResolver() throws, the framework must catch and fall back to the integer
-  // default rather than letting the literal sentinel reach Kafka Streams.
+  // Resolver throws → configured num.stream.threads flows through unchanged.
   @Test
-  public void dynamicWithThrowingResolverFallsBackToEight() {
+  public void dynamicWithThrowingResolverKeepsConfiguredValue() {
+    final Object configuredThreads = sampleApp.streamsConfig.get(NUM_STREAM_THREADS_CONFIG);
+
     SampleApp dynamicApp =
         new SampleApp(ConfigClientFactory.getClient()) {
           @Override
           public Map<String, Object> getStreamsConfig(Config jobConfig) {
             Map<String, Object> properties = super.getStreamsConfig(jobConfig);
-            properties.put(NUM_STREAM_THREADS_CONFIG, StreamThreadsCountResolver.DYNAMIC_SENTINEL);
+            properties.put(KafkaStreamsApp.DYNAMIC_NUM_STREAM_THREADS_CONFIG, true);
             return properties;
           }
 
@@ -175,8 +177,6 @@ public class SampleAppTest {
 
     dynamicApp.doInit();
 
-    assertThat(
-        dynamicApp.streamsConfig.get(NUM_STREAM_THREADS_CONFIG),
-        is(StreamThreadsCountResolver.FALLBACK_NUM_STREAM_THREADS));
+    assertThat(dynamicApp.streamsConfig.get(NUM_STREAM_THREADS_CONFIG), is(configuredThreads));
   }
 }

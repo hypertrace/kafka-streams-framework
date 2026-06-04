@@ -75,12 +75,13 @@ class DynamicStreamThreadsCountCalculatorTest {
         IllegalArgumentException.class, () -> calculator.compute(topology, adminClient, -1));
   }
 
+  // No resolvable partitions -> caller keeps the configured num.stream.threads as-is.
   @Test
-  void totalTasksZeroReturnsOne() {
+  void totalTasksZeroReturnsEmpty() {
     final Topology topology = topologyForSubtopologies(Set.of("topic-a"));
     stubPartitions(Map.of("topic-a", ABSENT));
 
-    assertEquals(OptionalInt.of(1), calculator.compute(topology, adminClient, 8));
+    assertEquals(OptionalInt.empty(), calculator.compute(topology, adminClient, 8));
   }
 
   // Regex/pattern subscriptions cannot be enumerated up-front against the broker, so dynamic
