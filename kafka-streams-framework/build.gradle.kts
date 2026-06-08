@@ -33,6 +33,7 @@ dependencies {
   testImplementation(commonLibs.junit.jupiter)
   testImplementation(localLibs.junit.pioneer)
   testImplementation(commonLibs.mockito.core)
+  testImplementation(commonLibs.mockito.junit)
   testImplementation(localLibs.hamcrest.core)
   testRuntimeOnly(commonLibs.log4j.slf4j2.impl)
 }
