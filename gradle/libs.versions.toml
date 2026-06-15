@@ -1,0 +1,17 @@
+[versions]
+caffeine = "3.1.8"
+junit-pioneer = "2.3.0"
+hypertrace-config = "0.1.73"
+hypertrace-avro-plugin = "0.5.1"
+
+[libraries]
+junit-pioneer = { module = "org.junit-pioneer:junit-pioneer", version.ref = "junit-pioneer" }
+hamcrest-core = { module = "org.hamcrest:hamcrest-core", version = "2.2" }
+caffeine = { module = "com.github.ben-manes.caffeine:caffeine", version.ref = "caffeine" }
+kafka-streams-avro-serde = { module = "io.confluent:kafka-streams-avro-serde" }
+kafka-streams-test-utils = { module = "org.apache.kafka:kafka-streams-test-utils" }
+avro = { module = "org.apache.avro:avro" }
+hypertrace-config-partitioner-api = { module = "org.hypertrace.config.service:partitioner-config-service-api", version.ref = "hypertrace-config" }
+
+[plugins]
+hypertrace-avro = { id = "org.hypertrace.avro-plugin", version.ref = "hypertrace-avro-plugin" }
