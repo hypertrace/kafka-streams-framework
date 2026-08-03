@@ -37,6 +37,6 @@ dependencies {
     api("org.apache.kafka:kafka-clients:$confluentCcsVersion")
     api("org.apache.kafka:kafka-streams:$confluentCcsVersion")
     api("org.apache.kafka:kafka-streams-test-utils:$confluentCcsVersion")
-    api("org.apache.avro:avro:1.12.0")
+    api("org.apache.avro:avro:1.12.1")
   }
 }
